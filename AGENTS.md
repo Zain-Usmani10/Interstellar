@@ -12,6 +12,8 @@ Working branch: **`dev`**. `main` = stable demo copy.
 
 If this file and a plan file disagree on roles, ownership or git policy, **this file wins**.
 
+**New clone? Your human asks "what do I do?"** Walk them through `docs/TEAM_SETUP.md` step by step, for their login (`gh auth status` / `tools/board whoami` tell you who they are). Run the checks yourself where you can: `gh` works in Git Bash, `git config core.hooksPath` is `.githooks`, `tools/board iam` is set for this folder, and a second agent has its own worktree (step 4). Then take on your role from the table below, using your prompt in `docs/plan/TEAM_AGENT_PROMPTS.md`, and post `[<login>'s <Agent>] online` on the board. Don't start coding before setup is done.
+
 ## 0. Team and handles
 
 | Human | GitHub login | Agents (handle) | Role |
