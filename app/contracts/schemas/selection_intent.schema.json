@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interstellar.local/contracts/v1/selection_intent.schema.json",
+  "title": "SelectionIntent",
+  "description": "A proposal to select one allowed target. Mouse, keyboard and EEG all use it. EEG-type sources must attach evidence. The backend accepts at most one intent per context revision.",
+  "type": "object",
+  "required": ["schema_version", "event_id", "input_session_id", "context_id", "context_revision", "target_id", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "event_id": { "$ref": "common.schema.json#/$defs/uuid", "description": "New UUID per decision. An exact retry reuses it and gets the same result." },
+    "input_session_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "context_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "context_revision": { "type": "integer", "minimum": 0 },
+    "target_id": { "$ref": "common.schema.json#/$defs/target_id" },
+    "source": { "enum": ["mouse", "keyboard", "live_eeg", "replay", "synthetic"], "description": "Must equal the source the session registered with" },
+    "evidence": {
+      "type": "object",
+      "required": ["window_start_source_ms", "window_end_source_ms", "sample_count", "sample_rate_hz", "winner_score", "runner_up_score", "quality"],
+      "additionalProperties": false,
+      "properties": {
+        "window_start_source_ms": { "type": "number", "minimum": 0, "description": "Source-process monotonic clock; never compared with another clock" },
+        "window_end_source_ms": { "type": "number", "minimum": 0 },
+        "sample_count": { "type": "integer", "minimum": 1 },
+        "sample_rate_hz": { "type": "number", "exclusiveMinimum": 0 },
+        "winner_score": { "type": "number", "description": "Evidence score, not a probability" },
+        "runner_up_score": { "type": "number" },
+        "quality": { "enum": ["valid", "artifact", "gap", "flatline", "clipped", "stale"], "description": "Only 'valid' can be accepted" }
+      }
+    }
+  },
+  "if": { "required": ["source"], "properties": { "source": { "enum": ["live_eeg", "replay", "synthetic"] } } },
+  "then": { "required": ["evidence"] }
+}
