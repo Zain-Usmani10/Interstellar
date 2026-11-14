@@ -1,2 +1,58 @@
+# Board state (per working folder)
 .board/
+
+# Secrets: never commit. Template lives in .env.example
 .env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.venv-brain/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Quartus generated output (commit .qpf/.qsf/.sdc/RTL; packaged .sof goes in app/artifacts/)
+app/hardware/fpga/**/db/
+app/hardware/fpga/**/incremental_db/
+app/hardware/fpga/**/output_files/
+app/hardware/fpga/**/simulation/
+*.qws
+*.bak
+*.rpt
+*.summary
+*.smsg
+*.done
+*.jdi
+*.pin
+*.sld
+
+# Arduino / ESP32 build output
+app/hardware/xiao/**/build/
+
+# EEG recordings and sponsor datasets: never public
+app/brain/recordings/
+app/brain/datasets/
+*.edf
+*.bdf
+*.xdf
+
+# Runtime data
+*.sqlite
+*.sqlite3
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

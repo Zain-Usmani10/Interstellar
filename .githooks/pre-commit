@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Blocks commits that touch files you don't own (see AGENTS.md section 4 / tools/owners.txt).
+# Enable once per clone:   git config core.hooksPath .githooks
+# Identity comes from the board setup: tools/board whoami  +  tools/board iam <agent>
+# Emergency bypass (only with the owner's OK on the board): ALLOW_ANY_PATH=1 git commit ...
+
+[ "${ALLOW_ANY_PATH:-0}" = 1 ] && exit 0
+
+ROOT="$(git rev-parse --show-toplevel)" || exit 0
+OWNERS="$ROOT/tools/owners.txt"
+[ -f "$OWNERS" ] || exit 0
+OWNERS_TXT="$(tr -d '\r' < "$OWNERS")"   # tolerate Windows CRLF checkouts
+
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+
+login="${BOARD_LOGIN:-}"
+[ -n "$login" ] || { [ -s "$ROOT/.board/login" ] && login="$(cat "$ROOT/.board/login")"; }
+agent="${BOARD_AGENT:-}"
+[ -n "$agent" ] || { [ -s "$ROOT/.board/agent" ] && agent="$(cat "$ROOT/.board/agent")"; }
+login="$(lower "$login" | tr -d '[:space:]')"; agent="$(lower "$agent" | tr -d '[:space:]')"
+
+if [ -z "$login" ] || [ -z "$agent" ]; then
+  echo "pre-commit: unknown identity. Run in Git Bash:  tools/board whoami  and  tools/board iam <claude|codex|cursor|human>" >&2
+  exit 1
+fi
+
+default_owner="$(lower "$(awk '$1=="DEFAULT"{print $2}' <<< "$OWNERS_TXT")")"
+
+owner_of() { # longest matching prefix wins
+  awk -v f="$1" '!/^#/ && NF==2 && $1!="DEFAULT" && index(f,$1)==1 && length($1)>best {best=length($1); o=$2} END{print o}' <<< "$OWNERS_TXT"
+}
+
+bad=""
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  o="$(lower "$(owner_of "$f")")"
+  [ -n "$o" ] || o="$default_owner"
+  case "$o" in
+    */*) [ "$o" = "$login/$agent" ] && continue ;;   # agent-owned path
+    *)   [ "$o" = "$login" ] && continue ;;          # human-owned path (any of their agents)
+  esac
+  bad="$bad
+  $f  (owner: @$o)"
+done < <(git diff --cached --name-only --diff-filter=ACMRD)
+
+if [ -n "$bad" ]; then
+  echo "pre-commit: you are @$login/$agent and these staged files belong to someone else:$bad" >&2
+  echo "Unstage them (git restore --staged <file>) and ask the owner for a handoff on the board." >&2
+  exit 1
+fi
+exit 0

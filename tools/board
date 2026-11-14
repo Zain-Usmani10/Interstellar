@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 # Agent message board on a GitHub issue. Needs only `gh` (authenticated).
-# Usage: tools/board <post|read|unread|wait|whoami> [args]   (see `tools/board help`)
-# Env: BOARD_ISSUE (default 1), BOARD_REPO (default: from git remote), BOARD_LOGIN (override gh user, for tests)
+# Usage: tools/board <post|read|unread|wait|whoami|iam> [args]   (see `tools/board help`)
+# Env: BOARD_ISSUE (default 1), BOARD_REPO (default: from git remote),
+#      BOARD_LOGIN (override gh user, for tests), BOARD_AGENT (override `iam`),
+#      BOARD_TEAM (space-separated logins whose posts are shown; default = team table)
 set -u
 
 ISSUE="${BOARD_ISSUE:-1}"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-STATE_DIR="$ROOT/.board"
+STATE_DIR="$ROOT/.board"   # per working folder (each git worktree has its own)
+TEAM="${BOARD_TEAM:-ANaceri26 sadattanzim01 AffanSyed07 Zain-Usmani10}"
+AGENTS_ALLOWED="claude codex cursor human"
 
 die() { echo "board: $*" >&2; exit 1; }
 command -v gh >/dev/null 2>&1 || die "gh not found (https://cli.github.com), then run: gh auth login"
 
 valid_repo() { [[ "$1" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; }
 valid_login() { [[ "$1" =~ ^[A-Za-z0-9-]+$ ]]; }
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
 repo_from_remote() {
   local url path
@@ -50,17 +55,6 @@ repo() {
   printf '%s\n' "$r" > "$f"
   printf '%s\n' "$r"
 }
-REPO="$(repo)" || REPO=""
-[ -n "$REPO" ] || die "cannot determine repo; set BOARD_REPO=owner/name"
-
-# GitHub redirects renamed repositories. Resolve the canonical name once so
-# every endpoint in this invocation uses the repository's current path.
-CANONICAL_REPO="$(gh api "repos/$REPO" --jq .full_name 2>/dev/null)" || CANONICAL_REPO=""
-if valid_repo "$CANONICAL_REPO"; then
-  REPO="$CANONICAL_REPO"
-  mkdir -p "$STATE_DIR"
-  printf '%s\n' "$REPO" > "$STATE_DIR/repo"
-fi
 
 me() {
   if [ -n "${BOARD_LOGIN:-}" ]; then valid_login "$BOARD_LOGIN" && { echo "$BOARD_LOGIN"; return; }; return 1; fi
@@ -73,6 +67,40 @@ me() {
   l="$(gh api user --jq .login 2>/dev/null)" || return 1
   valid_login "$l" && { echo "$l" > "$f"; echo "$l"; }
 }
+
+# Which agent this working folder is (claude/codex/cursor/human). Empty if unset.
+my_agent() {
+  local a="${BOARD_AGENT:-}"
+  [ -n "$a" ] || { [ -s "$STATE_DIR/agent" ] && a="$(cat "$STATE_DIR/agent")"; }
+  lower "$a" | tr -d '[:space:]'
+}
+
+# `iam` and `whoami` work without a repo lookup.
+case "${1:-}" in
+  iam)
+    a="$(lower "${2:-}")"
+    case " $AGENTS_ALLOWED " in *" $a "*) ;; *) die "usage: tools/board iam <claude|codex|cursor|human>" ;; esac
+    mkdir -p "$STATE_DIR"; echo "$a" > "$STATE_DIR/agent"
+    l="$(me)" || die "gh not authenticated (run: gh auth login)"
+    echo "board: this folder is now @$l/$a"; exit 0 ;;
+  whoami)
+    l="$(me)" || die "gh not authenticated (run: gh auth login)"
+    a="$(my_agent)"
+    if [ -n "$a" ]; then echo "$l/$a"; else echo "$l"; echo "board: agent not set; run: tools/board iam <claude|codex|cursor|human>" >&2; fi
+    exit 0 ;;
+esac
+
+REPO="$(repo)" || REPO=""
+[ -n "$REPO" ] || die "cannot determine repo; set BOARD_REPO=owner/name"
+
+# GitHub redirects renamed repositories. Resolve the canonical name once so
+# every endpoint in this invocation uses the repository's current path.
+CANONICAL_REPO="$(gh api "repos/$REPO" --jq .full_name 2>/dev/null)" || CANONICAL_REPO=""
+if valid_repo "$CANONICAL_REPO"; then
+  REPO="$CANONICAL_REPO"
+  mkdir -p "$STATE_DIR"
+  printf '%s\n' "$REPO" > "$STATE_DIR/repo"
+fi
 
 b64d() { base64 -d 2>/dev/null || base64 -D; }
 
@@ -99,60 +127,100 @@ fetch_last() {
   printf '%s\n' "$acc" | awk 'NF' | tail -n "$want"
 }
 
+# Separate read cursors: "unread" (default) and "wait", so a background waiter
+# never consumes posts before a foreground `unread` sees them.
 # Cursor file holds "<newest seen comment id> <its created_at>".
-cursor_file() { echo "$STATE_DIR/cursor-$(echo "$REPO" | tr '/' '_')-$ISSUE"; }
-get_cursor() { local f; f="$(cursor_file)"; [ -s "$f" ] && cat "$f" || echo ""; }
-set_cursor() { # $1=id $2=created_at; only moves forward
+cursor_file() { echo "$STATE_DIR/cursor-$(echo "$REPO" | tr '/' '_')-$ISSUE${1:+-$1}"; }
+get_cursor() { local f; f="$(cursor_file "${1:-}")"; [ -s "$f" ] && cat "$f" || echo ""; }
+set_cursor() { # $1=name $2=id $3=created_at; only moves forward
   mkdir -p "$STATE_DIR"
-  local cur; cur="$(get_cursor | cut -d' ' -f1)"
-  if [ -z "$cur" ] || [ "$1" -gt "$cur" ]; then echo "$1 $2" > "$(cursor_file)"; fi
+  local cur; cur="$(get_cursor "$1" | cut -d' ' -f1)"
+  if [ -z "$cur" ] || [ "$2" -gt "$cur" ]; then echo "$2 $3" > "$(cursor_file "$1")"; fi
 }
 
-# stdin: fetch lines. Prints formatted comments; $1 = login to flag mentions for (may be empty)
+# stdin: rows. Keeps only rows written by team logins (prompt-injection safety).
+team_only() {
+  awk -F'\t' -v team="$(lower "$TEAM")" 'BEGIN{n=split(team,t," "); for(i=1;i<=n;i++) ok[t[i]]=1} NF && (tolower($2) in ok)'
+}
+
+# Is this row my own post? Same login AND same agent prefix ([login's Agent]).
+# Without an agent set, every post from my login counts as mine (old behaviour).
+is_mine() { # $1=author $2=body $3=my login $4=my agent
+  [ "$(lower "$1")" = "$(lower "$3")" ] || return 1
+  [ -n "$4" ] || return 0
+  local tag
+  tag="$(printf '%s' "$2" | head -n1 | sed -nE "s/^\[[A-Za-z0-9-]+'s ([A-Za-z]+)\].*/\1/p")"
+  [ -n "$tag" ] || { [ "$4" = "human" ]; return; }
+  [ "$(lower "$tag")" = "$4" ]
+}
+
+# stdin: rows. Prints formatted comments. $1=my login (may be empty) $2=my agent $3=1 to hide my own posts
 render() {
-  local login="$1" id user ts b body flag
+  local login="$1" agent="$2" hide="${3:-0}" id user ts b body flag B='[^A-Za-z0-9_-]'
   while IFS=$'\t' read -r id user ts b; do
     [ -n "$id" ] || continue
     body="$(printf '%s' "$b" | b64d | tr -d '\r')"
+    if [ "$hide" = 1 ] && [ -n "$login" ] && is_mine "$user" "$body" "$login" "$agent"; then continue; fi
     flag=""
-    if [ -n "$login" ] && printf '%s' "$body" | grep -qiE "(^|[^A-Za-z0-9_-])@(${login}|all)([^A-Za-z0-9_-]|$)"; then
-      flag=" ** MENTION **"
+    if [ -n "$login" ]; then
+      if printf '%s' "$body" | grep -qiE "(^|$B)@all($B|$)"; then
+        flag=" ** MENTION **"
+      elif [ -n "$agent" ] && [ "$agent" != "human" ]; then
+        if printf '%s' "$body" | grep -qiE "(^|$B)@${login}/${agent}($B|$)"; then
+          flag=" ** MENTION **"
+        elif printf '%s' "$body" | grep -qiE "(^|$B)@${login}([^A-Za-z0-9_/-]|$)"; then
+          flag=" (for your human @$login)"
+        fi
+      elif printf '%s' "$body" | grep -qiE "(^|$B)@${login}(/[A-Za-z]+)?($B|$)"; then
+        flag=" ** MENTION **"
+      fi
     fi
     printf -- '--- @%s %s (#%s)%s\n%s\n' "$user" "$ts" "$id" "$flag" "$body"
   done
 }
 
-# Emit unread comments by others, advance cursor. Returns 0 and prints nothing if none. 1 on fetch failure.
+# Emit new team posts (minus my own) since cursor $1, advance it. Prints nothing if none. 1 on fetch failure.
+# $2=1: on a brand-new cursor, just mark everything read silently (used by `wait`).
 do_unread() {
-  local all login cur cid cts new maxrow
+  local name="${1:-}" silent_init="${2:-0}" all login agent cur cid cts new maxrow
   login="$(me)" || return 1
-  cur="$(get_cursor)"; cid="${cur%% *}"; cts="${cur#* }"
+  agent="$(my_agent)"
+  cur="$(get_cursor "$name")"; cid="${cur%% *}"; cts="${cur#* }"
   if [ -z "$cur" ] || [ "$cid" = "$cts" ]; then
-    # first run in this clone (or old-format cursor): last 10 for context
+    # first run for this cursor: last 10 for context
     all="$(fetch_last 10)" || return 1
     new="$all"
+    if [ "$silent_init" = 1 ]; then
+      if [ -n "$new" ]; then
+        maxrow="$(printf '%s\n' "$new" | sort -n -t"$(printf '\t')" -k1,1 | tail -1)"
+        set_cursor "$name" "$(printf '%s' "$maxrow" | cut -f1)" "$(printf '%s' "$maxrow" | cut -f3)"
+      else
+        set_cursor "$name" 0 "1970-01-01T00:00:00Z"
+      fi
+      return 0
+    fi
   else
     all="$(fetch_since "$cts")" || return 1
     new="$(printf '%s\n' "$all" | awk -F'\t' -v c="$cid" 'NF && $1+0 > c+0')"
   fi
   [ -n "$new" ] || return 0
   maxrow="$(printf '%s\n' "$new" | sort -n -t"$(printf '\t')" -k1,1 | tail -1)"
-  new="$(printf '%s\n' "$new" | awk -F'\t' -v me="$login" 'NF && tolower($2) != tolower(me)')"
-  if [ -n "$new" ]; then
-    printf '%s\n' "$new" | render "$login"
-  fi
-  set_cursor "$(printf '%s' "$maxrow" | cut -f1)" "$(printf '%s' "$maxrow" | cut -f3)"
+  printf '%s\n' "$new" | team_only | render "$login" "$agent" 1
+  set_cursor "$name" "$(printf '%s' "$maxrow" | cut -f1)" "$(printf '%s' "$maxrow" | cut -f3)"
   return 0
 }
 
 cmd_post() {
-  local text
+  local text login tag_login
   if [ $# -gt 0 ]; then text="$*"; else text="$(cat)"; fi
   [ -n "$text" ] || die "empty post"
   case "$text" in
     "["*"'s "*"]"*) ;;
-    *) die "post must start with [<human>'s <agent>], e.g. [Sam's Claude]" ;;
+    *) die "post must start with [<login>'s <Agent>], e.g. [ANaceri26's Claude]" ;;
   esac
+  login="$(me)" || die "gh not authenticated"
+  tag_login="$(printf '%s' "$text" | sed -nE "1s/^\[([A-Za-z0-9-]+)'s .*/\1/p")"
+  [ "$(lower "$tag_login")" = "$(lower "$login")" ] || die "prefix login '$tag_login' must be your own GitHub login ($login)"
   gh api "repos/$REPO/issues/$ISSUE/comments" -f body="$text" --jq .html_url || die "post failed"
 }
 
@@ -169,30 +237,36 @@ cmd_read() {
   local all login
   all="$(fetch_last "$n")" || die "could not reach GitHub"
   login="$(me)" || login=""
-  [ -n "$all" ] && printf '%s\n' "$all" | tail -n "$n" | render "$login"
+  [ -n "$all" ] && printf '%s\n' "$all" | tail -n "$n" | team_only | render "$login" "$(my_agent)" 0
   return 0
 }
 
 cmd_unread() {
-  do_unread || { echo "board: could not reach GitHub (cursor unchanged)" >&2; exit 1; }
+  do_unread "" || { echo "board: could not reach GitHub (cursor unchanged)" >&2; exit 1; }
 }
 
 cmd_wait() {
-  local interval=30 timeout=0 start out
+  local interval=30 timeout=0 mentions=0 start out
   while [ $# -gt 0 ]; do
     case "$1" in
       --interval) interval="${2:-}"; shift 2 ;;
       --timeout) timeout="${2:-}"; shift 2 ;;
+      --mentions-only) mentions=1; shift ;;
       *) die "wait: unknown arg $1" ;;
     esac
   done
   case "$interval$timeout" in *[!0-9]*|'') die "wait: --interval/--timeout need whole seconds" ;; esac
+  # first use in this folder: start from "now" instead of replaying old posts
+  [ -n "$(get_cursor wait)" ] || do_unread wait 1 >/dev/null 2>&1
   start="$(date +%s)"
   while :; do
     # transient gh errors: ignore and retry next tick
-    if out="$(do_unread 2>/dev/null)" && [ -n "$out" ]; then
-      printf '%s\n' "$out"
-      exit 0
+    if out="$(do_unread wait 2>/dev/null)" && [ -n "$out" ]; then
+      if [ "$mentions" = 0 ] || printf '%s' "$out" | grep -q '\*\* MENTION \*\*'; then
+        printf '%s\n' "$out"
+        echo "board: run 'tools/board unread' to see everything since your last check"
+        exit 0
+      fi
     fi
     if [ "$timeout" -gt 0 ] && [ $(( $(date +%s) - start )) -ge "$timeout" ]; then
       echo "board: wait timed out after ${timeout}s" >&2
@@ -207,16 +281,18 @@ case "${1:-help}" in
   read) shift; cmd_read "$@" ;;
   unread) shift; cmd_unread ;;
   wait) shift; cmd_wait "$@" ;;
-  whoami) me || die "gh not authenticated" ;;
   *)
     cat <<USAGE
-tools/board post <text>        post a comment (or pipe text on stdin); must start with [<human>'s <agent>]
-tools/board read [-n N]        show the last N comments (default 10)
-tools/board unread             show comments by others since your last check, then mark read
-tools/board wait [--interval S] [--timeout S]
-                               block until someone else posts; print it; exit 0 (124 on timeout)
-tools/board whoami             your GitHub login
-Env: BOARD_ISSUE (default 1), BOARD_REPO, BOARD_LOGIN
+tools/board iam <claude|codex|cursor|human>
+                               once per working folder: which agent you are
+tools/board whoami             your handle (login/agent)
+tools/board post <text>        post a comment (or pipe text on stdin); must start with [<your login>'s <Agent>]
+tools/board read [-n N]        show the last N team posts (default 10); marks nothing read
+tools/board unread             team posts since your last check (not your own), then mark read
+tools/board wait [--mentions-only] [--interval S] [--timeout S]
+                               block until a new post (or one tagging you) arrives; own cursor,
+                               does not mark posts read for 'unread'. exit 0 (124 on timeout)
+Env: BOARD_ISSUE (default 1), BOARD_REPO, BOARD_LOGIN, BOARD_AGENT, BOARD_TEAM
 USAGE
     ;;
 esac

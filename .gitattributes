@@ -1,3 +1,6 @@
 * text=auto
+# bash scripts and files they parse must keep LF line endings (CRLF breaks bash on Windows)
 tools/board text eol=lf
+tools/owners.txt text eol=lf
 *.sh text eol=lf
+.githooks/* text eol=lf

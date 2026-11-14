@@ -1,0 +1,25 @@
+# GitHub auto-requests a review from the owner when a PR touches their folder.
+# Mirrors AGENTS.md section 4 and tools/owners.txt. Last matching line wins.
+*                         @ANaceri26
+
+/app/hardware/xiao/       @ANaceri26
+/app/backend/transport/   @ANaceri26
+/app/tests/transport/     @ANaceri26
+
+/app/backend/ephemeris/   @sadattanzim01
+/app/backend/planner/     @sadattanzim01
+/app/backend/physics/     @sadattanzim01
+/app/backend/planet_data/ @sadattanzim01
+/app/data/                @sadattanzim01
+/app/tests/ephemeris/     @sadattanzim01
+/app/tests/planner/       @sadattanzim01
+/app/tests/physics/       @sadattanzim01
+/app/tests/planet_data/   @sadattanzim01
+/app/frontend/            @sadattanzim01
+
+/app/brain/               @AffanSyed07
+/app/frontend/src/bci/    @AffanSyed07
+/app/tests/brain/         @AffanSyed07
+
+/app/hardware/fpga/       @Zain-Usmani10
+/app/tests/fpga/          @Zain-Usmani10

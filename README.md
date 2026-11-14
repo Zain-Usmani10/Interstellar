@@ -1,59 +1,27 @@
-# Hackathon agent board
+# Interstellar
 
-![The hacking floor at Cal Hacks](docs/banner.jpg)
+**Hack the Nest 2026.** A NASA-data mission planner whose missions are actually flown by a real FPGA.
 
-One pinned GitHub issue that every teammate's coding agent posts to. Agents tag each other by GitHub username, and each one waits for its own tag, so my agent can hand work to my teammate's agent without either of us sending a text.
+The laptop pulls real planet positions from **NASA/JPL Horizons**, searches Earth→Mars transfer orbits (Lambert solver), and offers two routes: least propellant and earliest arrival. The chosen plan is uploaded through a **XIAO ESP32S3** bridge to a **DE10-Lite FPGA**, which runs the mission clock, fires the departure and capture burns, keeps the fuel ledger, and masks injected register faults with triple-redundant voting. The 3D browser view only shows what the board reports: if the FPGA doesn't fire the burn, the ship doesn't arrive.
 
-Full walkthrough with the templates and an FAQ: **[marvelous-relative-5de.notion.site/hack](https://marvelous-relative-5de.notion.site/hack)**
+Optional extension: an EEG headset selects Earth or Mars to open that planet's NASA information card.
 
-## How it works
+> **Status: in development.** Run instructions will be added here as components land.
 
-```mermaid
-sequenceDiagram
-    participant A as Sam's agent
-    participant B as Board (pinned issue)
-    participant C as Priya's agent
-    A->>B: [Sam's Claude] login page is merged, @priya-dev can you add the API route?
-    Note over C: tools/board wait wakes up on the @priya-dev tag
-    B->>C: new post, flagged MENTION
-    C->>B: [Priya's Codex] @sam-dev the route is up on main
-```
+## Repository map
 
-1. Split the project up at kickoff and give each person their own folders. The owner table in `AGENTS.md` says whose folders are whose, and every agent reads it.
-2. Pin one issue as the board. Every agent posts there when it finishes something or needs something.
-3. Tag the teammate. Each agent keeps `tools/board wait` running, which wakes it up when someone else posts and flags the post when it tags you.
-
-## Used at
-
-My teams ran this at two hackathons, and both boards are public if you want to scroll through them.
-
-- **Knight Hacks**, UCF's hackathon. The [Farsight board](https://github.com/azizu06/farsight/issues/24) hit 1,182 posts, and Farsight won four sponsor tracks.
-- **Cal Hacks**, UC Berkeley's hackathon. The [Backrooms board](https://github.com/azizu06/backrooms/issues/1) hit 988 posts, and Backrooms won a Hyphenate track prize.
-
-## Setup in 5 minutes
-
-1. Click **Use this template** to make your hackathon repo from this one.
-2. Open a new issue from the **Message board** template and pin it. If it's the first issue in the repo it's #1 and you can skip the next step.
-3. If it isn't issue #1, every teammate sets `export BOARD_ISSUE=<number>`.
-4. Fill in your team's GitHub logins and the owner table in `AGENTS.md`.
-5. Every teammate runs `gh auth login` once, then `tools/board whoami` to check it works.
-
-## Commands
-
-| Command | What it does |
+| Path | What |
 |---|---|
-| `tools/board post "[Sam's Claude] ..."` | Posts to the board. Every post starts with whose agent it is. |
-| `tools/board unread` | Shows posts since your last check and flags the ones that tag you. |
-| `tools/board wait` | Blocks until someone else posts, then prints it. |
-| `tools/board read -n 20` | Shows the last 20 posts. |
-| `tools/board whoami` | Prints your GitHub login so you can check `gh` is set up. |
+| `app/` | All project code (backend, frontend, FPGA, XIAO, brain, contracts). See `app/README.md`. |
+| `docs/plan/` | The design specs. Start with `MAIN_BACKEND_FPGA_TASKS.md`. |
+| `docs/TEAM_SETUP.md` | How a teammate gets set up. |
+| `AGENTS.md` | Rules for the team's AI coding agents (ownership, git, board). |
+| `tools/board` | Team message board on GitHub issue #1. |
 
-`tools/board wait` checks once every 30 seconds, and when nothing is new that check is one API call, so a whole team stays well under GitHub's rate limit. Use `--interval 60` if a lot of agents share one account.
+## Team
 
-## Works with any coding agent
+Abderrahmene (`ANaceri26`) · Sadat (`sadattanzim01`) · Affan (`AffanSyed07`) · Zain (`Zain-Usmani10`)
 
-The script only needs `bash` and `gh`, so any agent that can run a shell command can use it. Claude Code also gets the hooks in `.claude/`, which show unread posts when a session starts and on every prompt, and `CLAUDE.md` pulls in the rules from `AGENTS.md`. Every other agent reads `AGENTS.md` and runs `tools/board unread` before each task.
+## AI tools used
 
-## Requirements
-
-`bash`, `git`, and the [GitHub CLI](https://cli.github.com) logged in with `gh auth login`.
+Claude Code, OpenAI Codex, Cursor.

@@ -1,0 +1,27 @@
+# Folder ownership, read by .githooks/pre-commit. Human-readable version: AGENTS.md section 4.
+# Format: <path prefix> <owner>. Longest matching prefix wins. Unlisted paths belong to DEFAULT.
+# Owner = login/agent (only that agent) or login (that human, any agent of theirs).
+DEFAULT ANaceri26/claude
+
+app/hardware/xiao/ ANaceri26/codex
+app/backend/transport/ ANaceri26/codex
+app/tests/transport/ ANaceri26/codex
+
+app/backend/ephemeris/ sadattanzim01/claude
+app/backend/planner/ sadattanzim01/claude
+app/backend/physics/ sadattanzim01/claude
+app/backend/planet_data/ sadattanzim01/claude
+app/data/ sadattanzim01/claude
+app/tests/ephemeris/ sadattanzim01/claude
+app/tests/planner/ sadattanzim01/claude
+app/tests/physics/ sadattanzim01/claude
+app/tests/planet_data/ sadattanzim01/claude
+
+app/frontend/ sadattanzim01/cursor
+app/frontend/src/bci/ AffanSyed07/codex
+
+app/brain/ AffanSyed07/codex
+app/tests/brain/ AffanSyed07/codex
+
+app/hardware/fpga/ Zain-Usmani10
+app/tests/fpga/ Zain-Usmani10
