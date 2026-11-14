@@ -6,7 +6,25 @@ The laptop pulls real planet positions from **NASA/JPL Horizons**, searches Eart
 
 Optional extension: an EEG headset selects Earth or Mars to open that planet's NASA information card.
 
-> **Status: in development.** Run instructions will be added here as components land.
+> **Status: in development.** The backend runs today against a **simulated controller** with a **synthetic** route. Real FPGA, NASA data and the browser UI are still landing; see `app/artifacts/acceptance.md` for what has actually been tested.
+
+## Run the backend (no hardware needed)
+
+Needs Python 3.10+ on Windows. From the repo root:
+
+```
+app\scripts\start-backend.ps1 simulator      # PowerShell
+app/scripts/start-backend.sh simulator        # Git Bash
+```
+
+The first run creates `.venv` from `requirements-core.txt`. The backend listens on `http://127.0.0.1:8000` and prints an operator token. Routes are listed in `app/contracts/api_v1.md`.
+
+```
+.venv\Scripts\python -m pytest app/tests                        # all tests
+.venv\Scripts\python app/scripts/smoke_test.py <operator-token>  # full mission against the running backend
+```
+
+Settings live in `.env` (copy `.env.example`). `TRANSPORT_MODE=fpga` needs the serial transport and a wired board; it refuses to start otherwise.
 
 ## Repository map
 

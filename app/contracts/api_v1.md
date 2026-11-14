@@ -25,6 +25,8 @@ Status: the routes marked **mock** are served from the contract fixtures until t
 | `POST /api/v1/missions` | `{plan_id}` | `201 MissionSnapshot`. 409 if another mission controls the board. |
 | `GET /api/v1/missions/{id}` | | `MissionSnapshot` |
 | `POST /api/v1/missions/{id}/commands` | `{command: "upload"\|"arm"\|"start"\|"abort"\|"clear"}` | `{command, applied, detail, snapshot}`. `applied` is true only after the controller's ACK. |
+| `POST /api/v1/sim/faults` | `{kind: "single"\|"divergence"}` | Simulated controller only (409 in fpga mode; the real board uses its switches). |
+| `GET /api/v1/session` | | `{operator_token}` for our own browser origin |
 | `POST /api/v1/input/sessions` | `{source, adapter: {name, version, device}}` | `201 {input_session_id, token, capability: "planet_explore", context: InputContext}` |
 | `POST /api/v1/input/sessions/{id}/heartbeat` | `InputHeartbeat` | `InputContext` |
 | `DELETE /api/v1/input/sessions/{id}` | | `204` |
@@ -48,10 +50,19 @@ Every message: `{"type": ..., "server_seq": n, "data": ...}`. `server_seq` incre
 
 ## Selection behaviour (mouse, keyboard and EEG take the same path)
 
-1. Register a session, keep heartbeats coming every 500 ms (older than 2 s = `stale_heartbeat`).
+1. Register a session. EEG-type sources (`live_eeg`, `replay`, `synthetic`) need `BRAIN_ENABLED=true` (else 403 `brain_disabled`) and must heartbeat every 500 ms; older than 2 s = `stale_heartbeat`. Their last heartbeat must name the current `context_id`/`revision` with `source_state: "ready"` and `stimulus_ready: true`. Mouse and keyboard sessions need no heartbeat.
 2. Send one `SelectionIntent` carrying the `context_id` and `revision` you last received.
 3. Accepted `planet.399` / `planet.499`: `selected_body_id` is set, screen becomes `planet_info`, revision increases, a `selection` event goes to every WebSocket client. The browser then loads `GET /planets/{id}/info`.
 4. `navigation.back` returns to `planet_choice`. `planet.more_details` keeps the screen and is broadcast for the UI to expand the card.
 5. One intent per revision. A selection from any source bumps the revision, so a late intent from another source gets `stale_context`.
 
 Selecting a planet never changes the mission destination, starts planning or sends anything to the controller.
+
+## Adapters the backend looks for (owners implement; until then the labelled fallback is used)
+
+| Import | Owner | Fallback |
+|---|---|---|
+| `app.backend.transport.create_transport(port: str, baud: int) -> Transport` (see `transport.py`; wrap with `DelayTransport` inside) | `@ANaceri26/codex` | `TRANSPORT_MODE=fpga` refuses to start; simulator works |
+| `app.backend.planet_data.get_planet_info(body_id: str, scene_epoch_jd_tdb: float \| None) -> dict` (valid `PlanetInfo`) | `@sadattanzim01/claude` | contract fixture, labelled synthetic |
+| `app.backend.planner.run_search(params: dict, progress: Callable[[float], None], cancelled: Callable[[], bool]) -> list[dict]` (valid `MissionPlan`s) | `@sadattanzim01/claude` | `POST /planning/jobs` answers 503 `PLANNER_UNAVAILABLE` |
+| Plan files `app/data/plans/*.json` (valid `MissionPlan` with correct `plan_sha256`) | `@sadattanzim01/claude` | only the synthetic fixture plan is listed |
