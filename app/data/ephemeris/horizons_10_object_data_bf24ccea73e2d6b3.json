@@ -1,0 +1,24 @@
+{
+ "cache_schema_version": 1,
+ "kind": "object_data",
+ "body_id": "10",
+ "body_name": "Sun",
+ "source_name": "NASA/JPL Horizons API",
+ "source_url": "https://ssd.jpl.nasa.gov/api/horizons.api",
+ "request": {
+  "format": "json",
+  "COMMAND": "'10'",
+  "OBJ_DATA": "'YES'",
+  "MAKE_EPHEM": "'NO'"
+ },
+ "request_sha256": "bf24ccea73e2d6b390a4a32b28e80f50ca13f6b5b05605f8bfd2183d57f1d0db",
+ "retrieved_utc": "2026-11-14T23:22:29Z",
+ "api_signature": {
+  "source": "NASA/JPL Horizons API",
+  "version": "1.2"
+ },
+ "frame": null,
+ "raw_sha256": "25f9e7743dd9c717ad5d7b33afa42097b76e94e47a76a6effb2f1c4bb909101b",
+ "rows": [],
+ "raw_response": "{\"result\":\"*******************************************************************************\\n Revised: July 31, 2013                  Sun                                 10\\n\\n PHYSICAL PROPERTIES (updated 2024-Oct-30):\\n  GM, km^3/s^2          = 132712440041.93938  Mass, 10^24 kg        = ~1988410\\n  Vol. mean radius, km  = 695700              Volume, 10^12 km^3    = 1412000\\n  Solar radius (IAU2015)= 695700 km           Mean density, g/cm^3  = 1.408\\n  Radius (photosphere)  = 696500 km           Angular diam at 1 AU  = 1919.3\\\"\\n  Photosphere temp., K  = 6600 (bottom)       Photosphere temp., K  = 4400(top)\\n  Photospheric depth    = ~500 km             Chromospheric depth   = ~2500 km\\n  Flatness, f           = 0.00005             Adopted sid. rot. per.= 25.38 d\\n  Surface gravity       =  274.0 m/s^2        Escape speed, km/s    =  617.7\\n  Pole (RA,DEC), deg.   = (286.13, 63.87)     Obliquity to ecliptic = 7.25 deg.\\n  Solar constant (1 AU) = 1367.6 W/m^2        Luminosity, 10^24 J/s = 382.8\\n  Mass-energy conv rate = 4.260 x 10^9 kg/s   Effective temp, K     = 5772\\n  Sunspot cycle         = 11.4 yr             Cycle 24 sunspot min. = 2008 A.D.\\n\\n  Motion relative to nearby stars = apex : R.A.= 271 deg.; DEC.= +30 deg.\\n                                    speed: 19.4 km/s (0.0112 au/day)\\n  Motion relative to 2.73K BB/CBR = apex : l= 264.7 +- 0.8; b= 48.2 +- 0.5 deg.\\n                                    speed: 369 +-11 km/s\\n*******************************************************************************\\n\",\"signature\":{\"version\":\"1.2\",\"source\":\"NASA/JPL Horizons API\"}}\n"
+}

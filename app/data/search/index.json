@@ -1,0 +1,7 @@
+{
+ "objectives": {
+  "least_fuel": "mission_plan_earth_mars_least_fuel.json",
+  "earliest_arrival": "mission_plan_earth_mars_earliest_arrival.json"
+ },
+ "grid": "grid_earth_mars.json"
+}
