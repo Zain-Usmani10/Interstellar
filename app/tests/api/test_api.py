@@ -127,7 +127,9 @@ def test_planning_job_says_unavailable_instead_of_faking(ctx):
     client, app, _ = ctx
     body = {"departure_start_utc": "2026-11-15T00:00:00Z", "departure_end_utc": "2027-02-15T00:00:00Z",
             "tof_min_days": 120, "tof_max_days": 360, "n_departures": 5, "n_durations": 5}
-    assert client.post("/api/v1/planning/jobs", json=body, headers=operator(app)).status_code == 503
+    available = client.get("/api/v1/health").json()["planner_available"]
+    # Without the planner module the backend must say so; with it, the job is queued.
+    assert client.post("/api/v1/planning/jobs", json=body, headers=operator(app)).status_code == (202 if available else 503)
     assert client.post("/api/v1/planning/jobs", json=dict(body, n_departures=26), headers=operator(app)).status_code == 422
 
 
