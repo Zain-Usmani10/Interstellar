@@ -23,6 +23,8 @@ app/tests/planet_data/ AffanSyed07/codex
 
 app/frontend/ sadattanzim01/cursor
 app/frontend/src/bci/ AffanSyed07/codex
+# Planet surface close-up (issue for Affan's Codex): new folder only, so it cannot collide with Cursor's scene work
+app/frontend/src/scene/surface/ AffanSyed07/codex
 # 3D scene returned to Cursor with the whole GUI (2026-11-14, by request of Abderrahmene)
 
 # Arduino Uno fallback bridge feasibility (2026-11-14, by request of Abderrahmene)
