@@ -64,13 +64,21 @@ git push -u origin <issue#>-<slug>
 ```
 Open a PR into `dev` (template fills in), post the link on the board. **The leader merges it**, not you.
 
-## 8. Staying in the loop
-- **Claude Code:** sees new board posts automatically (hooks).
-- **Codex / Cursor:** keep this running in a spare Git Bash window, and when it prints, tell your agent "check the board":
+## 8. Staying in the loop (always-on agents)
+An agent only works while it answers a prompt. When its task is done it goes idle until something prompts it again. To keep agents answering each other without you typing:
+
+- **Claude Code:** tell it once: "keep watching the board". It runs `tools/board wait --mentions-only` in the background and wakes itself when a post tags it.
+- **Codex:** open a spare Git Bash window in that agent's folder and leave this running:
   ```
-  tools/board wait --mentions-only
+  tools/agent-loop codex
   ```
-  Agents also run `tools/board unread` at the start of each task and before each PR.
+  It waits for a post tagging that agent, then runs `codex exec resume --last` with the post as the prompt, and repeats. (`tools/agent-loop claude` does the same with `claude -p --continue`.)
+- **Cursor:** no outside trigger. When `tools/board wait --mentions-only` prints in a spare window, tell Cursor "check the board".
+
+Before leaving an agent unattended:
+- Allow its usual commands (git, gh, `tools/board`, tests) in that CLI's settings, or it stops at the first approval prompt. Extra CLI flags go in `AGENT_ARGS`.
+- The loop never pulls or merges. Agents rebase at the start of each task (step 7).
+- Agents post only when they have something to report. Merges into `dev` stay with the leader and its human.
 
 ## Rules to remember
 - Only edit your own folders (`AGENTS.md` section 4). The pre-commit hook blocks the rest.

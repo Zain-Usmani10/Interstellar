@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interstellar.local/contracts/v1/planet_info.schema.json",
+  "title": "PlanetInfo",
+  "description": "Read-only information card for one planet. Every section carries its own provenance and availability; missing data stays null/unavailable.",
+  "type": "object",
+  "required": ["schema_version", "body_id", "name", "scene_epoch_jd_tdb", "facts", "orbital_state", "conditions"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "body_id": { "$ref": "common.schema.json#/$defs/body_id" },
+    "name": { "type": "string" },
+    "scene_epoch_jd_tdb": { "type": "number", "description": "Epoch the 3D scene shows; orbital_state refers to it" },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "label", "value", "unit", "source"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "label": { "type": "string" },
+          "value": { "type": ["number", "string", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "note": { "type": "string" },
+          "source": { "$ref": "common.schema.json#/$defs/source" }
+        }
+      }
+    },
+    "orbital_state": {
+      "type": "object",
+      "required": ["availability", "epoch_jd_tdb", "r_km", "v_km_s", "frame", "provenance"],
+      "properties": {
+        "availability": { "enum": ["available", "unavailable", "error"] },
+        "epoch_jd_tdb": { "type": ["number", "null"] },
+        "r_km": { "anyOf": [{ "$ref": "common.schema.json#/$defs/vec3" }, { "type": "null" }] },
+        "v_km_s": { "anyOf": [{ "$ref": "common.schema.json#/$defs/vec3" }, { "type": "null" }] },
+        "frame": { "$ref": "common.schema.json#/$defs/frame" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "description": "Dated observations, separate from the mission epoch. Earth: EONET natural hazard events. Mars: current weather is unavailable.",
+      "required": ["scope", "kind", "label", "availability", "delivery", "observed_from_utc", "observed_to_utc", "retrieved_utc", "items", "note", "provenance"],
+      "properties": {
+        "scope": { "enum": ["earth", "mars"] },
+        "kind": { "enum": ["natural_hazard_events", "current_weather"] },
+        "label": { "type": "string", "description": "Panel heading, e.g. 'Earth natural hazard events'" },
+        "availability": { "enum": ["available", "empty", "unavailable", "error"],
+          "description": "empty is not an all-clear; error is not zero hazards" },
+        "delivery": { "enum": ["live_fetch", "cached", null] },
+        "observed_from_utc": { "anyOf": [{ "$ref": "common.schema.json#/$defs/utc" }, { "type": "null" }] },
+        "observed_to_utc": { "anyOf": [{ "$ref": "common.schema.json#/$defs/utc" }, { "type": "null" }] },
+        "retrieved_utc": { "anyOf": [{ "$ref": "common.schema.json#/$defs/utc" }, { "type": "null" }] },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "category", "date_utc", "coordinates", "source_url"],
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "category": { "type": "string" },
+              "date_utc": { "$ref": "common.schema.json#/$defs/utc" },
+              "coordinates": { "anyOf": [{ "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "[longitude, latitude] degrees" }, { "type": "null" }] },
+              "source_url": { "type": "string" }
+            }
+          }
+        },
+        "note": { "type": "string" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "required": ["mode", "source"],
+      "properties": {
+        "mode": { "anyOf": [{ "$ref": "common.schema.json#/$defs/data_mode" }, { "type": "null" }] },
+        "source": { "anyOf": [{ "$ref": "common.schema.json#/$defs/source" }, { "type": "null" }] }
+      }
+    }
+  }
+}

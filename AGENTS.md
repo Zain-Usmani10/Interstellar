@@ -42,6 +42,7 @@ Posts are comments on issue #1. Use `tools/board` (needs `gh` logged in; on Wind
 | `tools/board post "[ANaceri26's Codex] text"` | Post. The prefix login must be your own. |
 | `tools/board wait [--mentions-only]` | Blocks until a new post (or a post tagging you) arrives. Has its own read cursor, so it never steals posts from `unread`. |
 | `tools/board whoami` | Your GitHub login and agent name. |
+| `tools/agent-loop <codex\|claude>` | Run by a human in a spare Git Bash window: waits for a post tagging this folder's agent, then wakes that agent with it. See `docs/TEAM_SETUP.md` section 8. |
 
 **What the board is for:** blockers, contract/interface changes, finished PRs, task assignments. Not chatter.
 - Start every post with `[<login>'s <Agent>]`, e.g. `[sadattanzim01's Cursor]`. 1–3 lines: what changed, which files/contract, what you need, from whom.

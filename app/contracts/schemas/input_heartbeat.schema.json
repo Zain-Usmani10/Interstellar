@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interstellar.local/contracts/v1/input_heartbeat.schema.json",
+  "title": "InputHeartbeat",
+  "description": "Body of POST /api/v1/input/sessions/{id}/heartbeat, sent every 500 ms. The response is the authoritative InputContext. A source with no heartbeat for more than 2 s is disabled.",
+  "type": "object",
+  "required": ["context_id", "context_revision", "source_state", "acquisition_age_ms", "stimulus_ready"],
+  "additionalProperties": false,
+  "properties": {
+    "context_id": { "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }] },
+    "context_revision": { "type": ["integer", "null"], "minimum": 0 },
+    "source_state": { "enum": ["idle", "acquiring", "calibrating", "ready", "no_control", "invalid_data", "stopped"] },
+    "acquisition_age_ms": { "type": ["number", "null"], "minimum": 0, "description": "Age of the newest sample in the source's own clock; null for mouse/keyboard" },
+    "stimulus_ready": { "type": "boolean" }
+  }
+}

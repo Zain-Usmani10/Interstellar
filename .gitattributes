@@ -1,6 +1,10 @@
 * text=auto
 # bash scripts and files they parse must keep LF line endings (CRLF breaks bash on Windows)
 tools/board text eol=lf
+tools/agent-loop text eol=lf
 tools/owners.txt text eol=lf
 *.sh text eol=lf
 .githooks/* text eol=lf
+# Golden protocol frames: raw bytes, never line-ending converted
+*.bin binary
+*.hex text eol=lf
