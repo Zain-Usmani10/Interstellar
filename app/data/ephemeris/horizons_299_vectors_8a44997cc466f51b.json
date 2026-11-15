@@ -1,0 +1,185 @@
+{
+ "cache_schema_version": 1,
+ "kind": "vectors",
+ "body_id": "299",
+ "body_name": "Venus",
+ "source_name": "NASA/JPL Horizons API",
+ "source_url": "https://ssd.jpl.nasa.gov/api/horizons.api",
+ "request": {
+  "format": "json",
+  "COMMAND": "'299'",
+  "OBJ_DATA": "'YES'",
+  "MAKE_EPHEM": "'YES'",
+  "EPHEM_TYPE": "'VECTORS'",
+  "CENTER": "'500@10'",
+  "REF_SYSTEM": "'ICRF'",
+  "REF_PLANE": "'ECLIPTIC'",
+  "OUT_UNITS": "'KM-S'",
+  "TIME_TYPE": "'TDB'",
+  "VEC_CORR": "'NONE'",
+  "VEC_TABLE": "'2'",
+  "CSV_FORMAT": "'YES'",
+  "TLIST_TYPE": "'JD'",
+  "TLIST": "'2461724.000000000' '2461765.000000000' '2461785.000000000' '2461806.000000000' '2461826.000000000' '2461847.000000000' '2461867.000000000' '2461888.000000000' '2461908.000000000' '2461929.000000000' '2461950.000000000'"
+ },
+ "request_sha256": "8a44997cc466f51b9f6d1d59d3180123f736c104c079db56ed9e84e19ec8aa9d",
+ "retrieved_utc": "2026-11-15T05:36:30Z",
+ "api_signature": {
+  "source": "NASA/JPL Horizons API",
+  "version": "1.2"
+ },
+ "frame": {
+  "center": "500@10",
+  "ref_system": "ICRF",
+  "ref_plane": "ECLIPTIC",
+  "units": "KM-S",
+  "time_scale": "TDB"
+ },
+ "raw_sha256": "2bbd110b6d425ae7c460f40dd2f726e4f5c877c35efa3dee044dc838827485b0",
+ "rows": [
+  {
+   "jd_tdb": 2461724.0,
+   "r_km": [
+    37753014.89110415,
+    -102069144.0673573,
+    -3581181.042187139
+   ],
+   "v_km_s": [
+    32.61095049850134,
+    12.03171115339852,
+    -1.716257336626388
+   ]
+  },
+  {
+   "jd_tdb": 2461765.0,
+   "r_km": [
+    108169888.6722604,
+    -9018928.45463391,
+    -6365258.23558482
+   ],
+   "v_km_s": [
+    2.751872419512422,
+    34.74155865695457,
+    0.3187226234892471
+   ]
+  },
+  {
+   "jd_tdb": 2461785.0,
+   "r_km": [
+    96388909.68056133,
+    49322428.28855576,
+    -4883634.389166294
+   ],
+   "v_km_s": [
+    -16.06355125662043,
+    31.02546412507833,
+    1.353283041417738
+   ]
+  },
+  {
+   "jd_tdb": 2461806.0,
+   "r_km": [
+    52761089.84956455,
+    94178329.99960028,
+    -1749823.123018049
+   ],
+   "v_km_s": [
+    -30.66424674881554,
+    16.96113648203995,
+    2.002423753792316
+   ]
+  },
+  {
+   "jd_tdb": 2461826.0,
+   "r_km": [
+    -5593273.060509693,
+    107476312.3275833,
+    1799947.352831297
+   ],
+   "v_km_s": [
+    -35.09209095472931,
+    -2.006739947411418,
+    1.997200482949931
+   ]
+  },
+  {
+   "jd_tdb": 2461847.0,
+   "r_km": [
+    -64647740.20924551,
+    85726255.96175489,
+    4908388.923912268
+   ],
+   "v_km_s": [
+    -28.08173292535518,
+    -21.27620181392001,
+    1.327854390098951
+   ]
+  },
+  {
+   "jd_tdb": 2461867.0,
+   "r_km": [
+    -100591715.5171874,
+    37567847.54672353,
+    6320393.943813113
+   ],
+   "v_km_s": [
+    -12.41461857799644,
+    -32.96913785918391,
+    0.2631537405275832
+   ]
+  },
+  {
+   "jd_tdb": 2461888.0,
+   "r_km": [
+    -104718737.6133658,
+    -25213914.68942985,
+    5695579.401378925
+   ],
+   "v_km_s": [
+    7.970577427248321,
+    -34.20452827226843,
+    -0.9300451303212682
+   ]
+  },
+  {
+   "jd_tdb": 2461908.0,
+   "r_km": [
+    -75606132.45543431,
+    -77409139.49689707,
+    3298357.693930857
+   ],
+   "v_km_s": [
+    24.80729633174333,
+    -24.63454269036691,
+    -1.769982866341373
+   ]
+  },
+  {
+   "jd_tdb": 2461929.0,
+   "r_km": [
+    -20518541.30622622,
+    -106695939.3195848,
+    -282739.1955019906
+   ],
+   "v_km_s": [
+    34.15547226417861,
+    -6.754126553647559,
+    -2.063598347557642
+   ]
+  },
+  {
+   "jd_tdb": 2461950.0,
+   "r_km": [
+    41395343.83182929,
+    -100654382.7466226,
+    -3772091.049465336
+   ],
+   "v_km_s": [
+    32.15298800051902,
+    13.20153652959586,
+    -1.673736470367831
+   ]
+  }
+ ],
+ "raw_response": "{\"signature\":{\"source\":\"NASA/JPL Horizons API\",\"version\":\"1.2\"},\"result\":\"*******************************************************************************\\n Revised: April 12, 2021                Venus                           299 / 2\\n \\n PHYSICAL DATA (updated 2020-Oct-19):\\n  Vol. Mean Radius (km) =  6051.84+-0.01 Density (g/cm^3)      =  5.204\\n  Mass x10^23 (kg)      =    48.685      Volume (x10^10 km^3)  = 92.843\\n  Sidereal rot. period  =   243.018484 d Sid. Rot. Rate (rad/s)= -0.00000029924\\n  Mean solar day        =   116.7490 d   Equ. gravity  m/s^2   =  8.870\\n  Mom. of Inertia       =     0.33       Core radius (km)      = ~3200\\n  Geometric Albedo      =     0.65       Potential Love # k2   = ~0.25\\n  GM (km^3/s^2)         = 324858.592     Equatorial Radius, Re = 6051.893 km\\n  GM 1-sigma (km^3/s^2) =    +-0.006     Mass ratio (Sun/Venus)= 408523.72\\n  Atmos. pressure (bar) =  90            Max. angular diam.    =   60.2\\\"\\n  Mean Temperature (K)  = 735            Visual mag. V(1,0)    =   -4.40\\n  Obliquity to orbit    = 177.3 deg      Hill's sphere rad.,Rp =  167.1\\n  Sidereal orb. per., y =   0.61519726   Orbit speed, km/s     =   35.021\\n  Sidereal orb. per., d = 224.70079922   Escape speed, km/s    =   10.361\\n                                 Perihelion  Aphelion    Mean\\n  Solar Constant (W/m^2)         2759         2614       2650\\n  Maximum Planetary IR (W/m^2)    153         153         153\\n  Minimum Planetary IR (W/m^2)    153         153         153\\n*******************************************************************************\\n\\n\\n*******************************************************************************\\nEphemeris / API_USER Sat Nov 14 21:36:30 2026 Pasadena, USA      / Horizons\\n*******************************************************************************\\nTarget body name: Venus (299)                     {source: DE441}\\nCenter body name: Sun (10)                        {source: DE441}\\nCenter-site name: BODY CENTER\\n*******************************************************************************\\nStart time      : A.D. 2027-Nov-14 12:00:00.0000 TDB\\nStop  time      : A.D. 2028-Jun-27 12:00:00.0000 TDB\\nStep-size       : DISCRETE TIME-LIST\\n*******************************************************************************\\nCenter geodetic : 0.0, 0.0, 0.0                   {E-lon(deg),Lat(deg),Alt(km)}\\nCenter cylindric: 0.0, 0.0, 0.0                   {E-lon(deg),Dxy(km),Dz(km)}\\nCenter radii    : 695700.0, 695700.0, 695700.0 km {Equator_a, b, pole_c}\\nOutput units    : KM-S\\nCalendar mode   : Mixed Julian/Gregorian\\nOutput type     : GEOMETRIC cartesian states\\nOutput format   : 2 (position and velocity)\\nReference frame : Ecliptic of J2000.0\\n*******************************************************************************\\n            JDTDB,            Calendar Date (TDB),                      X,                      Y,                      Z,                     VX,                     VY,                     VZ,\\n**************************************************************************************************************************************************************************************************\\n$$SOE\\n2461724.000000000, A.D. 2027-Nov-14 12:00:00.0000,  3.775301489110415E+07, -1.020691440673573E+08, -3.581181042187139E+06,  3.261095049850134E+01,  1.203171115339852E+01, -1.716257336626388E+00,\\n2461765.000000000, A.D. 2027-Dec-25 12:00:00.0000,  1.081698886722604E+08, -9.018928454633910E+06, -6.365258235584820E+06,  2.751872419512422E+00,  3.474155865695457E+01,  3.187226234892471E-01,\\n2461785.000000000, A.D. 2028-Jan-14 12:00:00.0000,  9.638890968056133E+07,  4.932242828855576E+07, -4.883634389166294E+06, -1.606355125662043E+01,  3.102546412507833E+01,  1.353283041417738E+00,\\n2461806.000000000, A.D. 2028-Feb-04 12:00:00.0000,  5.276108984956455E+07,  9.417832999960028E+07, -1.749823123018049E+06, -3.066424674881554E+01,  1.696113648203995E+01,  2.002423753792316E+00,\\n2461826.000000000, A.D. 2028-Feb-24 12:00:00.0000, -5.593273060509693E+06,  1.074763123275833E+08,  1.799947352831297E+06, -3.509209095472931E+01, -2.006739947411418E+00,  1.997200482949931E+00,\\n2461847.000000000, A.D. 2028-Mar-16 12:00:00.0000, -6.464774020924551E+07,  8.572625596175489E+07,  4.908388923912268E+06, -2.808173292535518E+01, -2.127620181392001E+01,  1.327854390098951E+00,\\n2461867.000000000, A.D. 2028-Apr-05 12:00:00.0000, -1.005917155171874E+08,  3.756784754672353E+07,  6.320393943813113E+06, -1.241461857799644E+01, -3.296913785918391E+01,  2.631537405275832E-01,\\n2461888.000000000, A.D. 2028-Apr-26 12:00:00.0000, -1.047187376133658E+08, -2.521391468942985E+07,  5.695579401378925E+06,  7.970577427248321E+00, -3.420452827226843E+01, -9.300451303212682E-01,\\n2461908.000000000, A.D. 2028-May-16 12:00:00.0000, -7.560613245543431E+07, -7.740913949689707E+07,  3.298357693930857E+06,  2.480729633174333E+01, -2.463454269036691E+01, -1.769982866341373E+00,\\n2461929.000000000, A.D. 2028-Jun-06 12:00:00.0000, -2.051854130622622E+07, -1.066959393195848E+08, -2.827391955019906E+05,  3.415547226417861E+01, -6.754126553647559E+00, -2.063598347557642E+00,\\n2461950.000000000, A.D. 2028-Jun-27 12:00:00.0000,  4.139534383182929E+07, -1.006543827466226E+08, -3.772091049465336E+06,  3.215298800051902E+01,  1.320153652959586E+01, -1.673736470367831E+00,\\n$$EOE\\n**************************************************************************************************************************************************************************************************\\n \\nTIME\\n\\n  Barycentric Dynamical Time (\\\"TDB\\\" or T_eph) output was requested. This\\ncontinuous coordinate time is equivalent to the relativistic proper time\\nof a clock at rest in a reference frame co-moving with the solar system\\nbarycenter but outside the system's gravity well. It is the independent\\nvariable in the solar system relativistic equations of motion.\\n\\n  TDB runs at a uniform rate of one SI second per second and is independent\\nof irregularities in Earth's rotation.\\n \\nCALENDAR SYSTEM\\n\\n  Mixed calendar mode was active such that calendar dates after AD 1582-Oct-15\\n(if any) are in the modern Gregorian system. Dates prior to 1582-Oct-5 (if any)\\nare in the Julian calendar system, which is automatically extended for dates\\nprior to its adoption on 45-Jan-1 BC.  The Julian calendar is useful for\\nmatching historical dates. The Gregorian calendar more accurately corresponds\\nto the Earth's orbital motion and seasons. A \\\"Gregorian-only\\\" calendar mode is\\navailable if such physical events are the primary interest.\\n\\nREFERENCE FRAME AND COORDINATES\\n\\n  Ecliptic at the standard reference epoch\\n\\n    Reference epoch: J2000.0\\n    X-Y plane: adopted Earth orbital plane at the reference epoch\\n               Note: IAU76 obliquity of 84381.448 arcseconds wrt ICRF X-Y plane\\n    X-axis   : ICRF\\n    Z-axis   : perpendicular to the X-Y plane in the directional (+ or -) sense\\n               of Earth's north pole at the reference epoch.\\n\\n  Symbol meaning:\\n\\n    JDTDB    Julian Day Number, Barycentric Dynamical Time\\n      X      X-component of position vector (km)\\n      Y      Y-component of position vector (km)\\n      Z      Z-component of position vector (km)\\n      VX     X-component of velocity vector (km/sec)                           \\n      VY     Y-component of velocity vector (km/sec)                           \\n      VZ     Z-component of velocity vector (km/sec)                           \\n\\nABERRATIONS AND CORRECTIONS\\n\\n Geometric state vectors have NO corrections or aberrations applied.\\n\\nComputations by ...\\n\\n    Solar System Dynamics Group, Horizons On-Line Ephemeris System\\n    4800 Oak Grove Drive, Jet Propulsion Laboratory\\n    Pasadena, CA  91109   USA\\n\\n    General site: https://ssd.jpl.nasa.gov/\\n    Mailing list: https://ssd.jpl.nasa.gov/email_list.html\\n    System news : https://ssd.jpl.nasa.gov/horizons/news.html\\n    User Guide  : https://ssd.jpl.nasa.gov/horizons/manual.html\\n    Connect     : browser        https://ssd.jpl.nasa.gov/horizons/app.html#/x\\n                  API            https://ssd-api.jpl.nasa.gov/doc/horizons.html\\n                  command-line   telnet ssd.jpl.nasa.gov 6775\\n                  e-mail/batch   https://ssd.jpl.nasa.gov/ftp/ssd/horizons_batch.txt\\n                  scripts        https://ssd.jpl.nasa.gov/ftp/ssd/SCRIPTS\\n    Inquiries   : Jon.D.Giorgini@jpl.nasa.gov\\n*******************************************************************************\\n\"}\n"
+}

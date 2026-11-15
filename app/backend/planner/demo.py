@@ -17,9 +17,9 @@ from pathlib import Path
 
 from ..ephemeris.cache import DEFAULT_CACHE_DIR, EphemerisCache, EphemerisSource
 from ..ephemeris.horizons import HorizonsClient
-from ..physics.burns import Vehicle
+from ..physics.burns import Vehicle, DEMO_VEHICLE_LABEL
 from .plan import TickMap, build_plan, verify_plan
-from .search import Constants, GridSpec, SearchCancelled, grid_summary, run_grid, select_winners
+from .search import Constants, GridSpec, SearchCancelled, grid_summary, run_grid, select_winners, validate_pair
 
 PLANS_DIR = Path(__file__).resolve().parents[2] / "data" / "plans"
 SEARCH_DIR = Path(__file__).resolve().parents[2] / "data" / "search"
@@ -27,12 +27,21 @@ SEARCH_DIR = Path(__file__).resolve().parents[2] / "data" / "search"
 
 def plan_earth_mars(source: EphemerisSource, grid: GridSpec = GridSpec(), vehicle: Vehicle = Vehicle(),
                     ticks: TickMap = TickMap(), progress=lambda fraction: None, cancelled=lambda: False) -> dict:
+    """Compatibility entry point preserving the original Earth/Mars defaults."""
+    return plan_pair(source, grid, vehicle, ticks, progress, cancelled)
+
+
+def plan_pair(source: EphemerisSource, grid: GridSpec = GridSpec(), vehicle: Vehicle = Vehicle(),
+              ticks: TickMap = TickMap(), progress=lambda fraction: None, cancelled=lambda: False,
+              origin_body_id="399", destination_body_id="499") -> dict:
     """Search the grid and return {'plans': [MissionPlan, ...], 'grid': summary}.
 
     One plan per distinct winner. If the same route wins both objectives there is one plan that says so.
     """
-    constants = Constants.from_source(source)
-    cells = run_grid(source, grid, vehicle, constants, lambda f: progress(0.8 * f), cancelled)
+    validate_pair(origin_body_id, destination_body_id)
+    constants = Constants.from_source(source, origin_body_id, destination_body_id)
+    cells = run_grid(source, grid, vehicle, constants, lambda f: progress(0.8 * f), cancelled,
+                     origin_body_id, destination_body_id)
     winners = select_winners(cells)
     n_feasible = sum(c.feasible for c in cells)
     grid_files = set(source.files_used)          # NASA replies the search itself read
@@ -43,7 +52,8 @@ def plan_earth_mars(source: EphemerisSource, grid: GridSpec = GridSpec(), vehicl
         seen.append(cell)
         source.files_used = set(grid_files)      # each plan lists the search data plus only its own planet tracks
         won = [name for name, w in winners.items() if w is cell]
-        plans.append(build_plan(cell, won, grid, n_feasible, vehicle, constants, source, ticks))
+        plans.append(build_plan(cell, won, grid, n_feasible, vehicle, constants, source, ticks,
+                                origin_body_id, destination_body_id))
         progress(0.8 + 0.2 * len(plans) / len(set(map(id, winners.values()))))
     return {"plans": plans, "grid": grid_summary(cells, grid, winners)}
 
@@ -74,17 +84,24 @@ def run_search(params: dict, progress=lambda fraction: None, cancelled=lambda: F
         n_durations=n_dur if tof_span > 0 else 1,
     )
     fields = ("dry_mass_kg", "payload_mass_kg", "isp_s", "propellant_capacity_kg")
-    vehicle = Vehicle(**{k: float(v) for k, v in (params.get("vehicle") or {}).items() if k in fields})
+    vehicle_values = {k: float(v) for k, v in (params.get("vehicle") or {}).items() if k in fields}
+    if vehicle_values.get("isp_s") == 900.0:
+        vehicle_values["label"] = DEMO_VEHICLE_LABEL
+    vehicle = Vehicle(**vehicle_values)
     if cancelled():
         return []
-    stored = stored_plans_for(grid, vehicle)
+    origin = params.get("origin_body_id", "399")
+    destination = params.get("destination_body_id", "499")
+    validate_pair(origin, destination)
+    stored = stored_plans_for(grid, vehicle) if (origin, destination) == ("399", "499") else None
     if stored is not None:                      # same request as the checked-in search: hand out those exact files
         progress(1.0)
         return stored
     client = HorizonsClient() if os.environ.get("INTERSTELLAR_NASA_LIVE") == "1" else None
     source = EphemerisSource(EphemerisCache(DEFAULT_CACHE_DIR), client)
     try:
-        return plan_earth_mars(source, grid, vehicle, progress=progress, cancelled=cancelled)["plans"]
+        return plan_pair(source, grid, vehicle, progress=progress, cancelled=cancelled,
+                         origin_body_id=origin, destination_body_id=destination)["plans"]
     except SearchCancelled:
         return []
 

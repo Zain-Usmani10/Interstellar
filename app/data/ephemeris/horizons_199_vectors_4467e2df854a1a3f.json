@@ -1,0 +1,120 @@
+{
+ "cache_schema_version": 1,
+ "kind": "vectors",
+ "body_id": "199",
+ "body_name": "Mercury",
+ "source_name": "NASA/JPL Horizons API",
+ "source_url": "https://ssd.jpl.nasa.gov/api/horizons.api",
+ "request": {
+  "format": "json",
+  "COMMAND": "'199'",
+  "OBJ_DATA": "'YES'",
+  "MAKE_EPHEM": "'YES'",
+  "EPHEM_TYPE": "'VECTORS'",
+  "CENTER": "'500@10'",
+  "REF_SYSTEM": "'ICRF'",
+  "REF_PLANE": "'ECLIPTIC'",
+  "OUT_UNITS": "'KM-S'",
+  "TIME_TYPE": "'TDB'",
+  "VEC_CORR": "'NONE'",
+  "VEC_TABLE": "'2'",
+  "CSV_FORMAT": "'YES'",
+  "TLIST_TYPE": "'JD'",
+  "TLIST": "'2461359.500800726' '2461432.500800726' '2461505.500800726' '2461578.500800726' '2461651.500800726' '2461724.500800726'"
+ },
+ "request_sha256": "4467e2df854a1a3f3059d2bed95844442b9c7d0ee317a9b4821276af30c16c97",
+ "retrieved_utc": "2026-11-15T05:35:49Z",
+ "api_signature": {
+  "source": "NASA/JPL Horizons API",
+  "version": "1.2"
+ },
+ "frame": {
+  "center": "500@10",
+  "ref_system": "ICRF",
+  "ref_plane": "ECLIPTIC",
+  "units": "KM-S",
+  "time_scale": "TDB"
+ },
+ "raw_sha256": "0e9b1a69dcd8a6be7de8fcc34baf5129df5d29cd8d0d23008a2ba7770026e32f",
+ "rows": [
+  {
+   "jd_tdb": 2461359.500800726,
+   "r_km": [
+    -13179556.08764226,
+    44861206.31744725,
+    4875025.840779454
+   ],
+   "v_km_s": [
+    -56.51607407094342,
+    -11.93963181118744,
+    4.207683130630315
+   ]
+  },
+  {
+   "jd_tdb": 2461432.500800726,
+   "r_km": [
+    48357116.55903983,
+    14141257.9860012,
+    -3279422.834913015
+   ],
+   "v_km_s": [
+    -23.11274513557276,
+    48.92557131771942,
+    6.118219353732606
+   ]
+  },
+  {
+   "jd_tdb": 2461505.500800726,
+   "r_km": [
+    42375674.97513828,
+    -45715692.56386574,
+    -7622547.236189989
+   ],
+   "v_km_s": [
+    26.05488569608219,
+    35.43629120468255,
+    0.5064292101264716
+   ]
+  },
+  {
+   "jd_tdb": 2461578.500800726,
+   "r_km": [
+    -2930705.746863425,
+    -69256232.7392102,
+    -5391196.435959574
+   ],
+   "v_km_s": [
+    38.89928791359845,
+    0.4320666283030186,
+    -3.532280344853995
+   ]
+  },
+  {
+   "jd_tdb": 2461651.500800726,
+   "r_km": [
+    -46912596.21302824,
+    -48123282.5697935,
+    369572.2346733846
+   ],
+   "v_km_s": [
+    24.97247604377295,
+    -31.78223229119011,
+    -4.887734481849735
+   ]
+  },
+  {
+   "jd_tdb": 2461724.500800726,
+   "r_km": [
+    -56175238.31848153,
+    5827174.385325946,
+    5628224.179176535
+   ],
+   "v_km_s": [
+    -15.14980510796267,
+    -46.36324338797145,
+    -2.399662110568844
+   ]
+  }
+ ],
+ "raw_response": "{\"signature\":{\"version\":\"1.2\",\"source\":\"NASA/JPL Horizons API\"},\"result\":\"*******************************************************************************\\n Revised: April 12, 2021             Mercury                            199 / 1\\n\\n PHYSICAL DATA (updated 2024-Mar-04):\\n  Vol. Mean Radius (km) =  2439.4+-0.1    Density (g cm^-3)     = 5.427\\n  Mass x10^23 (kg)      =     3.302       Volume (x10^10 km^3)  = 6.085  \\n  Sidereal rot. period  =    58.6463 d    Sid. rot. rate (rad/s)= 0.00000124001\\n  Mean solar day        =   175.9421 d    Core radius (km)      = ~1600 \\n  Geometric Albedo      =     0.106       Surface emissivity    = 0.77+-0.06\\n  GM (km^3/s^2)         = 22031.86855     Equatorial radius, Re = 2440.53 km\\n  GM 1-sigma (km^3/s^2) =                 Mass ratio (Sun/plnt) = 6023682\\n  Mom. of Inertia       =     0.33        Equ. gravity  m/s^2   = 3.701     \\n  Atmos. pressure (bar) = < 5x10^-15      Max. angular diam.    = 11.0\\\"   \\n  Mean Temperature (K)  = 440             Visual mag. V(1,0)    = -0.42 \\n  Obliquity to orbit[1] =  2.11' +/- 0.1' Hill's sphere rad. Rp = 94.4 \\n  Sidereal orb. per.    =  0.2408467 y    Mean Orbit vel.  km/s = 47.362 \\n  Sidereal orb. per.    = 87.969257  d    Escape vel. km/s      =  4.435\\n                                 Perihelion  Aphelion    Mean\\n  Solar Constant (W/m^2)         14462       6278        9126\\n  Maximum Planetary IR (W/m^2)   12700       5500        8000\\n  Minimum Planetary IR (W/m^2)   6           6           6\\n*******************************************************************************\\n\\n\\n*******************************************************************************\\nEphemeris / API_USER Sat Nov 14 21:35:49 2026 Pasadena, USA      / Horizons\\n*******************************************************************************\\nTarget body name: Mercury (199)                   {source: DE441}\\nCenter body name: Sun (10)                        {source: DE441}\\nCenter-site name: BODY CENTER\\n*******************************************************************************\\nStart time      : A.D. 2026-Nov-15 00:01:09.1827 TDB\\nStop  time      : A.D. 2027-Nov-15 00:01:09.1827 TDB\\nStep-size       : DISCRETE TIME-LIST\\n*******************************************************************************\\nCenter geodetic : 0.0, 0.0, 0.0                   {E-lon(deg),Lat(deg),Alt(km)}\\nCenter cylindric: 0.0, 0.0, 0.0                   {E-lon(deg),Dxy(km),Dz(km)}\\nCenter radii    : 695700.0, 695700.0, 695700.0 km {Equator_a, b, pole_c}\\nOutput units    : KM-S\\nCalendar mode   : Mixed Julian/Gregorian\\nOutput type     : GEOMETRIC cartesian states\\nOutput format   : 2 (position and velocity)\\nReference frame : Ecliptic of J2000.0\\n*******************************************************************************\\n            JDTDB,            Calendar Date (TDB),                      X,                      Y,                      Z,                     VX,                     VY,                     VZ,\\n**************************************************************************************************************************************************************************************************\\n$$SOE\\n2461359.500800726, A.D. 2026-Nov-15 00:01:09.1827, -1.317955608764226E+07,  4.486120631744725E+07,  4.875025840779454E+06, -5.651607407094342E+01, -1.193963181118744E+01,  4.207683130630315E+00,\\n2461432.500800726, A.D. 2027-Jan-27 00:01:09.1827,  4.835711655903983E+07,  1.414125798600120E+07, -3.279422834913015E+06, -2.311274513557276E+01,  4.892557131771942E+01,  6.118219353732606E+00,\\n2461505.500800726, A.D. 2027-Apr-10 00:01:09.1827,  4.237567497513828E+07, -4.571569256386574E+07, -7.622547236189989E+06,  2.605488569608219E+01,  3.543629120468255E+01,  5.064292101264716E-01,\\n2461578.500800726, A.D. 2027-Jun-22 00:01:09.1827, -2.930705746863425E+06, -6.925623273921020E+07, -5.391196435959574E+06,  3.889928791359845E+01,  4.320666283030186E-01, -3.532280344853995E+00,\\n2461651.500800726, A.D. 2027-Sep-03 00:01:09.1827, -4.691259621302824E+07, -4.812328256979350E+07,  3.695722346733846E+05,  2.497247604377295E+01, -3.178223229119011E+01, -4.887734481849735E+00,\\n2461724.500800726, A.D. 2027-Nov-15 00:01:09.1827, -5.617523831848153E+07,  5.827174385325946E+06,  5.628224179176535E+06, -1.514980510796267E+01, -4.636324338797145E+01, -2.399662110568844E+00,\\n$$EOE\\n**************************************************************************************************************************************************************************************************\\n \\nTIME\\n\\n  Barycentric Dynamical Time (\\\"TDB\\\" or T_eph) output was requested. This\\ncontinuous coordinate time is equivalent to the relativistic proper time\\nof a clock at rest in a reference frame co-moving with the solar system\\nbarycenter but outside the system's gravity well. It is the independent\\nvariable in the solar system relativistic equations of motion.\\n\\n  TDB runs at a uniform rate of one SI second per second and is independent\\nof irregularities in Earth's rotation.\\n \\nCALENDAR SYSTEM\\n\\n  Mixed calendar mode was active such that calendar dates after AD 1582-Oct-15\\n(if any) are in the modern Gregorian system. Dates prior to 1582-Oct-5 (if any)\\nare in the Julian calendar system, which is automatically extended for dates\\nprior to its adoption on 45-Jan-1 BC.  The Julian calendar is useful for\\nmatching historical dates. The Gregorian calendar more accurately corresponds\\nto the Earth's orbital motion and seasons. A \\\"Gregorian-only\\\" calendar mode is\\navailable if such physical events are the primary interest.\\n\\nREFERENCE FRAME AND COORDINATES\\n\\n  Ecliptic at the standard reference epoch\\n\\n    Reference epoch: J2000.0\\n    X-Y plane: adopted Earth orbital plane at the reference epoch\\n               Note: IAU76 obliquity of 84381.448 arcseconds wrt ICRF X-Y plane\\n    X-axis   : ICRF\\n    Z-axis   : perpendicular to the X-Y plane in the directional (+ or -) sense\\n               of Earth's north pole at the reference epoch.\\n\\n  Symbol meaning:\\n\\n    JDTDB    Julian Day Number, Barycentric Dynamical Time\\n      X      X-component of position vector (km)\\n      Y      Y-component of position vector (km)\\n      Z      Z-component of position vector (km)\\n      VX     X-component of velocity vector (km/sec)                           \\n      VY     Y-component of velocity vector (km/sec)                           \\n      VZ     Z-component of velocity vector (km/sec)                           \\n\\nABERRATIONS AND CORRECTIONS\\n\\n Geometric state vectors have NO corrections or aberrations applied.\\n\\nComputations by ...\\n\\n    Solar System Dynamics Group, Horizons On-Line Ephemeris System\\n    4800 Oak Grove Drive, Jet Propulsion Laboratory\\n    Pasadena, CA  91109   USA\\n\\n    General site: https://ssd.jpl.nasa.gov/\\n    Mailing list: https://ssd.jpl.nasa.gov/email_list.html\\n    System news : https://ssd.jpl.nasa.gov/horizons/news.html\\n    User Guide  : https://ssd.jpl.nasa.gov/horizons/manual.html\\n    Connect     : browser        https://ssd.jpl.nasa.gov/horizons/app.html#/x\\n                  API            https://ssd-api.jpl.nasa.gov/doc/horizons.html\\n                  command-line   telnet ssd.jpl.nasa.gov 6775\\n                  e-mail/batch   https://ssd.jpl.nasa.gov/ftp/ssd/horizons_batch.txt\\n                  scripts        https://ssd.jpl.nasa.gov/ftp/ssd/SCRIPTS\\n    Inquiries   : Jon.D.Giorgini@jpl.nasa.gov\\n*******************************************************************************\\n\"}\n"
+}

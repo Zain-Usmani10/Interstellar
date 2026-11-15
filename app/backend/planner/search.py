@@ -1,22 +1,23 @@
-"""Bounded Earth->Mars route search: try a grid of (departure date, flight time) pairs.
+"""Bounded planet-to-planet search: try a grid of (departure date, flight time) pairs.
 
-For every cell: take NASA's Earth position at departure and Mars position at arrival, solve
+For every cell: take NASA's origin position at departure and destination position at arrival, solve
 Lambert for the connecting arc, size the two burns, apply the rocket equation, mark feasible or not.
 Then pick two recommendations, both only 'best within this grid':
   - least_fuel:        the feasible cell needing the least propellant
-  - earliest_arrival:  the feasible cell that reaches Mars on the earliest date
+  - earliest_arrival:  the feasible cell that reaches the destination on the earliest date
                        (ties broken by propellant; this is NOT the same as shortest flight)
 All NASA vectors are fetched/read before the loop; there are no network calls per cell.
 """
 from __future__ import annotations
 
 import math
+from collections import Counter
 from dataclasses import dataclass, field
 
 import numpy as np
 
 from ..ephemeris.cache import EphemerisSource
-from ..ephemeris.horizons import SUN_ID, canonical_epoch
+from ..ephemeris.horizons import SUN_ID, PLANET_IDS, canonical_epoch
 from ..ephemeris.timeconv import jd_tdb_to_utc, utc_to_jd_tdb
 from ..physics.burns import BurnModelError, Propellant, Vehicle, parking_orbit_dv_km_s, parking_radius_km, propellant_for
 from ..physics.lambert import LambertFailure, solve_lambert
@@ -24,6 +25,13 @@ from ..physics.lambert import LambertFailure, solve_lambert
 ORIGIN_ID, DESTINATION_ID = "399", "499"
 MAX_GRID_AXIS = 25
 OBJECTIVES = ("least_fuel", "earliest_arrival")
+
+
+def validate_pair(origin_body_id: str, destination_body_id: str) -> None:
+    if origin_body_id not in PLANET_IDS or destination_body_id not in PLANET_IDS:
+        raise ValueError("origin and destination must be supported planet centres")
+    if origin_body_id == destination_body_id:
+        raise ValueError("origin and destination must differ")
 
 
 class NoFeasibleRoute(Exception):
@@ -74,8 +82,10 @@ class Constants:
     radius_destination_km: float
 
     @classmethod
-    def from_source(cls, source: EphemerisSource) -> "Constants":
-        sun, origin, dest = (source.body_constants(b) for b in (SUN_ID, ORIGIN_ID, DESTINATION_ID))
+    def from_source(cls, source: EphemerisSource, origin_body_id=ORIGIN_ID,
+                    destination_body_id=DESTINATION_ID) -> "Constants":
+        validate_pair(origin_body_id, destination_body_id)
+        sun, origin, dest = (source.body_constants(b) for b in (SUN_ID, origin_body_id, destination_body_id))
         return cls(sun["gm_km3_s2"], origin["gm_km3_s2"], dest["gm_km3_s2"],
                    sun["mean_radius_km"], origin["mean_radius_km"], dest["mean_radius_km"])
 
@@ -135,16 +145,18 @@ def evaluate_cell(cell: Cell, constants: Constants, vehicle: Vehicle, r_park_ori
 
 
 def run_grid(source: EphemerisSource, grid: GridSpec, vehicle: Vehicle, constants: Constants,
-             progress=lambda fraction: None, cancelled=lambda: False) -> list[Cell]:
+             progress=lambda fraction: None, cancelled=lambda: False,
+             origin_body_id=ORIGIN_ID, destination_body_id=DESTINATION_ID) -> list[Cell]:
     """Evaluate every cell of the grid. NASA data is gathered first, in two batched reads.
 
     `progress` gets 0..1 as cells finish; if `cancelled()` turns true the search stops with SearchCancelled.
     """
+    validate_pair(origin_body_id, destination_body_id)
     departures = grid.departure_epochs()
     cells = [Cell(d, canonical_epoch(d + tof), tof) for d in departures for tof in grid.durations_days()]
     arrivals = sorted({c.arrival_jd_tdb for c in cells})
-    earth = dict(zip(departures, source.states(ORIGIN_ID, departures)))
-    mars = dict(zip(arrivals, source.states(DESTINATION_ID, arrivals)))
+    origins = dict(zip(departures, source.states(origin_body_id, departures)))
+    destinations = dict(zip(arrivals, source.states(destination_body_id, arrivals)))
 
     r_park_origin = parking_radius_km(constants.mu_origin, constants.radius_origin_km)
     r_park_dest = parking_radius_km(constants.mu_destination, constants.radius_destination_km)
@@ -152,7 +164,7 @@ def run_grid(source: EphemerisSource, grid: GridSpec, vehicle: Vehicle, constant
         if cancelled():
             raise SearchCancelled("search cancelled")
         progress(n / len(cells))
-        e, m = earth[cell.departure_jd_tdb], mars[cell.arrival_jd_tdb]
+        e, m = origins[cell.departure_jd_tdb], destinations[cell.arrival_jd_tdb]
         cell.vectors = {"origin_r": e.r_km, "origin_v": e.v_km_s, "destination_r": m.r_km, "destination_v": m.v_km_s}
         evaluate_cell(cell, constants, vehicle, r_park_origin, r_park_dest)
     return cells
@@ -162,7 +174,10 @@ def select_winners(cells: list[Cell]) -> dict[str, Cell]:
     """The two recommendations. Only feasible, successfully solved cells can win."""
     feasible = [c for c in cells if c.status == "ok" and c.feasible and c.propellant is not None]
     if not feasible:
-        raise NoFeasibleRoute("NO_FEASIBLE_ROUTE: no cell in this grid fits the vehicle's propellant capacity")
+        counts = dict(Counter(c.status.split(":", 1)[0] for c in cells))
+        error = NoFeasibleRoute(f"NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {counts}")
+        error.rejection_counts = counts
+        raise error
     return {
         "least_fuel": min(feasible, key=lambda c: (c.propellant.required_kg, c.arrival_jd_tdb)),
         "earliest_arrival": min(feasible, key=lambda c: (c.arrival_jd_tdb, c.propellant.required_kg)),

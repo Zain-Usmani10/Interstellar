@@ -31,7 +31,9 @@ MAX_ATTEMPTS = 3
 MIN_SECONDS_BETWEEN_REQUESTS = 0.5
 
 SUN_ID = "10"
-BODY_NAMES = {"399": "Earth", "499": "Mars", SUN_ID: "Sun"}
+BODY_NAMES = {"199": "Mercury", "299": "Venus", "399": "Earth", "499": "Mars",
+              "599": "Jupiter", "699": "Saturn", "799": "Uranus", "899": "Neptune", SUN_ID: "Sun"}
+PLANET_IDS = tuple(body for body in BODY_NAMES if body != SUN_ID)
 
 # The frame every vector in this project lives in. Stored next to every cached row.
 FRAME = {"center": "500@10", "ref_system": "ICRF", "ref_plane": "ECLIPTIC", "units": "KM-S", "time_scale": "TDB"}
@@ -80,8 +82,8 @@ def utc_now_label() -> str:
 
 def build_vector_request(body_id: str, epochs_jd_tdb: list[float]) -> dict[str, str]:
     """Exact Horizons parameters for planet state vectors at an explicit list of TDB Julian dates."""
-    if body_id not in ("399", "499"):
-        raise HorizonsError("UNSUPPORTED_BODY", f"only Earth 399 and Mars 499 are supported, got {body_id!r}")
+    if body_id not in PLANET_IDS:
+        raise HorizonsError("UNSUPPORTED_BODY", f"expected a supported planet centre, got {body_id!r}")
     if not 1 <= len(epochs_jd_tdb) <= MAX_EPOCHS_PER_REQUEST:
         raise HorizonsError("BAD_REQUEST", f"need 1..{MAX_EPOCHS_PER_REQUEST} epochs per request, got {len(epochs_jd_tdb)}")
     keys = [epoch_key(e) for e in epochs_jd_tdb]
