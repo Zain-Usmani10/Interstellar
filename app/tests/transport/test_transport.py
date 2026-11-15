@@ -246,5 +246,69 @@ class DelayTests(unittest.TestCase):
             self.transport.send(self.start)
 
 
+class RuntimeBoundaryTests(unittest.TestCase):
+    def run_mission(self, transport):
+        from app.backend.runtime.link import Link
+        transport.open()
+        link = Link(transport, lambda *_: None,
+                    retry_timeout_s=getattr(transport, "retry_timeout_s", 0.02))
+        self.assertEqual(link.open_session().result, p.Result.APPLIED)
+        plan = p.Plan(5, 10, 12010, 12610, 30, 10, 20)
+        for kind, payload in [(p.MsgType.LOAD_PLAN, plan.pack()),
+                              (p.MsgType.COMMIT_PLAN, p.pack_commit(5, plan.crc16())),
+                              (p.MsgType.ARM, p.pack_u32(5)),
+                              (p.MsgType.START, p.pack_u32(5))]:
+            self.assertEqual(link.mutate(kind, payload).result, p.Result.APPLIED)
+        return link
+
+    def test_real_runtime_link_over_delayed_simulator(self):
+        from app.backend.runtime.sim_controller import SimulatorTransport
+        inner = SimulatorTransport()
+        transport = DelayTransport(inner, 0.01, max_delay_s=0.01)
+        try:
+            link = self.run_mission(transport)
+            session, status = link.read_status()
+            self.assertEqual(session, link.session_id)
+            self.assertEqual(status.mission_id, 5)
+            self.assertEqual(status.state, p.State.RUNNING)
+        finally:
+            transport.close()
+
+    def test_lost_start_ack_retries_identical_bytes_and_applies_once(self):
+        from app.backend.runtime.sim_controller import SimulatorTransport
+
+        class DropFirstStartAck(SimulatorTransport):
+            dropped = False
+
+            def __init__(self):
+                super().__init__()
+                self.starts = []
+
+            def send(self, raw):
+                if decode_frame(raw).msg_type == p.MsgType.START:
+                    self.starts.append(raw)
+                super().send(raw)
+
+            def receive(self, timeout_s):
+                raw = super().receive(timeout_s)
+                if raw is not None:
+                    frame = decode_frame(raw)
+                    if (frame.msg_type == p.MsgType.ACK and not self.dropped
+                            and p.Ack.unpack(frame.payload).original_type == p.MsgType.START):
+                        self.dropped = True
+                        return None
+                return raw
+
+        transport = DropFirstStartAck()
+        try:
+            link = self.run_mission(transport)
+            self.assertEqual(len(transport.starts), 2)
+            self.assertEqual(transport.starts[0], transport.starts[1])
+            self.assertEqual(link.next_seq, 5)
+            self.assertEqual(transport.controller.state, p.State.RUNNING)
+        finally:
+            transport.close()
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -49,12 +49,13 @@ Run from the repository root after contracts PR #9 is available:
 python -m unittest discover -s app/tests/transport -v
 ```
 
-16 software tests passed on Python 3.10.11 on 2026-11-14: every golden valid and
+18 software tests passed on Python 3.10.11 on 2026-11-14: every golden valid and
 invalid frame, every split of the four stream fixtures, bytewise reads, timeout
 recovery, large garbage, exact/short serial writes, reconnect clearing, FIFO,
 bidirectional delay, queue overflow and newly timed telemetry coalescing.
-The initial run used an ignored `.board/deps` extraction of PR #9 contracts
-because it was not yet merged; no shared contract files were changed.
+The final run used the merged contracts and backend on dev. The additional
+runtime boundary tests exercise a delayed simulated upload/commit/arm/start and
+a lost START ACK with an identical retry. No shared contract files were changed.
 
 Serial I/O is fake in these tests. Python 3.12, Arduino compilation, USB loopback,
-FPGA exchange and the combined runtime retry/reconnect path remain unverified.
+FPGA exchange and runtime reconciliation after real link loss remain unverified.
