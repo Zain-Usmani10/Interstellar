@@ -1,15 +1,15 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
-import { FaultHistory } from "./components/FaultHistory";
-import { MissionActions } from "./components/MissionActions";
-import { MissionPanel } from "./components/MissionPanel";
-import { MockBanner } from "./components/MockBanner";
+import { EngineerDrawer } from "./components/EngineerDrawer";
+import { GlassStatus } from "./components/GlassStatus";
+import { GuidedLaunch } from "./components/GuidedLaunch";
+import { PlanetBar } from "./components/PlanetBar";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
-import { PlanetPicker } from "./components/PlanetPicker";
-import { RouteCompare } from "./components/RouteCompare";
-import { StatusStrip } from "./components/StatusStrip";
+import { RouteCards } from "./components/RouteCards";
+import { TripPicker } from "./components/TripPicker";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
+import { planetName } from "./state/planetBodies";
 import { useCoreBridge } from "./state/useCoreBridge";
 
 export default function App() {
@@ -17,7 +17,6 @@ export default function App() {
     linkMode,
     controllerLabel,
     dataMode,
-    inputSourceLabel,
     selectedId,
     planetChoiceEnabled,
     card,
@@ -26,41 +25,64 @@ export default function App() {
     commandBusy,
     routePlans,
     selectedPlan,
+    originBodyId,
+    destinationBodyId,
+    routesAvailable,
     snapshot,
     faultHistory,
     gates,
     simFaultsEnabled,
     selectPlanById,
-    createMissionFromSelected,
+    setTrip,
+    prepareMission,
+    resetMission,
     sendCommand,
     injectFault,
     selectPlanet,
     clearSelection,
   } = useCoreBridge();
 
+  const [focusName, setFocusName] = useState<string | null>("Mars");
+
   const scenePlan = useMemo(() => toScenePlan(selectedPlan), [selectedPlan]);
   const sceneSnapshot = useMemo(() => toSceneSnapshot(snapshot), [snapshot]);
   const live = linkMode === "live";
+  const originLabel = planetName(originBodyId);
+  const destinationLabel = planetName(destinationBodyId);
+  const routeLabel = `${originLabel} → ${destinationLabel}`;
+  const tripLocked = commandBusy || Boolean(
+    snapshot &&
+      snapshot.state !== "IDLE" &&
+      snapshot.state !== "UNKNOWN" &&
+      snapshot.state !== "ABORTED" &&
+      snapshot.state !== "COMPLETE",
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         clearSelection("keyboard");
+        setFocusName(null);
         return;
       }
       if (planetChoiceEnabled) {
-        if (event.key === "1") selectPlanet("planet.399", "keyboard");
-        if (event.key === "2") selectPlanet("planet.499", "keyboard");
+        if (event.key === "1") {
+          setFocusName("Earth");
+          selectPlanet("planet.399", "keyboard");
+        }
+        if (event.key === "2") {
+          setFocusName("Mars");
+          selectPlanet("planet.499", "keyboard");
+        }
       }
-
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       const key = event.key.toLowerCase();
-      if (key === "c" && live && selectedPlan && gates.canCreate && !commandBusy) {
+      if (key === "o") {
         event.preventDefault();
-        void createMissionFromSelected();
-      } else if (key === "u" && live && gates.canUpload && !commandBusy) {
+        void resetMission();
+      } else if (key === "p" && live && selectedPlan && !commandBusy) {
         event.preventDefault();
-        void sendCommand("upload");
+        void prepareMission();
       } else if (key === "r" && live && gates.canArm && !commandBusy) {
         event.preventDefault();
         void sendCommand("arm");
@@ -70,114 +92,119 @@ export default function App() {
       } else if (key === "x" && live && gates.canAbort && !commandBusy) {
         event.preventDefault();
         void sendCommand("abort");
-      } else if (key === "l" && live && gates.canClear && !commandBusy) {
-        event.preventDefault();
-        void sendCommand("clear");
-      } else if (key === "f" && simFaultsEnabled && !commandBusy) {
-        event.preventDefault();
-        void injectFault("single");
-      } else if (key === "d" && simFaultsEnabled && !commandBusy) {
-        event.preventDefault();
-        void injectFault("divergence");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [
-    clearSelection,
-    commandBusy,
-    createMissionFromSelected,
-    gates,
-    injectFault,
-    live,
-    planetChoiceEnabled,
-    selectPlanet,
-    selectedPlan,
-    sendCommand,
-    simFaultsEnabled,
-  ]);
+  });
 
   return (
     <div className="app-shell">
-      <MockBanner linkMode={linkMode} />
-      <StatusStrip
+      <div className="scene-layer">
+        <OrbitScene
+          selectedId={selectedId}
+          selectionEnabled={planetChoiceEnabled}
+          onSelect={(id) => {
+            const name = id === "planet.399" ? "Earth" : "Mars";
+            setFocusName(name);
+            selectPlanet(id);
+          }}
+          onFocusName={setFocusName}
+          focusName={focusName}
+          plan={scenePlan}
+          snapshot={sceneSnapshot}
+        />
+      </div>
+
+      <header className="glass brand-glass">
+        <p className="brand">Interstellar</p>
+        <p className="brand-sub">{routeLabel}</p>
+      </header>
+
+      <GlassStatus
         linkMode={linkMode}
         controllerLabel={controllerLabel}
         dataMode={dataMode}
-        inputSourceLabel={inputSourceLabel}
         snapshot={snapshot}
         lastError={lastError}
+        destinationName={destinationLabel}
       />
-      <header className="top-bar">
-        <div>
-          <p className="brand">Interstellar</p>
-          <h1>Mission control</h1>
-          <p className="lede">
-            Compare routes, create a mission, upload → arm → start. The rocket
-            moves only when MissionSnapshot says so.
-          </p>
-        </div>
-        <PlanetPicker
-          selectedId={selectedId}
-          enabled={planetChoiceEnabled}
-          onSelect={selectPlanet}
-        />
-      </header>
 
-      <main className="stage">
-        <div className="canvas-column">
-          <div className="canvas-wrap">
-            <OrbitScene
-              selectedId={selectedId}
-              selectionEnabled={planetChoiceEnabled}
-              onSelect={selectPlanet}
-              plan={scenePlan}
-              snapshot={sceneSnapshot}
-            />
-          </div>
-          <div className="bci-dock" aria-label="Optional brain widget">
-            <BciSlot />
-          </div>
-        </div>
-        <div className="side-stack">
-          <RouteCompare
+      <aside className="glass panel-left" aria-label="Route and launch">
+        <h2 className="panel-title">Choose a trip</h2>
+        <TripPicker
+          originBodyId={originBodyId}
+          destinationBodyId={destinationBodyId}
+          disabled={tripLocked}
+          onOrigin={(id) => setTrip({ origin: id })}
+          onDestination={(id) => {
+            setTrip({ destination: id });
+            setFocusName(planetName(id));
+          }}
+        />
+        <h2 className="panel-title panel-title-sub">Choose a route</h2>
+        {routesAvailable ? (
+          <RouteCards
             leastFuel={routePlans.least_fuel}
             earliestArrival={routePlans.earliest_arrival}
             selectedPlanId={selectedPlan?.plan_id ?? null}
             disabled={commandBusy}
             onSelect={(id) => void selectPlanById(id)}
           />
-          <MissionActions
-            live={live}
-            busy={commandBusy}
-            gates={gates}
-            simFaultsEnabled={simFaultsEnabled}
-            hasSelectedPlan={Boolean(selectedPlan)}
-            onCreate={() => void createMissionFromSelected()}
-            onCommand={(cmd) => void sendCommand(cmd)}
-            onFault={(kind) => void injectFault(kind)}
+        ) : (
+          <p className="muted scenic-note">
+            Route being calculated / not available yet for {routeLabel}.
+            Earth→Mars plans are available today; other pairs arrive with
+            planner work (#38).
+          </p>
+        )}
+        <GuidedLaunch
+          live={live}
+          busy={commandBusy}
+          hasPlan={Boolean(selectedPlan)}
+          snapshot={snapshot}
+          gates={gates}
+          simFaultsEnabled={simFaultsEnabled}
+          routeLabel={routeLabel}
+          onPrepare={() => void prepareMission()}
+          onArm={() => void sendCommand("arm")}
+          onLaunch={() => void sendCommand("start")}
+          onAbort={() => {
+            void sendCommand("abort");
+            clearSelection("mouse");
+          }}
+          onReset={() => void resetMission()}
+          onFaultSingle={() => void injectFault("single")}
+          onFaultDivergence={() => void injectFault("divergence")}
+        />
+        <EngineerDrawer
+          plan={selectedPlan}
+          snapshot={snapshot}
+          faultHistory={faultHistory}
+        />
+      </aside>
+
+      {card ? (
+        <aside className="glass panel-right" aria-label="Planet information">
+          <PlanetInfoCard
+            planet={card}
+            status={cardStatus === "idle" ? "ready" : cardStatus}
+            onClose={() => clearSelection("mouse")}
           />
-          {card ? (
-            <PlanetInfoCard
-              planet={card}
-              status={cardStatus === "idle" ? "ready" : cardStatus}
-              onClose={() => clearSelection("mouse")}
-            />
-          ) : (
-            <aside className="info-card idle" aria-live="polite">
-              <p className="eyebrow">Planet explorer</p>
-              <h2>Earth or Mars</h2>
-              <p>
-                Optional: open a sourced info card. Mission launch does not
-                require a planet selection.
-              </p>
-              <p className="muted">Keys: 1 Earth · 2 Mars · Esc back</p>
-            </aside>
-          )}
-          <MissionPanel plan={selectedPlan} snapshot={snapshot} />
-          <FaultHistory entries={faultHistory} />
-        </div>
-      </main>
+        </aside>
+      ) : null}
+
+      <div className="bci-float" aria-label="Optional brain widget">
+        <BciSlot />
+      </div>
+
+      <PlanetBar
+        focusName={focusName}
+        selectedId={selectedId}
+        selectionEnabled={planetChoiceEnabled}
+        onVisit={setFocusName}
+        onSelectEarthMars={selectPlanet}
+      />
     </div>
   );
 }

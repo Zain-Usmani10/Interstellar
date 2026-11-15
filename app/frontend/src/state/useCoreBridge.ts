@@ -25,6 +25,7 @@ import type {
 } from "../api/missionTypes";
 import type { BodyId, PlanetTargetId, TargetId } from "../api/types";
 import { missionActionGates } from "./missionGates";
+import type { PlanetBodyId } from "./planetBodies";
 import { pickRoutePair } from "./pickRoutePair";
 
 export type LinkMode = "connecting" | "live" | "offline_mock";
@@ -132,6 +133,10 @@ export function useCoreBridge() {
     earliest_arrival: MissionPlan | null;
   }>({ least_fuel: null, earliest_arrival: null });
   const [selectedPlan, setSelectedPlan] = useState<MissionPlan | null>(null);
+  const [originBodyId, setOriginBodyId] = useState<PlanetBodyId>("399");
+  const [destinationBodyId, setDestinationBodyId] =
+    useState<PlanetBodyId>("499");
+  const [routesAvailable, setRoutesAvailable] = useState(false);
   const [snapshot, setSnapshot] = useState<MissionSnapshot | null>(null);
   const [faultHistory, setFaultHistory] = useState<FaultHistoryEntry[]>([]);
 
@@ -160,28 +165,57 @@ export function useCoreBridge() {
     if (next.controller_source) setControllerSource(next.controller_source);
   }, []);
 
-  const loadPlans = useCallback(async () => {
-    const { plans } = await listPlans();
-    setPlanSummaries(plans);
-    const pair = pickRoutePair(plans);
+  const loadPlans = useCallback(
+    async (origin = originBodyId, destination = destinationBodyId) => {
+      const { plans } = await listPlans();
+      setPlanSummaries(plans);
+      const pair = pickRoutePair(plans, {
+        originBodyId: origin,
+        destinationBodyId: destination,
+      });
 
-    const [least, fast] = await Promise.all([
-      pair.least_fuel ? getPlan(pair.least_fuel.plan_id) : Promise.resolve(null),
-      pair.earliest_arrival
-        ? getPlan(pair.earliest_arrival.plan_id)
-        : Promise.resolve(null),
-    ]);
-    setRoutePlans({ least_fuel: least, earliest_arrival: fast });
-    setSelectedPlan((current) => {
-      if (current) {
-        const still =
-          (least && least.plan_id === current.plan_id && least) ||
-          (fast && fast.plan_id === current.plan_id && fast);
-        if (still) return still;
+      const [least, fast] = await Promise.all([
+        pair.least_fuel
+          ? getPlan(pair.least_fuel.plan_id)
+          : Promise.resolve(null),
+        pair.earliest_arrival
+          ? getPlan(pair.earliest_arrival.plan_id)
+          : Promise.resolve(null),
+      ]);
+      setRoutePlans({ least_fuel: least, earliest_arrival: fast });
+      setRoutesAvailable(Boolean(least || fast));
+      setSelectedPlan((current) => {
+        if (current) {
+          const still =
+            (least && least.plan_id === current.plan_id && least) ||
+            (fast && fast.plan_id === current.plan_id && fast);
+          if (still) return still;
+        }
+        return least ?? fast ?? null;
+      });
+    },
+    [destinationBodyId, originBodyId],
+  );
+
+  const setTrip = useCallback(
+    (next: { origin?: PlanetBodyId; destination?: PlanetBodyId }) => {
+      const origin = next.origin ?? originBodyId;
+      let destination = next.destination ?? destinationBodyId;
+      if (destination === origin) {
+        destination = (origin === "399" ? "499" : "399") as PlanetBodyId;
       }
-      return least ?? fast ?? null;
-    });
-  }, []);
+      setOriginBodyId(origin);
+      setDestinationBodyId(destination);
+      if (linkMode === "live") {
+        void loadPlans(origin, destination);
+      } else {
+        setRoutePlans({ least_fuel: null, earliest_arrival: null });
+        setSelectedPlan(null);
+        setRoutesAvailable(false);
+      }
+    },
+    [destinationBodyId, linkMode, loadPlans, originBodyId],
+  );
 
   const applySelection = useCallback(
     (
@@ -523,14 +557,47 @@ export function useCoreBridge() {
         if (!result.applied) {
           setLastError(`${command}: ${result.detail || "not_applied"}`);
         }
+        return result;
       } catch (err) {
         setLastError(formatApiError(err, `${command}_failed`));
+        return null;
       } finally {
         setCommandBusy(false);
       }
     },
     [applySnapshot, linkMode],
   );
+
+  /** Guided "Prepare": create mission if needed, then upload (LOAD+COMMIT). */
+  const prepareMission = useCallback(async () => {
+    const token = operatorTokenRef.current;
+    const plan = selectedPlan;
+    if (!token || !plan || linkMode !== "live") {
+      setLastError("operator_or_plan_unavailable");
+      return;
+    }
+    setCommandBusy(true);
+    setLastError(null);
+    try {
+      let missionId = missionIdRef.current;
+      const state = snapshotRef.current?.state;
+      if (!missionId || state === "IDLE" || state === "UNKNOWN" || !state) {
+        const snap = await createMission(token, plan.plan_id);
+        applySnapshot(snap);
+        missionId = snap.mission_id;
+      }
+      if (!missionId) return;
+      const result = await postMissionCommand(token, missionId, "upload");
+      if (result.snapshot) applySnapshot(result.snapshot);
+      if (!result.applied) {
+        setLastError(`upload: ${result.detail || "not_applied"}`);
+      }
+    } catch (err) {
+      setLastError(formatApiError(err, "prepare_failed"));
+    } finally {
+      setCommandBusy(false);
+    }
+  }, [applySnapshot, linkMode, selectedPlan]);
 
   const injectFault = useCallback(
     async (kind: SimFaultKind) => {
@@ -556,6 +623,40 @@ export function useCoreBridge() {
     [controllerSource, linkMode],
   );
 
+  /** Clear controller mission so Prepare works again after abort/complete. */
+  const resetMission = useCallback(async () => {
+    const token = operatorTokenRef.current;
+    const missionId = missionIdRef.current;
+    setLastError(null);
+    let cleared = false;
+    if (token && missionId && linkMode === "live") {
+      setCommandBusy(true);
+      try {
+        const result = await postMissionCommand(token, missionId, "clear");
+        if (result.snapshot) {
+          applySnapshot(result.snapshot);
+          cleared =
+            result.snapshot.state === "IDLE" ||
+            result.snapshot.state === "UNKNOWN";
+        }
+        if (!result.applied && !cleared) {
+          setLastError(`clear: ${result.detail || "not_applied"}`);
+        }
+      } catch (err) {
+        setLastError(formatApiError(err, "clear_failed"));
+      } finally {
+        setCommandBusy(false);
+      }
+    }
+    if (!cleared) {
+      // Drop local mission without resetting seq — otherwise WS re-applies ABORTED.
+      missionIdRef.current = null;
+      snapshotRef.current = null;
+      setSnapshot(null);
+    }
+    void proposeTarget("navigation.back", "mouse");
+  }, [applySnapshot, linkMode, proposeTarget]);
+
   const gates = missionActionGates(snapshot);
   const simFaultsEnabled =
     linkMode === "live" && controllerSource === "simulator";
@@ -576,12 +677,18 @@ export function useCoreBridge() {
     planSummaries,
     routePlans,
     selectedPlan,
+    originBodyId,
+    destinationBodyId,
+    routesAvailable,
     snapshot,
     faultHistory,
     gates,
     simFaultsEnabled,
     selectPlanById,
+    setTrip,
     createMissionFromSelected,
+    prepareMission,
+    resetMission,
     sendCommand,
     injectFault,
     selectPlanet,

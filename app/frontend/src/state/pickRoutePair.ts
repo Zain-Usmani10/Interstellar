@@ -5,15 +5,32 @@ const MODE_PREF = ["nasa_cached", "cached", "live_fetch", "synthetic"] as const;
 /**
  * Pick one least_fuel + one earliest_arrival from the same data_mode so the
  * comparison is apples-to-apples (backend may also list a synthetic fixture).
+ * Optionally filter by origin/destination body ids (contracts 1.1.0).
  */
-export function pickRoutePair(plans: PlanSummary[]): {
+export function pickRoutePair(
+  plans: PlanSummary[],
+  opts?: { originBodyId?: string; destinationBodyId?: string },
+): {
   least_fuel: PlanSummary | null;
   earliest_arrival: PlanSummary | null;
   data_mode: string | null;
 } {
+  const filtered = plans.filter((plan) => {
+    if (opts?.originBodyId && plan.origin_body_id !== opts.originBodyId) {
+      return false;
+    }
+    if (
+      opts?.destinationBodyId &&
+      plan.destination_body_id !== opts.destinationBodyId
+    ) {
+      return false;
+    }
+    return true;
+  });
+
   const byMode = new Map<string, { least?: PlanSummary; fast?: PlanSummary }>();
 
-  for (const plan of plans) {
+  for (const plan of filtered) {
     const mode = plan.data_mode ?? "unknown";
     const bucket = byMode.get(mode) ?? {};
     if (plan.objectives_won?.includes("least_fuel") && !bucket.least) {
