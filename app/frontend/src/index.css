@@ -311,8 +311,16 @@ button {
   font-size: 0.78rem !important;
 }
 
-.bci-slot {
+.bci-slot[data-bci-slot="reserved"] {
   display: none;
+}
+
+.bci-slot[data-bci-slot="mounted"] {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  max-width: min(22rem, calc(100vw - 2rem));
 }
 
 @media (max-width: 900px) {

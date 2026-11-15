@@ -26,4 +26,17 @@ Requires Node 22 LTS (or another supported even-numbered LTS).
 
 ## Scope of this milestone
 
-Mock-driven planet explorer only: select → highlight → info card. No mission upload, scores, or game mechanics. BCI widget mounts later via `src/integrations/bciSlot.tsx`; Affan owns `src/bci/`.
+Mock-driven planet explorer only: select → highlight → info card. No mission upload, scores, or game mechanics.
+
+## Optional brain widget
+
+Affan owns `src/bci/`. Cursor mounts it from `src/integrations/bciSlot.tsx` only when:
+
+1. `app/frontend/src/bci/BrainWidget.tsx` is present (Affan's PR), and
+2. `VITE_BRAIN_ENABLED=true` is set when starting Vite.
+
+```bash
+VITE_BRAIN_ENABLED=true npm run dev
+```
+
+Core selection / highlight / info card still come from ordinary input (and later core WS `selection` events), not from classifier scores.
