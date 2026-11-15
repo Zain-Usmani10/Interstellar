@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import math
 import secrets
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -97,7 +98,11 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
     hub = EventHub()
     plans = PlanStore(validators, settings.plans_dir)
     inputs = InputManager(hub, validators, settings.brain_enabled)
-    fleet = FleetStore(settings.fleet_path or Path(settings.db_path).with_name("fleet.json"))
+    fleet_path = settings.fleet_path
+    if not fleet_path and settings.db_path == ":memory:":
+        # A throwaway database gets a throwaway fleet: never write fleet.json into the working folder.
+        fleet_path = Path(tempfile.mkdtemp(prefix="interstellar-fleet-")) / "fleet.json"
+    fleet = FleetStore(fleet_path or Path(settings.db_path).with_name("fleet.json"))
     runtime = MissionRuntime(transport or make_transport(settings), plans, hub, MissionDb(settings.db_path),
                              on_state_change=lambda: inputs.bump("mission_state"), fleet=fleet)
     planet_tracks: dict = {}            # loaded and integrity-checked once, on first use
