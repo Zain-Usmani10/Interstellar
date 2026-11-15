@@ -3,5 +3,27 @@
   "least_fuel": "mission_plan_earth_mars_least_fuel.json",
   "earliest_arrival": "mission_plan_earth_mars_earliest_arrival.json"
  },
- "grid": "grid_earth_mars.json"
+ "grid": "grid_earth_mars.json",
+ "built_from": {
+  "grid": {
+   "departure_start_utc": "2026-11-15T00:00:00Z",
+   "departure_step_days": 4.0,
+   "n_departures": 24,
+   "tof_min_days": 120.0,
+   "tof_step_days": 10.0,
+   "n_durations": 25
+  },
+  "vehicle": {
+   "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+   "dry_mass_kg": 1000.0,
+   "payload_mass_kg": 100.0,
+   "isp_s": 450.0,
+   "propellant_capacity_kg": 10000.0
+  },
+  "ticks": {
+   "departure_tick": 10,
+   "arrival_tick": 12010,
+   "end_tick": 12610
+  }
+ }
 }

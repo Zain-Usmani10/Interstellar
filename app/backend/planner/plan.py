@@ -138,8 +138,6 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
     p = cell.propellant
     plan = {
         "schema_version": SCHEMA_VERSION,
-        "plan_id": str(uuid.uuid5(_PLAN_NAMESPACE, canonical_json(
-            [MODEL_VERSION, cell.departure_jd_tdb, cell.arrival_jd_tdb, asdict(vehicle), asdict(ticks)]))),
         "model_version": MODEL_VERSION,
         "data_mode": source.data_mode,
         "origin_body_id": ORIGIN_ID,
@@ -214,6 +212,9 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
                      "Lambert solver: lamberthub 1.0.0 izzo2015 (GPL-3.0).",
         },
     }
+    # The id is derived from the full contents, so two plans that differ anywhere (even in the last
+    # float digit on another machine) can never share an id.
+    plan["plan_id"] = str(uuid.uuid5(_PLAN_NAMESPACE, plan_digest(plan)))
     plan["plan_sha256"] = plan_digest(plan)
     return plan
 

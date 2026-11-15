@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
@@ -74,12 +75,36 @@ def run_search(params: dict, progress=lambda fraction: None, cancelled=lambda: F
     )
     fields = ("dry_mass_kg", "payload_mass_kg", "isp_s", "propellant_capacity_kg")
     vehicle = Vehicle(**{k: float(v) for k, v in (params.get("vehicle") or {}).items() if k in fields})
+    if cancelled():
+        return []
+    stored = stored_plans_for(grid, vehicle)
+    if stored is not None:                      # same request as the checked-in search: hand out those exact files
+        progress(1.0)
+        return stored
     client = HorizonsClient() if os.environ.get("INTERSTELLAR_NASA_LIVE") == "1" else None
     source = EphemerisSource(EphemerisCache(DEFAULT_CACHE_DIR), client)
     try:
         return plan_earth_mars(source, grid, vehicle, progress=progress, cancelled=cancelled)["plans"]
     except SearchCancelled:
         return []
+
+
+def stored_plans_for(grid: GridSpec, vehicle: Vehicle, ticks: TickMap = TickMap(),
+                     plans_dir: Path = PLANS_DIR, search_dir: Path = SEARCH_DIR) -> list[dict] | None:
+    """The checked-in plans, if they were built from exactly this grid, vehicle and tick map; else None.
+
+    Returning the stored files (instead of recomputing) keeps plan_id and plan_sha256 identical on every
+    machine: recomputed floats can differ in the last digits between Python/NumPy versions.
+    """
+    index_file = search_dir / "index.json"
+    if not index_file.is_file():
+        return None
+    index = json.loads(index_file.read_text(encoding="utf-8"))
+    if index.get("built_from") != {"grid": asdict(grid), "vehicle": asdict(vehicle), "ticks": asdict(ticks)}:
+        return None
+    return [load_demo_plan(objective, plans_dir, search_dir)
+            for objective, name in index["objectives"].items()
+            if name.endswith(f"_{objective}.json")]             # one entry per file, even if it won both
 
 
 def load_demo_plan(objective: str = "least_fuel", plans_dir: Path = PLANS_DIR, search_dir: Path = SEARCH_DIR) -> dict:
@@ -92,10 +117,12 @@ def load_demo_plan(objective: str = "least_fuel", plans_dir: Path = PLANS_DIR, s
     return plan
 
 
-def write_demo_plans(result: dict, plans_dir: Path = PLANS_DIR, search_dir: Path = SEARCH_DIR) -> dict:
+def write_demo_plans(result: dict, plans_dir: Path = PLANS_DIR, search_dir: Path = SEARCH_DIR,
+                     grid: GridSpec = GridSpec(), vehicle: Vehicle = Vehicle(), ticks: TickMap = TickMap()) -> dict:
     plans_dir.mkdir(parents=True, exist_ok=True)
     search_dir.mkdir(parents=True, exist_ok=True)
-    index = {"objectives": {}, "grid": "grid_earth_mars.json"}
+    index = {"objectives": {}, "grid": "grid_earth_mars.json",
+             "built_from": {"grid": asdict(grid), "vehicle": asdict(vehicle), "ticks": asdict(ticks)}}
     for plan in result["plans"]:
         name = f"mission_plan_earth_mars_{plan['objectives_won'][0]}.json"
         (plans_dir / name).write_text(json.dumps(plan, indent=1) + "\n", encoding="utf-8")

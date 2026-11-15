@@ -1,6 +1,5 @@
 {
  "schema_version": 1,
- "plan_id": "5b1ab986-b91b-57b6-9e1f-bf3290bd2eaa",
  "model_version": "two-body-lambert-v1",
  "data_mode": "nasa_cached",
  "origin_body_id": "399",
@@ -15795,5 +15794,6 @@
   ],
   "notes": "Planet positions/velocities and GM values are NASA/JPL Horizons data read from the local verified cache (data_mode says cached or live). The transfer arc, burns and propellant are computed by this project with a simplified model: Sun-only two-body coast, zero-revolution prograde Lambert arc, impulsive burns from circular 12-hour parking orbits, no launch, atmosphere, third bodies or finite burns. NASA did not compute or certify this route. Lambert solver: lamberthub 1.0.0 izzo2015 (GPL-3.0)."
  },
- "plan_sha256": "fe19de74de573cafea3aadf441dc8b2e5dc763f61f15b45947ec071174d964c9"
+ "plan_id": "a3d74b41-a59e-587b-9454-4d1c8695b100",
+ "plan_sha256": "808801a450cb2845b6692dd511ff1acb655599a5282e421c4dfa877d57a51ac0"
 }

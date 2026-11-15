@@ -90,10 +90,16 @@ def test_offline_search_reproduces_the_checked_in_plans(offline_result):
     for key, plan in fresh.items():
         old = stored[key]
         assert plan["data_mode"] == old["data_mode"] == "nasa_cached"
-        assert plan["plan_id"] == old["plan_id"]
+        # Recomputed floats may differ in the last digits between Python/NumPy versions, so compare with
+        # a tolerance; NASA rows, epochs and the integer fuel ledger must be identical.
         assert plan["departure"] == old["departure"] and plan["arrival"] == old["arrival"]
         assert plan["boundary"]["origin_r_km"] == old["boundary"]["origin_r_km"]              # same NASA rows
         assert plan["dv"]["dv_total_km_s"] == pytest.approx(old["dv"]["dv_total_km_s"], rel=1e-9)
+        assert plan["masses"]["propellant_required_kg"] == pytest.approx(old["masses"]["propellant_required_kg"], rel=1e-9)
+        assert np.allclose(plan["boundary"]["lambert_v1_km_s"], old["boundary"]["lambert_v1_km_s"], rtol=1e-9)
+        assert np.allclose(plan["nominal_path"][-1]["r_km"], old["nominal_path"][-1]["r_km"], atol=1.0)   # km
+        if plan["plan_sha256"] != old["plan_sha256"]:
+            assert plan["plan_id"] != old["plan_id"]          # different contents never reuse an id
         assert plan["wire"] == old["wire"]
         assert plan["provenance"]["sources"] == old["provenance"]["sources"]
 
@@ -244,12 +250,24 @@ DEMO_PARAMS = {"departure_start_utc": "2026-11-15T00:00:00Z", "departure_end_utc
                "tof_min_days": 120, "tof_max_days": 360, "n_departures": 24, "n_durations": 25}
 
 
-def test_run_search_hook_returns_the_stored_plans_and_reports_progress():
+def test_run_search_hook_returns_the_stored_files_for_the_demo_request():
     seen = []
     plans = run_search(DEMO_PARAMS, seen.append, lambda: False)
-    assert {p["plan_sha256"] for p in plans} == {p["plan_sha256"] for p in stored_plans()}
-    assert seen == sorted(seen) and seen[0] == 0.0 and seen[-1] == 1.0
+    assert plans == stored_plans()                       # the exact checked-in files: same id and digest everywhere
+    assert seen[-1] == 1.0
     assert all(verify_plan(p) == [] for p in plans)
+
+
+def test_run_search_hook_recomputes_other_requests_with_progress_and_a_new_id():
+    seen = []
+    one_cell = dict(DEMO_PARAMS, departure_end_utc=DEMO_PARAMS["departure_start_utc"], n_departures=1,
+                    tof_min_days=300, tof_max_days=300, n_durations=1)
+    plans = run_search(one_cell, seen.append, lambda: False)
+    assert len(plans) == 1 and verify_plan(plans[0]) == []
+    assert seen == sorted(seen) and seen[0] == 0.0 and seen[-1] == 1.0
+    least_fuel = load_demo_plan("least_fuel")
+    assert plans[0]["arrival"] == least_fuel["arrival"]              # same route as the stored least-fuel plan...
+    assert plans[0]["plan_id"] != least_fuel["plan_id"]              # ...but a different plan (other grid), so a new id
 
 
 def test_run_search_hook_stops_when_cancelled_and_passes_the_vehicle_through():
