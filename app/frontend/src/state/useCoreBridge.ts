@@ -27,6 +27,10 @@ import type {
   SimFaultKind,
 } from "../api/missionTypes";
 import type { BodyId, PlanetTargetId, TargetId } from "../api/types";
+import {
+  isLinkIndicator,
+  type LinkIndicator,
+} from "../api/linkIndicator";
 import type { FleetShuttle, ShuttleClass } from "./fleetMock";
 import { missionActionGates } from "./missionGates";
 import type { PlanetBodyId } from "./planetBodies";
@@ -122,6 +126,9 @@ export function useCoreBridge() {
   const [controllerSource, setControllerSource] = useState<
     "fpga" | "simulator" | "unknown"
   >("unknown");
+  /** From GET /health when no mission; never derived from age/timers. */
+  const [healthLinkIndicator, setHealthLinkIndicator] =
+    useState<LinkIndicator | null>(null);
   const [dataMode, setDataMode] = useState("unknown");
   const [inputSourceLabel, setInputSourceLabel] = useState("mouse");
   const [selectedId, setSelectedId] = useState<PlanetTargetId | null>(null);
@@ -473,6 +480,9 @@ export function useCoreBridge() {
         if (health.transport?.mode === "fpga" || health.transport?.mode === "simulator") {
           setControllerSource(health.transport.mode);
         }
+        if (isLinkIndicator(health.transport?.link_indicator)) {
+          setHealthLinkIndicator(health.transport.link_indicator);
+        }
         setLinkMode("live");
         bootReadyRef.current = true;
 
@@ -508,6 +518,31 @@ export function useCoreBridge() {
       socketRef.current = null;
     };
   }, [applyFleet, applySelection, applySnapshot, loadPlans]);
+
+  // Poll health ~1 Hz for transport.link_indicator when no mission snapshot drives it.
+  useEffect(() => {
+    if (linkMode !== "live") return;
+    let cancelled = false;
+    async function tick() {
+      try {
+        const health = await getHealth();
+        if (cancelled) return;
+        if (health.transport?.mode === "fpga" || health.transport?.mode === "simulator") {
+          setControllerSource(health.transport.mode);
+        }
+        if (isLinkIndicator(health.transport?.link_indicator)) {
+          setHealthLinkIndicator(health.transport.link_indicator);
+        }
+      } catch {
+        /* keep last backend value; never invent from a client timer */
+      }
+    }
+    const id = window.setInterval(() => void tick(), 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [linkMode]);
 
   const proposeTarget = useCallback(
     async (targetId: TargetId, source: "mouse" | "keyboard") => {
@@ -753,10 +788,17 @@ export function useCoreBridge() {
   const simFaultsEnabled =
     linkMode === "live" && controllerSource === "simulator";
 
+  const linkIndicator: LinkIndicator | null = isLinkIndicator(
+    snapshot?.link?.indicator,
+  )
+    ? snapshot!.link!.indicator!
+    : healthLinkIndicator;
+
   return {
     linkMode,
     controllerLabel,
     controllerSource,
+    linkIndicator,
     dataMode,
     inputSourceLabel,
     selectedId,
