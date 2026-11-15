@@ -1,0 +1,40 @@
+{
+ "dataset_version": 1,
+ "description": "Stable planet facts transcribed from the NASA/JPL Horizons object-data pages stored in app/data/ephemeris/. Each fact carries 'quote': the exact text in that cached page; a test checks every quote is really there. Means and bulk properties only: none of this is a current measurement.",
+ "bodies": {
+  "399": {
+   "name": "Earth",
+   "source_file": "horizons_399_object_data_88d2a1beeb8945ab.json",
+   "facts": [
+    {"key": "mean_radius", "label": "Mean radius", "value": 6371.01, "unit": "km", "quote": "Vol. Mean Radius (km) = 6371.01+-0.02"},
+    {"key": "mass", "label": "Mass", "value": 5.97219e24, "unit": "kg", "quote": "Mass x10^24 (kg)= 5.97219+-0.0006"},
+    {"key": "mean_density", "label": "Mean density", "value": 5.51, "unit": "g/cm^3", "quote": "Density, g/cm^3 = 5.51"},
+    {"key": "surface_gravity", "label": "Surface gravity", "value": 9.82022, "unit": "m/s^2", "quote": "g_o, m/s^2 = 9.82022"},
+    {"key": "escape_velocity", "label": "Escape velocity", "value": 11.186, "unit": "km/s", "quote": "Escape velocity = 11.186 km/s"},
+    {"key": "rotation_period", "label": "Length of sidereal day", "value": 23.9344695944, "unit": "h", "quote": "Mean sidereal day, hr = 23.9344695944"},
+    {"key": "orbital_period", "label": "Orbital period", "value": 365.25636, "unit": "days", "quote": "Sidereal orb period = 365.25636 d"},
+    {"key": "axial_tilt", "label": "Axial tilt", "value": 23.4392911, "unit": "deg", "quote": "Obliquity to orbit, deg = 23.4392911"},
+    {"key": "mean_temperature", "label": "Mean surface temperature", "value": 287.6, "unit": "K", "quote": "Mean surface temp (Ts), K= 287.6", "note": "Long-term mean, not a current weather reading"},
+    {"key": "surface_pressure", "label": "Atmospheric pressure", "value": 1.0, "unit": "bar", "quote": "Atm. pressure = 1.0 bar", "note": "Reference value, not a current weather reading"},
+    {"key": "gm", "label": "Gravitational parameter (GM)", "value": 398600.435436, "unit": "km^3/s^2", "quote": "GM, km^3/s^2 = 398600.435436", "note": "Used by the mission planner for the Earth departure burn"}
+   ]
+  },
+  "499": {
+   "name": "Mars",
+   "source_file": "horizons_499_object_data_bb1c25720c354595.json",
+   "facts": [
+    {"key": "mean_radius", "label": "Mean radius", "value": 3389.92, "unit": "km", "quote": "Vol. mean radius (km) = 3389.92+-0.04"},
+    {"key": "mass", "label": "Mass", "value": 6.4171e23, "unit": "kg", "quote": "Mass x10^23 (kg) = 6.4171"},
+    {"key": "mean_density", "label": "Mean density", "value": 3.933, "unit": "g/cm^3", "quote": "Density (g/cm^3) = 3.933(5+-4)"},
+    {"key": "surface_gravity", "label": "Surface gravity (equator)", "value": 3.71, "unit": "m/s^2", "quote": "Equ. gravity m/s^2 = 3.71"},
+    {"key": "escape_velocity", "label": "Escape velocity", "value": 5.027, "unit": "km/s", "quote": "Escape speed, km/s = 5.027"},
+    {"key": "rotation_period", "label": "Length of sidereal day", "value": 24.622962, "unit": "h", "quote": "Sidereal rot. period = 24.622962 hr"},
+    {"key": "orbital_period", "label": "Orbital period", "value": 686.98, "unit": "days", "quote": "Mean sidereal orb per = 686.98 d"},
+    {"key": "axial_tilt", "label": "Axial tilt", "value": 25.19, "unit": "deg", "quote": "Obliquity to orbit = 25.19 deg"},
+    {"key": "mean_temperature", "label": "Mean temperature", "value": 210, "unit": "K", "quote": "Mean temperature (K) = 210", "note": "Long-term mean, not a current weather reading"},
+    {"key": "surface_pressure", "label": "Atmospheric pressure", "value": 0.0056, "unit": "bar", "quote": "Atmos. pressure (bar) = 0.0056", "note": "Reference value, not a current weather reading"},
+    {"key": "gm", "label": "Gravitational parameter (GM)", "value": 42828.375662, "unit": "km^3/s^2", "quote": "GM (km^3/s^2) = 42828.375662", "note": "Used by the mission planner for the Mars capture burn"}
+   ]
+  }
+ }
+}
