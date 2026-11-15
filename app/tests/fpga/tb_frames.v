@@ -9,7 +9,9 @@
 //   3. The five invalid frames (40-44) get no reply and are each counted.
 //   4. The four messy byte streams (50-53) recover the frames they hide.
 //   5. A frame left unfinished is dropped after the timeout.
-//   6. KEY1 self-test with TX wired to RX: one good frame, one counted error.
+//
+// The 100 Hz tick is slowed right down here so the periodic 10 Hz STATUS
+// never fires and every reply seen is an answer to a request.
 
 `timescale 1ns / 1ps
 
@@ -44,11 +46,10 @@ module tb_frames;
     wire [9:0] ledr;
 
     interstellar_top #(
-        .TICK_DIVISOR         (1000),
+        .TICK_DIVISOR         (100_000_000),
         .HEARTBEAT_HALF_TICKS (5),
         .UART_CLKS_PER_BIT    (BIT),
-        .FRAME_TIMEOUT_CLKS   (TIMEOUT),
-        .DEBOUNCE_CLKS        (20)
+        .FRAME_TIMEOUT_CLKS   (TIMEOUT)
     ) dut (
         .MAX10_CLK1_50 (clk),
         .KEY           (key),
@@ -80,12 +81,10 @@ module tb_frames;
         if (mon_ferr) mon_ferr_count = mon_ferr_count + 1;
     end
 
-    // Count how often LEDR1 flips = good command frames received.
+    // Count good command frames accepted by the frame receiver.
     integer good_frames = 0;
-    reg     led1_prev = 1'b0;
     always @(posedge clk) begin
-        if (ledr[1] !== led1_prev) good_frames = good_frames + 1;
-        led1_prev <= ledr[1];
+        if (dut.frame_valid) good_frames = good_frames + 1;
     end
 
     // ---------------------------------------------------------- fixture files
@@ -195,36 +194,6 @@ module tb_frames;
         end
     endtask
 
-    // ---------------------------------------------------------- DUT 2: TX wired to RX, for the KEY1 self-test
-    reg        loop_closed = 1'b1;
-    reg  [1:0] key2 = 2'b11;
-    wire [9:0] ledr2;
-    wire       loop_tx;
-    wire       loop_rx = loop_closed ? loop_tx : 1'b1;
-
-    interstellar_top #(
-        .TICK_DIVISOR         (1000),
-        .HEARTBEAT_HALF_TICKS (5),
-        .UART_CLKS_PER_BIT    (BIT),
-        .FRAME_TIMEOUT_CLKS   (TIMEOUT),
-        .DEBOUNCE_CLKS        (20)
-    ) dut_loop (
-        .MAX10_CLK1_50 (clk),
-        .KEY           (key2),
-        .UART_RX       (loop_rx),
-        .UART_TX       (loop_tx),
-        .LEDR          (ledr2)
-    );
-
-    task press_key1_loop;
-        begin
-            @(negedge clk); key2[1] = 1'b0;
-            repeat (200) @(posedge clk);
-            @(negedge clk); key2[1] = 1'b1;
-            repeat (BIT * 10 * 90) @(posedge clk);   // DISCOVER out, STATUS out and back
-        end
-    endtask
-
     integer match;
     integer before;
 
@@ -299,18 +268,6 @@ module tb_frames;
         check(reply_ok && reply_seq == 16'd6, "GET_STATUS answered after the timeout");
         check(reply_rx_errors == 32'd9, "the timed-out frame was counted");
         check(mon_ferr_count == 0, "every transmitted byte had a good stop bit");
-
-        // --- 6. KEY1 self-test on the looped-back board.
-        check(ledr2[1] === 1'b0 && ledr2[2] === 1'b0, "loopback board: LEDR1 and LEDR2 start off");
-        press_key1_loop;
-        check(ledr2[1] === 1'b1, "KEY1 press: LEDR1 flipped (own DISCOVER received)");
-        check(ledr2[2] === 1'b1, "KEY1 press: LEDR2 flipped (own STATUS dropped and counted)");
-        press_key1_loop;
-        check(ledr2[1] === 1'b0 && ledr2[2] === 1'b0, "second KEY1 press: both flipped back");
-
-        loop_closed = 1'b0;                        // pull the jumper
-        press_key1_loop;
-        check(ledr2[1] === 1'b0 && ledr2[2] === 1'b0, "no jumper: KEY1 changes nothing");
 
         if (errors == 0)
             $display("\nSIMULATION PASS: tb_frames (simulation only, not a board test)");

@@ -58,8 +58,9 @@ module tb_heartbeat;
 
     tick_gen u_real_tick (           // default DIVISOR = 500,000
         .clk   (clk),
-        .rst_n (real_rst_n),
-        .tick  (real_tick)
+        .rst_n   (real_rst_n),
+        .restart (1'b0),
+        .tick    (real_tick)
     );
 
     // Count clocks between ticks and how long each tick stays high.

@@ -4,12 +4,16 @@
 // clock, so the whole design stays in one clock domain.
 //
 // Default: 50,000,000 / 500,000 = 100 Hz (the mission tick, spec section 4).
+//
+// restart = 1 sets the count back to zero, so the next tick comes exactly
+// one full period later. The mission clock uses this on START.
 
 module tick_gen #(
     parameter integer DIVISOR = 500_000
 ) (
     input  wire clk,
     input  wire rst_n,
+    input  wire restart,
     output reg  tick
 );
 
@@ -18,6 +22,9 @@ module tick_gen #(
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            count <= 32'd0;
+            tick  <= 1'b0;
+        end else if (restart) begin
             count <= 32'd0;
             tick  <= 1'b0;
         end else if (count == DIVISOR - 1) begin

@@ -15,9 +15,10 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `rtl/crc16.v` | CRC-16/CCITT-FALSE, one byte per step |
 | `rtl/frame_rx.v` | Finds and checks protocol v1 frames in the received bytes |
 | `rtl/frame_tx.v` | Sends one protocol v1 frame |
-| `rtl/status_gen.v` | Builds the 40-byte STATUS reply |
-| `rtl/debounce.v` | Cleans up a button or switch |
-| `rtl/bringup_selftest.v` | KEY1 self-test for the frame path (bring-up only) |
+| `rtl/status_gen.v` | Builds the 40-byte STATUS frame: on request, on change, and at 10 Hz |
+| `rtl/cmd_handler.v` | Checks each command (session, sequence, state, plan) and answers with an ACK |
+| `rtl/sequencer.v` | The mission: active plan, state, tick counter, fuel, the two burns |
+| `rtl/debounce.v` | Cleans up a button or switch (used from milestone D) |
 | `../../tests/fpga/` | Testbenches and `run_sim.sh` (simulation only) |
 
 ## Pins
@@ -25,12 +26,10 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 |---|---|---|
 | `MAX10_CLK1_50` | `PIN_P11` | Onboard 50 MHz oscillator |
 | `KEY[0]` | `PIN_B8` | Reset, active low (hold to reset) |
-| `KEY[1]` | `PIN_A7` | Bring-up self-test: send a DISCOVER frame |
+| `KEY[1]` | `PIN_A7` | Not used yet |
 | `UART_RX` | `PIN_V10` | JP1 pin 1 (GPIO0), from XIAO D6/TX, weak pull-up |
 | `UART_TX` | `PIN_W10` | JP1 pin 2 (GPIO1), to XIAO D7/RX, idles high |
-| `LEDR[0]` | `PIN_A8` | Heartbeat |
-| `LEDR[1]` | `PIN_A9` | Flips per good command frame received |
-| `LEDR[2]` | `PIN_A10` | Flips per dropped frame (error count bit 0) |
+| `LEDR[0]`..`LEDR[8]` | `PIN_A8` `A9` `A10` `B10` `D13` `C13` `E14` `D14` `A11` | Status LEDs, see below |
 | `LEDR[9]` | `PIN_B11` | On while in reset |
 
 All I/O is 3.3 V. Unused pins are high-impedance inputs.
@@ -56,12 +55,20 @@ Plug in the DE10-Lite USB-Blaster cable, then:
 ```
 Or use **Tools > Programmer** in Quartus. A `.sof` is volatile: reprogram after every power cycle.
 
-## What to expect on the board (milestone B)
-- LEDR0 blinks once per second (0.5 s on, 0.5 s off).
-- Holding KEY0 turns LEDR9 on and every other LED off; releasing it restarts the blink.
-- Frame self-test, with one jumper from JP1 pin 2 (TX) to JP1 pin 1 (RX): each KEY1 press flips LEDR1 (the board received its own DISCOVER) and LEDR2 (it received its own STATUS reply, which is not a command, so it is dropped and counted).
-- Without the jumper, KEY1 changes nothing.
-- All other red LEDs are off.
+## What to expect on the board (milestone C)
+| LED | Meaning |
+|---|---|
+| LEDR0 | Heartbeat, blinks once per second |
+| LEDR1 | READY: a plan is LOADED or ARMED |
+| LEDR2 | RUNNING |
+| LEDR3 | COMPLETE |
+| LEDR4 | SAFE |
+| LEDR5 | ABORTED |
+| LEDR7 | A session is open |
+| LEDR8 | Flips each time a received frame is dropped |
+| LEDR9 | On while KEY0 holds the board in reset |
+
+With nothing connected only LEDR0 blinks. The board sends a STATUS frame out of UART_TX ten times a second.
 
 ## Board test log
 Record real-board results here, separately from simulation.
@@ -70,3 +77,4 @@ Record real-board results here, separately from simulation.
 |---|---|---|---|---|
 | 2026-11-14 | heartbeat (uncommitted, branch `8-fpga-heartbeat-uart`) | Heartbeat on LEDR0, KEY0 reset, programmed by `.sof` from Quartus Programmer | Reported working on the DE10-Lite | Zain |
 | 2026-11-14 | UART loopback (milestone A) | Jumper JP1 pin 1 to pin 2: LEDR1 on with jumper, off without, LEDR2 stays off, KEY0 clears both | Reported working on the DE10-Lite | Zain |
+| 2026-11-14 | frames + STATUS (milestone B) | KEY1 self-test with jumper JP1 pin 1 to pin 2: LEDR1 and LEDR2 flip per press, nothing without the jumper | Reported working on the DE10-Lite | Zain |
