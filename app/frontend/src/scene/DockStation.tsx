@@ -3,7 +3,15 @@ import { RocketModel, Station } from "./Spacecraft";
 import type { SceneShuttle } from "./types";
 
 /** Empty centre pad is reserved for the telemetry-controlled mission shuttle. */
-export function DockStation({ radius, shuttles }: { radius: number; shuttles: SceneShuttle[] }) {
+export function DockStation({
+  radius,
+  shuttles,
+  showLabels = true,
+}: {
+  radius: number;
+  shuttles: SceneShuttle[];
+  showLabels?: boolean;
+}) {
   return <>
     <Station radius={radius} />
     <group position={[0, radius + 0.22, 0]}>
@@ -17,11 +25,13 @@ export function DockStation({ radius, shuttles }: { radius: number; shuttles: Sc
         return <group key={ship.id} position={[x, 0, 0]}>
           <Pad x={0} />
           <group position={[0, 0.2, 0]}><RocketModel warning={false} /></group>
-          <Html center position={[0, -0.15, 0.4]} style={{ pointerEvents: "none" }}>
-            <span style={{ color: "#b9e8ed", font: "9px monospace", whiteSpace: "nowrap" }}>
-              {ship.class === "standard" ? "STANDARD" : "LONG-RANGE"}
-            </span>
-          </Html>
+          {showLabels ? (
+            <Html center position={[0, -0.15, 0.4]} style={{ pointerEvents: "none" }}>
+              <span style={{ color: "#b9e8ed", font: "9px monospace", whiteSpace: "nowrap" }}>
+                {ship.class === "standard" ? "STANDARD" : "LONG-RANGE"}
+              </span>
+            </Html>
+          ) : null}
         </group>;
       })}
     </group>

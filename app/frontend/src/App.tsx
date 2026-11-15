@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { getPlanetPositions } from "./api/coreClient";
 import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
 import { BlackoutBanner } from "./components/BlackoutBanner";
-import { DateCorner } from "./components/DateCorner";
-import { EngineerDrawer } from "./components/EngineerDrawer";
-import { GlassStatus } from "./components/GlassStatus";
-import { GuidedLaunch } from "./components/GuidedLaunch";
-import { LaunchPanel } from "./components/LaunchPanel";
+import { BrandBlock } from "./components/BrandBlock";
+import { DateTimeCorner } from "./components/DateTimeCorner";
+import { DetailsTray } from "./components/DetailsTray";
+import {
+  PlanetFocusPanel,
+  type FocusTab,
+} from "./components/PlanetFocusPanel";
 import { PlanetBar } from "./components/PlanetBar";
-import { PlanetInfoCard } from "./components/PlanetInfoCard";
 import { ReconciliationCard } from "./components/ReconciliationCard";
 import { TripReadout } from "./components/TripReadout";
 import { BciSlot } from "./integrations/bciSlot";
@@ -63,6 +64,10 @@ const BODY_IDS: SceneBodyId[] = [
   "899",
 ];
 
+function isoUtcMinute(d: Date): string {
+  return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 export default function App() {
   const {
     linkMode,
@@ -98,7 +103,11 @@ export default function App() {
     clearSelection,
   } = useCoreBridge();
 
-  const [focusName, setFocusName] = useState<string | null>("Earth");
+  const [focusName, setFocusName] = useState<string | null>(null);
+  const [overview, setOverview] = useState(true);
+  const [focusTab, setFocusTab] = useState<FocusTab>("about");
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [clockIso, setClockIso] = useState(() => isoUtcMinute(new Date()));
   const [planetPositions, setPlanetPositions] = useState<
     ScenePlanetPosition[]
   >([]);
@@ -133,35 +142,79 @@ export default function App() {
     selectedPlan?.ticks?.departure_tick,
   );
 
-  const dateUtc = blackout
-    ? (snapshot?.estimate?.date_utc ?? null)
-    : (snapshot?.date_utc ?? selectedPlan?.departure?.utc ?? null);
-  const dateEstimated = Boolean(blackout && snapshot?.estimate?.date_utc);
+  const missionActive = Boolean(
+    snapshot &&
+      snapshot.state !== "IDLE" &&
+      snapshot.state !== "UNKNOWN" &&
+      snapshot.mission_id,
+  );
+  const missionDateUtc = missionActive
+    ? blackout
+      ? (snapshot?.estimate?.date_utc ?? snapshot?.date_utc ?? null)
+      : (snapshot?.date_utc ?? null)
+    : null;
+  const dateEstimated = Boolean(
+    missionActive && blackout && snapshot?.estimate?.date_utc,
+  );
+
+  /** Same date used for positions: mission clock, else live UTC (minute). */
+  const positionsDateUtc = missionDateUtc ?? clockIso;
 
   const routeMsg = unavailableMessage(
     routeUnavailable,
     dockedShuttles.length > 0,
   );
 
-  const reconciliation = snapshot?.reconciliation
-    ? {
-        blackoutStartTick: snapshot.reconciliation.blackout_start_tick,
-        blackoutEndTick: snapshot.reconciliation.blackout_end_tick,
-        eventsDuringBlackout: snapshot.reconciliation.events_during_blackout.map(
-          (e) => (typeof e === "string" ? e : e.event),
-        ),
-        estimateMatched: snapshot.reconciliation.estimate_matched,
-        differences: snapshot.reconciliation.differences,
-      }
-    : null;
+  const reconciliation =
+    snapshot?.reconciliation &&
+    snapshot.state !== "IDLE" &&
+    snapshot.state !== "UNKNOWN"
+      ? {
+          blackoutStartTick: snapshot.reconciliation.blackout_start_tick,
+          blackoutEndTick: snapshot.reconciliation.blackout_end_tick,
+          eventsDuringBlackout:
+            snapshot.reconciliation.events_during_blackout.map((e) =>
+              typeof e === "string" ? e : e.event,
+            ),
+          estimateMatched: snapshot.reconciliation.estimate_matched,
+          differences: snapshot.reconciliation.differences,
+        }
+      : null;
+
+  const inFlight = Boolean(
+    snapshot &&
+      (snapshot.state === "RUNNING" ||
+        snapshot.state === "ARMED" ||
+        snapshot.state === "LOADED"),
+  );
+  const followFlight = Boolean(
+    snapshot &&
+      snapshot.state !== "COMPLETE" &&
+      snapshot.state !== "ABORTED" &&
+      snapshot.state !== "IDLE" &&
+      snapshot.state !== "UNKNOWN" &&
+      ((snapshot.executed_mask & 1) !== 0 || snapshot.state === "RUNNING"),
+  );
+  const showPlanetPanel =
+    !overview && !followFlight && focusName != null && focusName !== "Black Hole";
+  const showMiniSystem = showPlanetPanel;
 
   useEffect(() => {
-    if (linkMode !== "live" || !dateUtc) {
+    if (missionDateUtc) return;
+    const id = window.setInterval(
+      () => setClockIso(isoUtcMinute(new Date())),
+      30_000,
+    );
+    return () => window.clearInterval(id);
+  }, [missionDateUtc]);
+
+  useEffect(() => {
+    if (linkMode !== "live" || !positionsDateUtc) {
       setPlanetPositions([]);
       return;
     }
     let cancelled = false;
-    void getPlanetPositions({ date_utc: dateUtc })
+    void getPlanetPositions({ date_utc: positionsDateUtc })
       .then((res) => {
         if (cancelled) return;
         setPlanetPositions(
@@ -179,13 +232,13 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [dateUtc, linkMode]);
+  }, [positionsDateUtc, linkMode]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         clearSelection("keyboard");
-        setFocusName(null);
+        goOverview();
         return;
       }
       if (planetChoiceEnabled) {
@@ -221,8 +274,16 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  function goOverview() {
+    setOverview(true);
+    setFocusName(null);
+    clearSelection("mouse");
+  }
+
   function visitPlanet(name: string) {
+    setOverview(false);
     setFocusName(name);
+    setFocusTab("about");
     const bodyId = bodyIdFromName(name);
     if (!bodyId) return;
     const docked = dockedAt(fleet, bodyId);
@@ -233,11 +294,20 @@ export default function App() {
       shuttleClass: first?.class ?? "standard",
       shuttleId: first?.id ?? null,
     });
+    if (name === "Earth") selectPlanet("planet.399");
+    if (name === "Mars") selectPlanet("planet.499");
   }
 
   function pickShuttle(shuttle: FleetShuttle) {
     setSelectedShuttleId(shuttle.id);
     setTrip({ shuttleClass: shuttle.class, shuttleId: shuttle.id });
+  }
+
+  function handleLaunch() {
+    void sendCommand("start").then(() => {
+      setOverview(false);
+      setFocusName(null);
+    });
   }
 
   return (
@@ -252,34 +322,75 @@ export default function App() {
             selectPlanet(id);
           }}
           onFocusName={(name) => visitPlanet(name)}
-          focusName={focusName}
+          focusName={overview ? null : focusName}
+          overview={overview && !followFlight}
           plan={scenePlan}
           snapshot={sceneSnapshot}
           fleet={sceneFleet}
           mockFleet={false}
           planetPositions={planetPositions}
+          dateUtc={positionsDateUtc}
+          fetchPositions={false}
         />
       </div>
 
-      <header className="glass brand-glass">
-        <p className="brand">Interstellar</p>
-        <p className="brand-sub">{routeLabel}</p>
-      </header>
+      <BrandBlock />
 
-      <DateCorner dateUtc={dateUtc} estimated={dateEstimated} />
+      <DateTimeCorner
+        missionDateUtc={missionDateUtc}
+        estimated={dateEstimated}
+      />
+
+      {showMiniSystem ? (
+        <div className="mini-system glass" aria-label="Solar system overview">
+          <OrbitScene
+            selectedId={null}
+            selectionEnabled={false}
+            onSelect={() => undefined}
+            focusName={null}
+            overview
+            compact
+            plan={scenePlan}
+            snapshot={sceneSnapshot}
+            fleet={sceneFleet}
+            mockFleet={false}
+            planetPositions={planetPositions}
+            dateUtc={positionsDateUtc}
+            fetchPositions={false}
+          />
+        </div>
+      ) : null}
 
       <BlackoutBanner visible={blackout} />
 
-      <GlassStatus
-        linkMode={linkMode}
-        controllerSource={controllerSource}
-        snapshot={snapshot}
-        lastError={lastError}
-        destinationName={destinationLabel}
-      />
-
-      <aside className="glass panel-left launch-aside" aria-label="Launch">
-        <LaunchPanel
+      {showPlanetPanel ? (
+        <PlanetFocusPanel
+          planetNameLabel={focusName!}
+          tab={focusTab}
+          onTab={(tab) => {
+            setFocusTab(tab);
+            const bodyId = bodyIdFromName(focusName);
+            if (!bodyId) return;
+            if (tab === "from-to") {
+              const dest =
+                destinationBodyId !== bodyId
+                  ? destinationBodyId
+                  : originBodyId !== bodyId
+                    ? originBodyId
+                    : ((bodyId === "399" ? "499" : "399") as typeof bodyId);
+              setTrip({ origin: bodyId, destination: dest });
+            } else if (tab === "to-from") {
+              const from =
+                originBodyId !== bodyId
+                  ? originBodyId
+                  : destinationBodyId !== bodyId
+                    ? destinationBodyId
+                    : ((bodyId === "399" ? "499" : "399") as typeof bodyId);
+              setTrip({ origin: from, destination: bodyId });
+            }
+          }}
+          card={card}
+          cardStatus={cardStatus}
           originBodyId={originBodyId}
           destinationBodyId={destinationBodyId}
           dockedShuttles={dockedShuttles}
@@ -289,32 +400,37 @@ export default function App() {
           earliestArrival={routePlans.earliest_arrival}
           selectedPlanId={selectedPlan?.plan_id ?? null}
           unavailableMessage={routeMsg}
-          disabled={tripLocked}
+          tripLocked={tripLocked}
           onShuttle={pickShuttle}
           onDestination={(id) => {
             setTrip({ destination: id });
-            setFocusName(planetName(id));
+          }}
+          onOrigin={(id) => {
+            const docked = dockedAt(fleet, id);
+            const first = docked[0] ?? null;
+            setSelectedShuttleId(first?.id ?? null);
+            setTrip({
+              origin: id,
+              destination: bodyIdFromName(focusName) ?? destinationBodyId,
+              shuttleClass: first?.class ?? "standard",
+              shuttleId: first?.id ?? null,
+            });
           }}
           onSelectPlan={(id) => void selectPlanById(id)}
-        />
-        <TripReadout
           daysToArrival={daysToArrival}
           tripDays={tripDays}
           tMinusLabel={tMinus}
-          estimated={blackout}
-        />
-        <GuidedLaunch
+          blackout={blackout}
           live={live}
-          busy={commandBusy}
+          commandBusy={commandBusy}
           hasPlan={Boolean(selectedPlan)}
           snapshot={snapshot}
           gates={gates}
           simFaultsEnabled={simFaultsEnabled}
           routeLabel={routeLabel}
-          blackoutActive={blackout}
           onPrepare={() => void prepareMission()}
           onArm={() => void sendCommand("arm")}
-          onLaunch={() => void sendCommand("start")}
+          onLaunch={handleLaunch}
           onAbort={() => {
             void sendCommand("abort");
             clearSelection("mouse");
@@ -326,25 +442,70 @@ export default function App() {
           onFaultSingle={() => void injectFault("single")}
           onFaultDivergence={() => void injectFault("divergence")}
         />
-        <EngineerDrawer
-          plan={selectedPlan}
-          snapshot={snapshot}
-          faultHistory={faultHistory}
-          dataMode={dataMode}
-        />
-      </aside>
+      ) : null}
+
+      {inFlight || followFlight ? (
+        <div className="flight-hud glass" aria-label="Flight readout">
+          <TripReadout
+            daysToArrival={daysToArrival}
+            tripDays={tripDays}
+            tMinusLabel={tMinus}
+            estimated={blackout}
+          />
+          <button
+            type="button"
+            className="abort-btn"
+            disabled={commandBusy || blackout || !(live && gates.canAbort)}
+            onClick={() => {
+              void sendCommand("abort");
+              clearSelection("mouse");
+            }}
+          >
+            Abort
+          </button>
+          {blackout ? (
+            <button
+              type="button"
+              className="blackout-btn end"
+              disabled={commandBusy}
+              onClick={() => void sendCommand("blackout_end")}
+            >
+              End blackout
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={commandBusy || (blackout && snapshot?.state === "RUNNING")}
+            onClick={() => void resetMission()}
+          >
+            Start over
+          </button>
+        </div>
+      ) : null}
 
       <ReconciliationCard data={reconciliation} />
 
-      {card ? (
-        <aside className="glass panel-right" aria-label="Planet information">
-          <PlanetInfoCard
-            planet={card}
-            status={cardStatus === "idle" ? "ready" : cardStatus}
-            onClose={() => clearSelection("mouse")}
-          />
-        </aside>
-      ) : null}
+      <DetailsTray
+        open={detailsOpen}
+        onToggle={() => setDetailsOpen((v) => !v)}
+        linkMode={linkMode}
+        controllerSource={controllerSource}
+        snapshot={snapshot}
+        lastError={lastError}
+        destinationName={destinationLabel}
+        plan={selectedPlan}
+        faultHistory={faultHistory}
+        dataMode={dataMode}
+        live={live}
+        busy={commandBusy}
+        blackout={blackout}
+        simFaultsEnabled={simFaultsEnabled}
+        onBlackoutStart={() => void sendCommand("blackout_start")}
+        onBlackoutEnd={() => void sendCommand("blackout_end")}
+        onResetFleet={() => void resetFleet()}
+        onFaultSingle={() => void injectFault("single")}
+        onFaultDivergence={() => void injectFault("divergence")}
+      />
 
       <div className="bci-float" aria-label="Optional brain widget">
         <BciSlot />
@@ -352,8 +513,10 @@ export default function App() {
 
       <PlanetBar
         focusName={focusName}
+        overview={overview && !followFlight}
         selectedId={selectedId}
         selectionEnabled={planetChoiceEnabled && !blackout}
+        onOverview={goOverview}
         onVisit={visitPlanet}
         onSelectEarthMars={selectPlanet}
       />

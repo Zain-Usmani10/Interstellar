@@ -553,13 +553,11 @@ export function useCoreBridge() {
 
   const selectPlanet = useCallback(
     (targetId: PlanetTargetId, source: "mouse" | "keyboard" = "mouse") => {
-      if (screen === "planet_info") {
-        setLastError("select_unavailable_on_info_screen");
-        return;
-      }
+      // Layout v2: switching planets from the bar must refresh the About card
+      // even while already on planet_info (old GUI required navigation.back first).
       void proposeTarget(targetId, source);
     },
-    [proposeTarget, screen],
+    [proposeTarget],
   );
 
   const clearSelection = useCallback(
