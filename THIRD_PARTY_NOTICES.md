@@ -12,4 +12,8 @@ this project may be distributed:
 Data: planet positions come from NASA/JPL Horizons (https://ssd.jpl.nasa.gov/horizons/). This
 project is not endorsed by NASA.
 
+Planet textures in `app/frontend/public/textures/` are from Solar System Scope
+(https://www.solarsystemscope.com/textures/), licensed CC BY 4.0, based on NASA imagery. The black hole
+in the 3D scene is an illustration, not NASA data.
+
 This list is maintained by hand and is not yet complete for the frontend and firmware.
