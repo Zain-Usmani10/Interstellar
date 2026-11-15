@@ -1,97 +1,212 @@
-import { useMemo } from "react";
+import { Component, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Line, OrbitControls, Stars } from "@react-three/drei";
-import { PLANETS } from "../mock/planetInfo";
+import { Line, Stars } from "@react-three/drei";
+import { AdditiveBlending } from "three";
 import type { PlanetTargetId } from "../api/types";
-import { sciToThree } from "./axes";
 import { PlanetMesh } from "./PlanetMesh";
+import { CameraRig } from "./CameraRig";
+import { Spacecraft, Station } from "./Spacecraft";
+import { VISUAL_PLANETS, planetPosition } from "./planets";
+import { flightView, routePoints } from "./flightState";
+import { sunGlow } from "./surfaces";
+import type { ScenePlan, SceneSnapshot } from "./types";
+import "./scene.css";
 
-type Props = {
+export type { ScenePlan, SceneSnapshot } from "./types";
+export type OrbitSceneProps = {
   selectedId: PlanetTargetId | null;
   selectionEnabled?: boolean;
-  onSelect: (targetId: PlanetTargetId) => void;
+  onSelect: (target: PlanetTargetId) => void;
+  plan?: ScenePlan | null;
+  snapshot?: SceneSnapshot | null;
 };
 
 function Sun() {
   return (
-    <mesh>
-      <sphereGeometry args={[0.55, 32, 32]} />
-      <meshBasicMaterial color="#f0c36a" />
-      <pointLight intensity={2.2} distance={80} decay={1.2} color="#fff1c9" />
-    </mesh>
+    <group>
+      <mesh>
+        <sphereGeometry args={[1.3, 48, 32]} />
+        <meshBasicMaterial color="#ffdba1" />
+      </mesh>
+      <sprite scale={[13, 13, 1]}>
+        <spriteMaterial
+          map={sunGlow()}
+          blending={AdditiveBlending}
+          depthWrite={false}
+        />
+      </sprite>
+      <pointLight color="#ffe1b3" intensity={80} decay={2} />
+    </group>
   );
 }
 
 function OrbitGuide({ radius }: { radius: number }) {
+  const points = useMemo(
+    () =>
+      Array.from({ length: 181 }, (_, i) => {
+        const angle = (i / 180) * Math.PI * 2;
+        return [Math.cos(angle) * radius, 0, Math.sin(angle) * radius] as [
+          number,
+          number,
+          number,
+        ];
+      }),
+    [radius],
+  );
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[radius - 0.02, radius + 0.02, 128]} />
-      <meshBasicMaterial color="#6a7a8c" transparent opacity={0.35} />
-    </mesh>
+    <Line
+      points={points}
+      color="#526578"
+      lineWidth={0.65}
+      transparent
+      opacity={0.27}
+    />
   );
 }
 
-/** Decorative mock preview arc — not a validated Lambert sample path. */
-function MockTransferPreview() {
-  const points = useMemo(() => {
-    const earth = PLANETS[0].display_position_au_scaled;
-    const mars = PLANETS[1].display_position_au_scaled;
-    const out: [number, number, number][] = [];
-    const steps = 48;
-    for (let i = 0; i <= steps; i += 1) {
-      const t = i / steps;
-      const x = earth[0] + (mars[0] - earth[0]) * t;
-      const y = earth[1] + (mars[1] - earth[1]) * t + Math.sin(Math.PI * t) * 2.5;
-      const z = earth[2] + (mars[2] - earth[2]) * t;
-      out.push(sciToThree(x, y, z));
-    }
-    return out;
-  }, []);
-
-  return <Line points={points} color="#9bb6d4" lineWidth={1.5} transparent opacity={0.55} />;
+class SceneBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? (
+      <div className="scene-fallback">
+        3D view unavailable. Planet buttons and information cards remain
+        available.
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
 }
 
 export function OrbitScene({
   selectedId,
   selectionEnabled = true,
   onSelect,
-}: Props) {
+  plan,
+  snapshot,
+}: OrbitSceneProps) {
+  const [visible, setVisible] = useState(() => !document.hidden);
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+  const view = flightView(snapshot, plan);
+  const points = useMemo(() => routePoints(plan), [plan]);
+  const planets = VISUAL_PLANETS.map((body) => ({
+    body,
+    position: planetPosition(body, plan, view.mode === "unavailable" ? null : snapshot),
+  }));
+  const selected = planets.find((p) => p.body.target === selectedId);
+  const origin = planets.find(
+    (p) => p.body.bodyId === (plan?.origin_body_id ?? "399"),
+  )!;
+  const captured = view.mode === "captured";
+  const cameraFocus = captured
+    ? view.position
+    : !view.departed
+      ? (selected?.position ?? null)
+      : null;
+  const transitionKey = `${selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}`;
+  const isReported = !!snapshot;
   return (
-    <Canvas
-      camera={{ position: [18, 12, 18], fov: 42, near: 0.1, far: 500 }}
-      dpr={[1, 1.75]}
-      style={{ width: "100%", height: "100%" }}
-    >
-      <color attach="background" args={["#070b12"]} />
-      <ambientLight intensity={0.28} />
-      <Stars
-        radius={120}
-        depth={50}
-        count={2500}
-        factor={3}
-        saturation={0}
-        fade
-        speed={0.4}
-      />
-      <Sun />
-      <OrbitGuide radius={10} />
-      <OrbitGuide radius={15.2} />
-      <MockTransferPreview />
-      {PLANETS.map((planet) => (
-        <PlanetMesh
-          key={planet.target_id}
-          planet={planet}
-          selected={selectedId === planet.target_id}
-          interactive={selectionEnabled}
-          onSelect={onSelect}
-        />
-      ))}
-      <OrbitControls
-        enablePan
-        minDistance={6}
-        maxDistance={60}
-        target={[8, 0, 0]}
-      />
-    </Canvas>
+    <div className="orbital-scene" aria-label="Three-dimensional solar system">
+      <div className="scene-heading" aria-hidden="true">
+        <span>INTERSTELLAR / ORBITAL VIEW</span>
+        <strong>{selected?.body.name ?? "SOLAR SYSTEM"}</strong>
+      </div>
+      <div
+        className={`scene-telemetry ${view.stale || view.mode === "uncaptured" ? "scene-warning" : ""}`}
+        role="status"
+      >
+        <span>{snapshot?.controller_label ?? "ILLUSTRATIVE PREVIEW"}</span>
+        <strong>{view.label}</strong>
+        {isReported && (
+          <span>
+            TICK {snapshot.tick.toLocaleString()}{" "}
+            {view.stale ? " / LAST RECEIVED — STALE" : ""}
+          </span>
+        )}
+      </div>
+      <SceneBoundary>
+        <Canvas
+          camera={{ position: [320, 500, 750], fov: 42, near: 0.03, far: 3000 }}
+          dpr={[1, 1.5]}
+          frameloop={visible ? "always" : "never"}
+          gl={{ antialias: true, powerPreference: "high-performance" }}
+        >
+          <color attach="background" args={["#050b15"]} />
+          <ambientLight intensity={1.1} />
+          <directionalLight
+            position={[20, 30, 15]}
+            color="#e4efff"
+            intensity={2.2}
+          />
+          <Stars
+            radius={1100}
+            depth={500}
+            count={1800}
+            factor={4}
+            saturation={0}
+            fade
+            speed={0}
+          />
+          <Sun />
+          {planets.map(({ body, position }) => (
+            <group key={body.name}>
+              <OrbitGuide radius={body.displayOrbitAU * 10} />
+              <PlanetMesh
+                body={body}
+                position={position}
+                selected={selectedId === body.target}
+                interactive={selectionEnabled}
+                onSelect={onSelect}
+              />
+            </group>
+          ))}
+          {points.length > 1 && (
+            <Line
+              points={points}
+              color="#8cdece"
+              lineWidth={1.6}
+              transparent
+              opacity={0.8}
+            />
+          )}
+          <group position={origin.position}>
+            <Station radius={origin.body.radius} />
+          </group>
+          <Spacecraft
+            view={view}
+            snapshot={snapshot}
+            origin={origin.position}
+            originRadius={origin.body.radius}
+          />
+          <CameraRig
+            focus={cameraFocus}
+            focusRadius={captured ? 0.65 : (selected?.body.radius ?? 1)}
+            transitionKey={transitionKey}
+            extent={80}
+          />
+        </Canvas>
+      </SceneBoundary>
+      <div className="scene-legend">
+        <span>DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN</span>
+        <span>Planet / vehicle sizes not to scale · 1 au = 10 units</span>
+        <span>
+          {plan
+            ? `${plan.data_mode.toUpperCase()} PLAN · supplied route samples`
+            : "No plan supplied — no transfer route"}{" "}
+          · outer distances compressed; orbit guides illustrative
+        </span>
+      </div>
+    </div>
   );
 }
