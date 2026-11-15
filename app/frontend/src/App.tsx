@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import type { ComponentProps } from "react";
 import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
 import { FaultHistory } from "./components/FaultHistory";
 import { MissionActions } from "./components/MissionActions";
@@ -12,15 +11,6 @@ import { StatusStrip } from "./components/StatusStrip";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
 import { useCoreBridge } from "./state/useCoreBridge";
-
-/**
- * Affan's OrbitScene declares optional plan/snapshot once #21 lands.
- * Until then we forward them at runtime without editing src/scene/.
- */
-type OrbitSceneProps = ComponentProps<typeof OrbitScene> & {
-  plan?: unknown;
-  snapshot?: unknown;
-};
 
 export default function App() {
   const {
@@ -107,14 +97,6 @@ export default function App() {
     simFaultsEnabled,
   ]);
 
-  const sceneProps = {
-    selectedId,
-    selectionEnabled: planetChoiceEnabled,
-    onSelect: selectPlanet,
-    plan: scenePlan,
-    snapshot: sceneSnapshot,
-  } as OrbitSceneProps;
-
   return (
     <div className="app-shell">
       <MockBanner linkMode={linkMode} />
@@ -145,7 +127,13 @@ export default function App() {
       <main className="stage">
         <div className="canvas-column">
           <div className="canvas-wrap">
-            <OrbitScene {...sceneProps} />
+            <OrbitScene
+              selectedId={selectedId}
+              selectionEnabled={planetChoiceEnabled}
+              onSelect={selectPlanet}
+              plan={scenePlan}
+              snapshot={sceneSnapshot}
+            />
           </div>
           <div className="bci-dock" aria-label="Optional brain widget">
             <BciSlot />
