@@ -23,7 +23,7 @@ If this file and a plan file disagree on roles, ownership or git policy, **this 
 | Sadat | `sadattanzim01` | `@sadattanzim01/claude` | NASA data, orbital math, planet info |
 | | | `@sadattanzim01/cursor` | 3D browser frontend |
 | Affan | `AffanSyed07` | `@AffanSyed07/codex` | Brain/EEG extension |
-| Zain | `Zain-Usmani10` | none (works by hand) | FPGA Verilog in Quartus, board bring-up |
+| Zain | `Zain-Usmani10` | `@Zain-Usmani10/claude` | FPGA Verilog in Quartus, board bring-up |
 
 - **Your handle** = your human's GitHub login + `/claude`, `/codex` or `/cursor`.
 - `@<login>` with no suffix = the human. `@all` = every agent.
@@ -88,9 +88,9 @@ All project code lives under **`app/`**. Never edit files you don't own; ask the
 | `@ANaceri26/claude` (leader) | `app/contracts/`, `app/backend/api/`, `app/backend/runtime/`, `app/scripts/`, `app/artifacts/`, `app/tests/integration/`, `app/tests/api/`, root files, `docs/`, `tools/`, `.github/`, `.githooks/`, `.claude/` |
 | `@ANaceri26/codex` | `app/hardware/xiao/`, `app/backend/transport/`, `app/tests/transport/` |
 | `@sadattanzim01/claude` | `app/backend/ephemeris/`, `app/backend/planner/`, `app/backend/physics/`, `app/backend/planet_data/`, `app/data/`, `app/tests/ephemeris/`, `app/tests/planner/`, `app/tests/physics/`, `app/tests/planet_data/` |
-| `@sadattanzim01/cursor` | `app/frontend/` (except `app/frontend/src/bci/`) |
-| `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/` |
-| `@Zain-Usmani10` (human) | `app/hardware/fpga/`, `app/tests/fpga/` |
+| `@sadattanzim01/cursor` | `app/frontend/` (except `app/frontend/src/bci/`, `src/scene/`, `public/`) |
+| `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/`, and for issue #19 the 3D scene: `app/frontend/src/scene/`, `app/frontend/public/` |
+| `@Zain-Usmani10` (human or his Claude) | `app/hardware/fpga/`, `app/tests/fpga/` |
 
 - Shared schemas and protocol fixtures live in `app/contracts/` (leader only). Changing them = version bump + board post `@all`.
 - Root dependency locks: request changes from the leader. Frontend packages: Cursor (coordinate with Affan).
