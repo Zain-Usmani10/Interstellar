@@ -18,11 +18,14 @@ type Props = {
   gates: Gates;
   simFaultsEnabled: boolean;
   routeLabel: string;
+  blackoutActive: boolean;
   onPrepare: () => void;
   onArm: () => void;
   onLaunch: () => void;
   onAbort: () => void;
   onReset: () => void;
+  onBlackoutStart: () => void;
+  onBlackoutEnd: () => void;
   onFaultSingle: () => void;
   onFaultDivergence: () => void;
 };
@@ -35,23 +38,29 @@ export function GuidedLaunch({
   gates,
   simFaultsEnabled,
   routeLabel,
+  blackoutActive,
   onPrepare,
   onArm,
   onLaunch,
   onAbort,
   onReset,
+  onBlackoutStart,
+  onBlackoutEnd,
   onFaultSingle,
   onFaultDivergence,
 }: Props) {
   const step = guidedStep(snapshot);
-  const locked = busy;
+  const locked = busy || blackoutActive;
+  const canStartBlackout =
+    live && !blackoutActive && snapshot?.state === "RUNNING";
+  const canEndBlackout = live && blackoutActive;
 
   const primary =
     step === "reset"
       ? {
           label: "Start over",
           hint: "Clears the aborted/finished mission so you can launch again",
-          enabled: true,
+          enabled: !blackoutActive,
           run: onReset,
         }
       : step === "prepare"
@@ -59,27 +68,35 @@ export function GuidedLaunch({
             label: "Prepare mission",
             hint: hasPlan
               ? `Loads your ${routeLabel} route onto the controller`
-              : "Pick a pair with an available MissionPlan first",
-            enabled: live && hasPlan && (gates.canCreate || gates.canUpload),
+              : "Pick a docked shuttle and destination with a route first",
+            enabled:
+              live &&
+              hasPlan &&
+              !blackoutActive &&
+              (gates.canCreate || gates.canUpload),
             run: onPrepare,
           }
         : step === "arm"
           ? {
               label: "Arm",
               hint: "Controller must be LOADED",
-              enabled: live && gates.canArm,
+              enabled: live && gates.canArm && !blackoutActive,
               run: onArm,
             }
           : step === "launch"
             ? {
                 label: "Launch",
                 hint: "Starts only when the controller is ARMED",
-                enabled: live && gates.canStart,
+                enabled: live && gates.canStart && !blackoutActive,
                 run: onLaunch,
               }
             : {
-                label: "Mission under way",
-                hint: "Follow the live snapshot",
+                label: blackoutActive
+                  ? "Blackout — estimate only"
+                  : "Mission under way",
+                hint: blackoutActive
+                  ? "Contact lost; waiting for sync at arrival"
+                  : "Follow the live snapshot",
                 enabled: false,
                 run: () => undefined,
               };
@@ -106,7 +123,7 @@ export function GuidedLaunch({
       <button
         type="button"
         className="primary-launch"
-        disabled={locked || !primary.enabled}
+        disabled={busy || !primary.enabled}
         onClick={primary.run}
       >
         {busy ? "Working…" : primary.label}
@@ -121,12 +138,36 @@ export function GuidedLaunch({
         >
           Abort
         </button>
+        {blackoutActive ? (
+          <button
+            type="button"
+            className="blackout-btn end"
+            disabled={busy || !canEndBlackout}
+            onClick={onBlackoutEnd}
+          >
+            End blackout
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="blackout-btn"
+            disabled={busy || !canStartBlackout}
+            title="RUNNING only"
+            onClick={onBlackoutStart}
+          >
+            Start blackout
+          </button>
+        )}
         <button type="button" disabled={locked} onClick={onReset}>
           Start over
         </button>
         {simFaultsEnabled ? (
           <>
-            <button type="button" disabled={locked || !live} onClick={onFaultSingle}>
+            <button
+              type="button"
+              disabled={locked || !live}
+              onClick={onFaultSingle}
+            >
               Sim fault
             </button>
             <button
