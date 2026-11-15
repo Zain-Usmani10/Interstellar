@@ -284,6 +284,7 @@ def test_link_indicator_follows_real_frames(ctx):
     transport = runtime.transport
     original = transport.receive
     transport.receive = lambda timeout_s: (time.sleep(min(timeout_s, 0.01)), None)[1]   # the board cannot be heard
+    time.sleep(0.3)                    # let a receive call that was already in progress finish
     command(client, app, mission_id, "blackout_end")
     time.sleep(0.6)
     assert health() == "reconnecting"                             # probing, but no valid STATUS yet
