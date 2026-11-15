@@ -46,18 +46,18 @@ export function PlanetMesh({
           metalness={0.02}
         />
       </mesh>
-      {(body.surface === "earth" || body.name === "Neptune") && (
-        <mesh scale={1.045}>
-          <sphereGeometry args={[body.radius, 32, 24]} />
-          <meshBasicMaterial
-            color={body.color}
-            side={BackSide}
-            transparent
-            opacity={0.28}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
+      <mesh scale={1.06}>
+        <sphereGeometry args={[body.radius, 32, 24]} />
+        <meshBasicMaterial
+          color={body.color}
+          side={BackSide}
+          transparent
+          opacity={
+            body.surface === "earth" || body.name === "Neptune" ? 0.32 : 0.14
+          }
+          depthWrite={false}
+        />
+      </mesh>
       {body.rings && (
         <group rotation={[Math.PI * 0.38, 0, 0.1]}>
           <mesh>

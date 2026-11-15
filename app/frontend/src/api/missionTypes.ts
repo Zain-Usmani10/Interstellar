@@ -32,6 +32,7 @@ export type MissionPlan = {
   tof_s?: number;
   dv?: { dv_total_km_s?: number };
   masses?: { propellant_required_kg?: number };
+  vehicle?: { propellant_capacity_kg?: number };
   nominal_path: PathSample[];
   uncaptured_coast_path?: PathSample[];
   bodies?: PlanBodyState[];

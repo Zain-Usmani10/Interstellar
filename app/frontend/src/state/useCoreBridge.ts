@@ -523,14 +523,47 @@ export function useCoreBridge() {
         if (!result.applied) {
           setLastError(`${command}: ${result.detail || "not_applied"}`);
         }
+        return result;
       } catch (err) {
         setLastError(formatApiError(err, `${command}_failed`));
+        return null;
       } finally {
         setCommandBusy(false);
       }
     },
     [applySnapshot, linkMode],
   );
+
+  /** Guided "Prepare": create mission if needed, then upload (LOAD+COMMIT). */
+  const prepareMission = useCallback(async () => {
+    const token = operatorTokenRef.current;
+    const plan = selectedPlan;
+    if (!token || !plan || linkMode !== "live") {
+      setLastError("operator_or_plan_unavailable");
+      return;
+    }
+    setCommandBusy(true);
+    setLastError(null);
+    try {
+      let missionId = missionIdRef.current;
+      const state = snapshotRef.current?.state;
+      if (!missionId || state === "IDLE" || state === "UNKNOWN" || !state) {
+        const snap = await createMission(token, plan.plan_id);
+        applySnapshot(snap);
+        missionId = snap.mission_id;
+      }
+      if (!missionId) return;
+      const result = await postMissionCommand(token, missionId, "upload");
+      if (result.snapshot) applySnapshot(result.snapshot);
+      if (!result.applied) {
+        setLastError(`upload: ${result.detail || "not_applied"}`);
+      }
+    } catch (err) {
+      setLastError(formatApiError(err, "prepare_failed"));
+    } finally {
+      setCommandBusy(false);
+    }
+  }, [applySnapshot, linkMode, selectedPlan]);
 
   const injectFault = useCallback(
     async (kind: SimFaultKind) => {
@@ -582,6 +615,7 @@ export function useCoreBridge() {
     simFaultsEnabled,
     selectPlanById,
     createMissionFromSelected,
+    prepareMission,
     sendCommand,
     injectFault,
     selectPlanet,

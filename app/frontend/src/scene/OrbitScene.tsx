@@ -19,6 +19,8 @@ export type OrbitSceneProps = {
   selectedId: PlanetTargetId | null;
   selectionEnabled?: boolean;
   onSelect: (target: PlanetTargetId) => void;
+  /** Visit focus for the bottom planet bar (any of the eight names). */
+  focusName?: string | null;
   plan?: ScenePlan | null;
   snapshot?: SceneSnapshot | null;
 };
@@ -30,14 +32,23 @@ function Sun() {
         <sphereGeometry args={[1.3, 48, 32]} />
         <meshBasicMaterial color="#ffdba1" />
       </mesh>
-      <sprite scale={[13, 13, 1]}>
+      <sprite scale={[18, 18, 1]}>
         <spriteMaterial
           map={sunGlow()}
           blending={AdditiveBlending}
           depthWrite={false}
+          opacity={0.95}
         />
       </sprite>
-      <pointLight color="#ffe1b3" intensity={80} decay={2} />
+      <sprite scale={[32, 32, 1]}>
+        <spriteMaterial
+          map={sunGlow()}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          opacity={0.35}
+        />
+      </sprite>
+      <pointLight color="#ffe1b3" intensity={95} decay={2} />
     </group>
   );
 }
@@ -90,12 +101,17 @@ export function OrbitScene({
   selectedId,
   selectionEnabled = true,
   onSelect,
+  focusName = null,
   plan,
   snapshot,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
-  const [performanceReport, setPerformanceReport] = useState("Development frame probe: 5s warmup + 15s sample.");
-  const performanceEnabled = import.meta.env.DEV && new URLSearchParams(location.search).has("scenePerf");
+  const [performanceReport, setPerformanceReport] = useState(
+    "Development frame probe: 5s warmup + 15s sample.",
+  );
+  const performanceEnabled =
+    import.meta.env.DEV &&
+    new URLSearchParams(location.search).has("scenePerf");
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
     document.addEventListener("visibilitychange", update);
@@ -105,46 +121,47 @@ export function OrbitScene({
   const points = useMemo(() => routePoints(plan), [plan]);
   const planets = VISUAL_PLANETS.map((body) => ({
     body,
-    position: planetPosition(body, plan, view.mode === "unavailable" ? null : snapshot),
+    position: planetPosition(
+      body,
+      plan,
+      view.mode === "unavailable" ? null : snapshot,
+    ),
   }));
   const selected = planets.find((p) => p.body.target === selectedId);
+  const focused = focusName
+    ? planets.find((p) => p.body.name === focusName)
+    : null;
   const origin = planets.find(
     (p) => p.body.bodyId === (plan?.origin_body_id ?? "399"),
   )!;
   const captured = view.mode === "captured";
-  const destination = planets.find((p) => p.body.bodyId === (plan?.destination_body_id ?? "499"))!;
-  const heading = captured
-    ? destination.body.name
-    : view.departed
-      ? `${origin.body.name} → ${destination.body.name}`
-      : selected?.body.name ?? "SOLAR SYSTEM";
+  const visitTarget = focused ?? selected;
   const cameraFocus = captured
     ? view.position
     : !view.departed
-      ? (selected?.position ?? null)
+      ? (visitTarget?.position ?? null)
       : null;
-  const transitionKey = `${selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}`;
-  const isReported = !!snapshot;
+  const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}`;
   return (
     <div className="orbital-scene" aria-label="Three-dimensional solar system">
-      {performanceEnabled && <pre aria-label="Scene frame measurement" style={{ position: "absolute", zIndex: 20, right: 12, top: 12, padding: 12, pointerEvents: "none", background: "#07121cee", color: "#bce8dc", font: "11px monospace" }}>{performanceReport}</pre>}
-      <div className="scene-heading" aria-hidden="true">
-        <span>INTERSTELLAR / ORBITAL VIEW</span>
-        <strong>{heading}</strong>
-      </div>
-      <div
-        className={`scene-telemetry ${view.stale || view.mode === "uncaptured" ? "scene-warning" : ""}`}
-        role="status"
-      >
-        <span>{snapshot?.controller_label ?? "ILLUSTRATIVE PREVIEW"}</span>
-        <strong>{view.label}</strong>
-        {isReported && (
-          <span>
-            TICK {snapshot.tick.toLocaleString()}{" "}
-            {view.stale ? " / LAST RECEIVED — STALE" : ""}
-          </span>
-        )}
-      </div>
+      {performanceEnabled ? (
+        <pre
+          aria-label="Scene frame measurement"
+          style={{
+            position: "absolute",
+            zIndex: 20,
+            right: 12,
+            top: 12,
+            padding: 12,
+            pointerEvents: "none",
+            background: "#07121cee",
+            color: "#bce8dc",
+            font: "11px monospace",
+          }}
+        >
+          {performanceReport}
+        </pre>
+      ) : null}
       <SceneBoundary>
         <Canvas
           camera={{ position: [320, 500, 750], fov: 42, near: 0.03, far: 3000 }}
@@ -152,31 +169,36 @@ export function OrbitScene({
           frameloop={visible ? "always" : "never"}
           gl={{ antialias: true, powerPreference: "high-performance" }}
         >
-          <color attach="background" args={["#050b15"]} />
-          <ambientLight intensity={1.1} />
+          <color attach="background" args={["#03060d"]} />
+          <fog attach="fog" args={["#03060d", 120, 1600]} />
+          <ambientLight intensity={0.55} />
           <directionalLight
             position={[20, 30, 15]}
             color="#e4efff"
-            intensity={2.2}
+            intensity={2.4}
           />
           <Stars
-            radius={1100}
-            depth={500}
-            count={1800}
-            factor={4}
+            radius={1400}
+            depth={600}
+            count={3200}
+            factor={3.2}
             saturation={0}
             fade
             speed={0}
           />
           <Sun />
-          {performanceEnabled && <ScenePerformance onSample={setPerformanceReport} />}
+          {performanceEnabled ? (
+            <ScenePerformance onSample={setPerformanceReport} />
+          ) : null}
           {planets.map(({ body, position }) => (
             <group key={body.name}>
               <OrbitGuide radius={body.displayOrbitAU * 10} />
               <PlanetMesh
                 body={body}
                 position={position}
-                selected={selectedId === body.target}
+                selected={
+                  selectedId === body.target || focusName === body.name
+                }
                 interactive={selectionEnabled}
                 onSelect={onSelect}
               />
@@ -202,22 +224,15 @@ export function OrbitScene({
           />
           <CameraRig
             focus={cameraFocus}
-            focusRadius={captured ? 0.65 : (selected?.body.radius ?? 1)}
+            focusRadius={
+              captured ? 0.65 : (visitTarget?.body.radius ?? 1)
+            }
             transitionKey={transitionKey}
             extent={80}
           />
         </Canvas>
       </SceneBoundary>
-      <div className="scene-legend">
-        <span>DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN</span>
-        <span>Planet / vehicle sizes not to scale · 1 au = 10 units</span>
-        <span>
-          {plan
-            ? `${plan.data_mode.toUpperCase()} PLAN · supplied route samples`
-            : "No plan supplied — no transfer route"}{" "}
-          · outer distances compressed; orbit guides illustrative
-        </span>
-      </div>
+      <div className="scene-vignette" aria-hidden="true" />
     </div>
   );
 }

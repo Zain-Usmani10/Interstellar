@@ -1,92 +1,30 @@
 .orbital-scene {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 360px;
   overflow: hidden;
   isolation: isolate;
-  background: #050b15;
+  background: #03060d;
 }
-.scene-heading,
-.scene-telemetry,
-.scene-legend {
+
+.orbital-scene canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.scene-vignette {
   position: absolute;
-  z-index: 10;
+  inset: 0;
   pointer-events: none;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
 }
-.scene-heading {
-  top: 24px;
-  left: 24px;
-  display: grid;
-  gap: 9px;
-  color: #8397b0;
-}
-.scene-heading span {
-  font-size: 9px;
-  letter-spacing: 0.19em;
-}
-.scene-heading strong {
-  font-size: clamp(16px, 2.1vw, 26px);
-  font-weight: 400;
-  letter-spacing: 0.13em;
-  color: #dce8ed;
-}
-.scene-telemetry {
-  bottom: 90px;
-  left: 24px;
-  display: grid;
-  gap: 7px;
-  color: #87cdbf;
-  border-left: 2px solid #609d96;
-  padding: 6px 12px;
-  background: linear-gradient(90deg, #07121ce6, transparent);
-}
-.scene-telemetry span {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-.scene-telemetry strong {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-}
-.scene-warning {
-  color: #e1a774;
-  border-color: #d79a62;
-}
-.scene-legend {
-  bottom: 17px;
-  left: 24px;
-  right: 12px;
-  display: grid;
-  gap: 5px;
-  color: #7e91a8;
-  font-size: 8px;
-  line-height: 1.4;
-  letter-spacing: 0.03em;
-}
-.scene-legend span:first-child {
-  color: #a5b8cb;
-  letter-spacing: 0.08em;
-}
+
 .scene-fallback {
   padding: 130px 30px;
   color: #cad7e2;
-  font:
-    13px/1.6 ui-monospace,
-    monospace;
-}
-@media (max-width: 600px) {
-  .scene-heading {
-    top: 16px;
-    left: 16px;
-  }
-  .scene-telemetry {
-    left: 16px;
-  }
-  .scene-legend {
-    left: 16px;
-    font-size: 7px;
-  }
+  font: 13px/1.6 var(--font-body, sans-serif);
 }
