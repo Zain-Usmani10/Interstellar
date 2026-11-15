@@ -22,6 +22,8 @@ export async function getHealth(): Promise<{
     mode?: string;
     controller_label?: string;
     open?: boolean;
+    /** contracts 1.4.2 */
+    link_indicator?: "active" | "inactive" | "reconnecting";
   };
 }> {
   return apiFetch("/api/v1/health");

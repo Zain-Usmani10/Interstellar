@@ -5,6 +5,7 @@ import { BlackoutBanner } from "./components/BlackoutBanner";
 import { BrandBlock } from "./components/BrandBlock";
 import { DateTimeCorner } from "./components/DateTimeCorner";
 import { DetailsTray } from "./components/DetailsTray";
+import { LinkLight } from "./components/LinkLight";
 import {
   PlanetFocusPanel,
   type FocusTab,
@@ -72,6 +73,7 @@ export default function App() {
   const {
     linkMode,
     controllerSource,
+    linkIndicator,
     dataMode,
     selectedId,
     planetChoiceEnabled,
@@ -357,6 +359,11 @@ export default function App() {
         estimated={dateEstimated}
       />
 
+      <LinkLight
+        indicator={linkIndicator}
+        controllerSource={controllerSource}
+      />
+
       {showMiniSystem ? (
         <button
           type="button"
@@ -512,8 +519,6 @@ export default function App() {
       <DetailsTray
         open={detailsOpen}
         onToggle={() => setDetailsOpen((v) => !v)}
-        linkMode={linkMode}
-        controllerSource={controllerSource}
         snapshot={snapshot}
         lastError={lastError}
         destinationName={destinationLabel}

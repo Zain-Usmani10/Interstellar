@@ -5,13 +5,10 @@ import type {
 } from "../api/missionTypes";
 import { EngineerDrawer } from "./EngineerDrawer";
 import { GlassStatus } from "./GlassStatus";
-import type { LinkMode } from "../state/useCoreBridge";
 
 type Props = {
   open: boolean;
   onToggle: () => void;
-  linkMode: LinkMode;
-  controllerSource: "fpga" | "simulator" | "unknown";
   snapshot: MissionSnapshot | null;
   lastError: string | null;
   destinationName: string;
@@ -32,8 +29,6 @@ type Props = {
 export function DetailsTray({
   open,
   onToggle,
-  linkMode,
-  controllerSource,
   snapshot,
   lastError,
   destinationName,
@@ -71,8 +66,6 @@ export function DetailsTray({
           aria-label="Engineer details"
         >
           <GlassStatus
-            linkMode={linkMode}
-            controllerSource={controllerSource}
             snapshot={snapshot}
             lastError={lastError}
             destinationName={destinationName}

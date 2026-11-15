@@ -402,6 +402,62 @@ button {
   box-shadow: 0 0 24px rgba(126, 200, 192, 0.22);
 }
 
+.link-light {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 4.6rem;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(6, 12, 22, 0.72);
+  backdrop-filter: blur(12px);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.link-light-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.link-light-active {
+  color: #7ec8a0;
+  border-color: rgba(126, 200, 160, 0.4);
+}
+
+.link-light-inactive {
+  color: #c07070;
+  border-color: rgba(192, 112, 112, 0.4);
+}
+
+.link-light-reconnecting {
+  color: #e0b06a;
+  border-color: rgba(224, 176, 106, 0.45);
+}
+
+.link-light-reconnecting .link-light-dot {
+  animation: link-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes link-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .date-corner {
   position: absolute;
   top: 1.1rem;
@@ -1080,6 +1136,11 @@ button {
 
   .details-tray {
     right: 0.75rem;
+    bottom: 4.4rem;
+  }
+
+  .link-light {
+    left: 0.75rem;
     bottom: 4.4rem;
   }
 

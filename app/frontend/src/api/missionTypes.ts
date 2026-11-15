@@ -118,6 +118,8 @@ export type MissionSnapshot = {
     delay_physical_s?: number | null;
     /** contracts 1.2.0 */
     blackout?: boolean;
+    /** contracts 1.4.2 — link light; never derive in the browser */
+    indicator?: "active" | "inactive" | "reconnecting";
   };
   /** contracts 1.2.0 — calendar of confirmed tick */
   date_utc?: string | null;
