@@ -19,7 +19,15 @@ export type SceneSnapshot = {
   plan_id: string;
   plan_sha256: string;
   controller_label: "FPGA" | "SIMULATED CONTROLLER";
-  state: "UNKNOWN" | "IDLE" | "LOADED" | "ARMED" | "RUNNING" | "SAFE" | "COMPLETE" | "ABORTED";
+  state:
+    | "UNKNOWN"
+    | "IDLE"
+    | "LOADED"
+    | "ARMED"
+    | "RUNNING"
+    | "SAFE"
+    | "COMPLETE"
+    | "ABORTED";
   tick: number;
   executed_mask: number;
   spacecraft: {
@@ -29,5 +37,6 @@ export type SceneSnapshot = {
   };
   planets: { body_id: SceneBodyId; r_km: Vec3 }[];
   link: { transport_state: string; observed_age_ms: number | null };
-  outcome: "pending" | "captured" | "uncaptured" | "aborted" | "plan_invalid" | "lost";
+  outcome:
+    "pending" | "captured" | "uncaptured" | "aborted" | "plan_invalid" | "lost";
 };

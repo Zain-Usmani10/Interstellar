@@ -1,72 +1,113 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import type { Mesh } from "three";
-import type { PlanetInfo } from "../mock/planetInfo";
-import { sciToThree } from "./axes";
+import { Html } from "@react-three/drei";
+import { BackSide, DoubleSide, Mesh } from "three";
+import type { PlanetTargetId } from "../api/types";
+import type { Vec3 } from "./types";
+import type { VisualPlanet } from "./planets";
+import { planetTexture } from "./surfaces";
 
 type Props = {
-  planet: PlanetInfo;
+  body: VisualPlanet;
+  position: Vec3;
   selected: boolean;
-  interactive?: boolean;
-  onSelect: (targetId: PlanetInfo["target_id"]) => void;
+  interactive: boolean;
+  onSelect: (target: PlanetTargetId) => void;
 };
-
 export function PlanetMesh({
-  planet,
+  body,
+  position,
   selected,
-  interactive = true,
+  interactive,
   onSelect,
 }: Props) {
-  const meshRef = useRef<Mesh>(null);
-  const [sx, sy, sz] = sciToThree(...planet.display_position_au_scaled);
-
+  const sphere = useRef<Mesh>(null);
   useFrame((_, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.25;
-    }
+    if (sphere.current)
+      sphere.current.rotation.y += Math.min(delta, 0.05) * 0.055;
   });
-
+  const clickable = interactive && !!body.target;
   return (
-    <group position={[sx, sy, sz]}>
+    <group position={position}>
       <mesh
-        ref={meshRef}
+        ref={sphere}
+        rotation={[0, 0, body.name === "Uranus" ? 1.5 : 0.08]}
         onClick={(e) => {
-          e.stopPropagation();
-          if (interactive) onSelect(planet.target_id);
-        }}
-        onPointerOver={() => {
-          if (interactive) document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = "default";
+          if (clickable && body.target) {
+            e.stopPropagation();
+            onSelect(body.target);
+          }
         }}
       >
-        <sphereGeometry args={[planet.display_radius, 48, 48]} />
+        <sphereGeometry args={[body.radius, 48, 32]} />
         <meshStandardMaterial
-          color={planet.display_color}
-          emissive={selected ? planet.display_color : "#000000"}
-          emissiveIntensity={selected ? 0.45 : 0}
-          roughness={0.55}
-          metalness={0.15}
+          map={planetTexture(body)}
+          roughness={0.9}
+          metalness={0.02}
         />
       </mesh>
-      {selected ? (
-        <mesh>
-          <ringGeometry
-            args={[
-              planet.display_radius * 1.35,
-              planet.display_radius * 1.55,
-              64,
-            ]}
-          />
+      {(body.surface === "earth" || body.name === "Neptune") && (
+        <mesh scale={1.045}>
+          <sphereGeometry args={[body.radius, 32, 24]} />
           <meshBasicMaterial
-            color="#f2e8d5"
+            color={body.color}
+            side={BackSide}
             transparent
-            opacity={0.85}
-            side={2}
+            opacity={0.28}
+            depthWrite={false}
           />
         </mesh>
-      ) : null}
+      )}
+      {body.rings && (
+        <group rotation={[Math.PI * 0.38, 0, 0.1]}>
+          <mesh>
+            <ringGeometry args={[body.radius * 1.3, body.radius * 2.15, 96]} />
+            <meshStandardMaterial
+              color="#a89875"
+              side={DoubleSide}
+              transparent
+              opacity={0.65}
+            />
+          </mesh>
+          <mesh>
+            <ringGeometry args={[body.radius * 1.65, body.radius * 1.69, 96]} />
+            <meshBasicMaterial color="#151b27" side={DoubleSide} />
+          </mesh>
+        </group>
+      )}
+      {selected && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[body.radius * 1.5, body.radius * 1.53, 96]} />
+          <meshBasicMaterial
+            color="#b1e8e4"
+            side={DoubleSide}
+            transparent
+            opacity={0.85}
+          />
+        </mesh>
+      )}
+      <Html
+        position={[0, body.radius * 1.7, 0]}
+        center
+        zIndexRange={[8, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <span
+          style={{
+            display: "block",
+            color: selected ? "#c1f6ef" : "#9dabbf",
+            font: "10px ui-monospace, monospace",
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+            textShadow: "0 2px 8px #000",
+            borderBottom: selected ? "1px solid #74d3c7" : "none",
+            paddingBottom: 4,
+          }}
+        >
+          {body.name}
+        </span>
+      </Html>
     </group>
   );
 }

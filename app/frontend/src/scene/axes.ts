@@ -15,7 +15,13 @@ export function sciToThree(
 }
 
 /** Use for every canonical plan/snapshot vector, which is in kilometres. */
-export function kmToScene(position: readonly number[]): [number, number, number] {
+export function kmToScene(
+  position: readonly number[],
+): [number, number, number] {
   const scale = UNITS_PER_AU / AU_KM;
-  return sciToThree(position[0] * scale, position[1] * scale, position[2] * scale);
+  return sciToThree(
+    position[0] * scale,
+    position[1] * scale,
+    position[2] * scale,
+  );
 }
