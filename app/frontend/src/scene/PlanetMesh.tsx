@@ -1,11 +1,17 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { BackSide, DoubleSide, Mesh } from "three";
+import {
+  AdditiveBlending,
+  BackSide,
+  DoubleSide,
+  Mesh,
+  type ColorRepresentation,
+} from "three";
 import type { PlanetTargetId } from "../api/types";
 import type { Vec3 } from "./types";
 import type { VisualPlanet } from "./planets";
-import { planetTexture } from "./surfaces";
+import { planetBump, planetTexture } from "./surfaces";
 
 type Props = {
   body: VisualPlanet;
@@ -14,6 +20,33 @@ type Props = {
   interactive: boolean;
   onSelect: (target: PlanetTargetId) => void;
 };
+
+function AtmosphereShell({
+  radius,
+  color,
+  scale,
+  opacity,
+}: {
+  radius: number;
+  color: ColorRepresentation;
+  scale: number;
+  opacity: number;
+}) {
+  return (
+    <mesh scale={scale}>
+      <sphereGeometry args={[radius, 48, 32]} />
+      <meshBasicMaterial
+        color={color}
+        side={BackSide}
+        transparent
+        opacity={opacity}
+        depthWrite={false}
+        blending={AdditiveBlending}
+      />
+    </mesh>
+  );
+}
+
 export function PlanetMesh({
   body,
   position,
@@ -22,15 +55,38 @@ export function PlanetMesh({
   onSelect,
 }: Props) {
   const sphere = useRef<Mesh>(null);
+  const maps = useMemo(
+    () => ({
+      map: planetTexture(body),
+      bumpMap: planetBump(body),
+    }),
+    [body],
+  );
+
   useFrame((_, delta) => {
-    if (sphere.current)
-      sphere.current.rotation.y += Math.min(delta, 0.05) * 0.055;
+    if (sphere.current) {
+      const speed =
+        body.surface === "gas" ? 0.085 : body.name === "Earth" ? 0.07 : 0.05;
+      sphere.current.rotation.y += Math.min(delta, 0.05) * speed;
+    }
   });
+
   const clickable = interactive && !!body.target;
+  const atmosphereColor =
+    body.name === "Earth"
+      ? "#6ec8ff"
+      : body.name === "Mars"
+        ? "#ff9a6a"
+        : body.name === "Neptune" || body.name === "Uranus"
+          ? "#7ad0ff"
+          : body.color;
+
   return (
     <group position={position}>
       <mesh
         ref={sphere}
+        castShadow
+        receiveShadow
         rotation={[0, 0, body.name === "Uranus" ? 1.5 : 0.08]}
         onClick={(e) => {
           if (clickable && body.target) {
@@ -38,56 +94,77 @@ export function PlanetMesh({
             onSelect(body.target);
           }
         }}
-      >
-        <sphereGeometry args={[body.radius, 48, 32]} />
-        <meshStandardMaterial
-          map={planetTexture(body)}
-          roughness={0.9}
-          metalness={0.02}
-        />
-      </mesh>
-      <mesh scale={1.06}>
-        <sphereGeometry args={[body.radius, 32, 24]} />
-        <meshBasicMaterial
-          color={body.color}
-          side={BackSide}
-          transparent
-          opacity={
-            body.surface === "earth" || body.name === "Neptune" ? 0.32 : 0.14
+        onPointerOver={(e) => {
+          if (clickable) {
+            e.stopPropagation();
+            document.body.style.cursor = "pointer";
           }
-          depthWrite={false}
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "auto";
+        }}
+      >
+        <sphereGeometry args={[body.radius, 96, 64]} />
+        <meshStandardMaterial
+          map={maps.map}
+          bumpMap={maps.bumpMap}
+          bumpScale={body.surface === "gas" ? 0.012 : 0.045}
+          roughness={body.surface === "gas" ? 0.55 : 0.78}
+          metalness={body.surface === "gas" ? 0.08 : 0.04}
+          emissive={selected ? body.color : "#000000"}
+          emissiveIntensity={selected ? 0.12 : 0}
         />
       </mesh>
+
+      <AtmosphereShell
+        radius={body.radius}
+        color={atmosphereColor}
+        scale={1.035}
+        opacity={
+          body.surface === "earth" || body.name === "Neptune" ? 0.38 : 0.16
+        }
+      />
+      <AtmosphereShell
+        radius={body.radius}
+        color={atmosphereColor}
+        scale={1.09}
+        opacity={0.07}
+      />
+
       {body.rings && (
         <group rotation={[Math.PI * 0.38, 0, 0.1]}>
-          <mesh>
-            <ringGeometry args={[body.radius * 1.3, body.radius * 2.15, 96]} />
+          <mesh receiveShadow>
+            <ringGeometry args={[body.radius * 1.28, body.radius * 2.2, 128]} />
             <meshStandardMaterial
-              color="#a89875"
+              color="#c4b08a"
               side={DoubleSide}
               transparent
-              opacity={0.65}
+              opacity={0.72}
+              roughness={0.85}
+              metalness={0.05}
             />
           </mesh>
           <mesh>
-            <ringGeometry args={[body.radius * 1.65, body.radius * 1.69, 96]} />
-            <meshBasicMaterial color="#151b27" side={DoubleSide} />
+            <ringGeometry args={[body.radius * 1.62, body.radius * 1.7, 128]} />
+            <meshBasicMaterial color="#0b1018" side={DoubleSide} />
           </mesh>
         </group>
       )}
+
       {selected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[body.radius * 1.5, body.radius * 1.53, 96]} />
+          <ringGeometry args={[body.radius * 1.55, body.radius * 1.62, 96]} />
           <meshBasicMaterial
-            color="#b1e8e4"
+            color="#b8fff6"
             side={DoubleSide}
             transparent
-            opacity={0.85}
+            opacity={0.9}
           />
         </mesh>
       )}
+
       <Html
-        position={[0, body.radius * 1.7, 0]}
+        position={[0, body.radius * 1.85, 0]}
         center
         zIndexRange={[8, 0]}
         style={{ pointerEvents: "none" }}
@@ -95,14 +172,14 @@ export function PlanetMesh({
         <span
           style={{
             display: "block",
-            color: selected ? "#c1f6ef" : "#9dabbf",
-            font: "10px ui-monospace, monospace",
-            letterSpacing: ".14em",
+            color: selected ? "#e8fffb" : "#a8b8cc",
+            font: "600 11px/1 Avenir Next, Segoe UI, sans-serif",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             whiteSpace: "nowrap",
-            textShadow: "0 2px 8px #000",
-            borderBottom: selected ? "1px solid #74d3c7" : "none",
-            paddingBottom: 4,
+            textShadow: "0 2px 12px rgba(0,0,0,0.85)",
+            borderBottom: selected ? "1px solid #7de8da" : "none",
+            paddingBottom: 3,
           }}
         >
           {body.name}

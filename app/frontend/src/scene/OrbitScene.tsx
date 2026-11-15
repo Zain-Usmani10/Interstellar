@@ -169,19 +169,25 @@ export function OrbitScene({
           frameloop={visible ? "always" : "never"}
           gl={{ antialias: true, powerPreference: "high-performance" }}
         >
-          <color attach="background" args={["#03060d"]} />
-          <fog attach="fog" args={["#03060d", 120, 1600]} />
-          <ambientLight intensity={0.55} />
+          <color attach="background" args={["#02050c"]} />
+          <fog attach="fog" args={["#02050c", 90, 1400]} />
+          <ambientLight intensity={0.22} color="#8aa0c0" />
+          <hemisphereLight args={["#b8d4ff", "#1a1010", 0.45]} />
           <directionalLight
-            position={[20, 30, 15]}
-            color="#e4efff"
-            intensity={2.4}
+            position={[40, 25, 10]}
+            color="#fff4e0"
+            intensity={3.2}
+          />
+          <directionalLight
+            position={[-30, -10, -20]}
+            color="#4060a0"
+            intensity={0.55}
           />
           <Stars
             radius={1400}
-            depth={600}
-            count={3200}
-            factor={3.2}
+            depth={700}
+            count={4200}
+            factor={3.4}
             saturation={0}
             fade
             speed={0}
