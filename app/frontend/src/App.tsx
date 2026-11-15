@@ -1,16 +1,54 @@
 import { useEffect, useMemo, useState } from "react";
 import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
+import { BlackoutBanner } from "./components/BlackoutBanner";
+import { DateCorner } from "./components/DateCorner";
 import { EngineerDrawer } from "./components/EngineerDrawer";
 import { GlassStatus } from "./components/GlassStatus";
 import { GuidedLaunch } from "./components/GuidedLaunch";
+import { LaunchPanel } from "./components/LaunchPanel";
 import { PlanetBar } from "./components/PlanetBar";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
-import { RouteCards } from "./components/RouteCards";
-import { TripPicker } from "./components/TripPicker";
+import { ReconciliationCard } from "./components/ReconciliationCard";
+import { TripReadout } from "./components/TripReadout";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
-import { planetName } from "./state/planetBodies";
+import {
+  MOCK_FLEET,
+  dockedAt,
+  type FleetShuttle,
+} from "./state/fleetMock";
+import {
+  PLANET_BODIES,
+  type PlanetBodyId,
+  planetName,
+} from "./state/planetBodies";
+import { unavailableMessage } from "./state/selectPresentationRoutes";
 import { useCoreBridge } from "./state/useCoreBridge";
+
+function bodyIdFromName(name: string | null): PlanetBodyId | null {
+  if (!name) return null;
+  return PLANET_BODIES.find((p) => p.name === name)?.bodyId ?? null;
+}
+
+/** Format T-minus from confirmed tick vs plan departure_tick (100 Hz). */
+function formatTMinus(
+  tick: number | null | undefined,
+  departureTick: number | null | undefined,
+): string | null {
+  if (
+    tick == null ||
+    departureTick == null ||
+    !Number.isFinite(tick) ||
+    !Number.isFinite(departureTick) ||
+    tick >= departureTick
+  ) {
+    return null;
+  }
+  const seconds = (departureTick - tick) / 100;
+  const whole = Math.floor(seconds);
+  const centi = Math.floor((seconds - whole) * 100);
+  return `T−${String(whole).padStart(2, "0")}.${String(centi).padStart(2, "0")}`;
+}
 
 export default function App() {
   const {
@@ -27,7 +65,8 @@ export default function App() {
     selectedPlan,
     originBodyId,
     destinationBodyId,
-    routesAvailable,
+    shuttleClass,
+    routeUnavailable,
     snapshot,
     faultHistory,
     gates,
@@ -42,7 +81,11 @@ export default function App() {
     clearSelection,
   } = useCoreBridge();
 
-  const [focusName, setFocusName] = useState<string | null>("Mars");
+  const [focusName, setFocusName] = useState<string | null>("Earth");
+  const [shuttleId, setShuttleId] = useState<string | null>(
+    "shuttle-std-earth-1",
+  );
+  const [fleet] = useState(MOCK_FLEET);
 
   const scenePlan = useMemo(() => toScenePlan(selectedPlan), [selectedPlan]);
   const sceneSnapshot = useMemo(() => toSceneSnapshot(snapshot), [snapshot]);
@@ -50,13 +93,50 @@ export default function App() {
   const originLabel = planetName(originBodyId);
   const destinationLabel = planetName(destinationBodyId);
   const routeLabel = `${originLabel} → ${destinationLabel}`;
-  const tripLocked = commandBusy || Boolean(
-    snapshot &&
-      snapshot.state !== "IDLE" &&
-      snapshot.state !== "UNKNOWN" &&
-      snapshot.state !== "ABORTED" &&
-      snapshot.state !== "COMPLETE",
+
+  const dockedShuttles = dockedAt(fleet, originBodyId);
+  const blackout = Boolean(snapshot?.link?.blackout);
+  const tripLocked =
+    commandBusy ||
+    blackout ||
+    Boolean(
+      snapshot &&
+        snapshot.state !== "IDLE" &&
+        snapshot.state !== "UNKNOWN" &&
+        snapshot.state !== "ABORTED" &&
+        snapshot.state !== "COMPLETE",
+    );
+
+  const daysToArrival = blackout
+    ? (snapshot?.estimate?.days_to_arrival ?? null)
+    : (snapshot?.trip?.days_to_arrival ?? null);
+  const tripDays = snapshot?.trip?.trip_days ?? null;
+  const tMinus = formatTMinus(
+    snapshot?.tick,
+    selectedPlan?.ticks?.departure_tick,
   );
+
+  const dateUtc = blackout
+    ? (snapshot?.estimate?.date_utc ?? null)
+    : (snapshot?.date_utc ?? selectedPlan?.departure?.utc ?? null);
+  const dateEstimated = Boolean(blackout && snapshot?.estimate?.date_utc);
+
+  const routeMsg = unavailableMessage(
+    routeUnavailable,
+    dockedShuttles.length > 0,
+  );
+
+  const reconciliation = snapshot?.reconciliation
+    ? {
+        blackoutStartTick: snapshot.reconciliation.blackout_start_tick,
+        blackoutEndTick: snapshot.reconciliation.blackout_end_tick,
+        eventsDuringBlackout: snapshot.reconciliation.events_during_blackout.map(
+          (e) => (typeof e === "string" ? e : e.event),
+        ),
+        estimateMatched: snapshot.reconciliation.estimate_matched,
+        differences: snapshot.reconciliation.differences,
+      }
+    : null;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -69,10 +149,12 @@ export default function App() {
         if (event.key === "1") {
           setFocusName("Earth");
           selectPlanet("planet.399", "keyboard");
+          setTrip({ origin: "399" });
         }
         if (event.key === "2") {
           setFocusName("Mars");
           selectPlanet("planet.499", "keyboard");
+          setTrip({ origin: "499" });
         }
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -80,16 +162,16 @@ export default function App() {
       if (key === "o") {
         event.preventDefault();
         void resetMission();
-      } else if (key === "p" && live && selectedPlan && !commandBusy) {
+      } else if (key === "p" && live && selectedPlan && !commandBusy && !blackout) {
         event.preventDefault();
         void prepareMission();
-      } else if (key === "r" && live && gates.canArm && !commandBusy) {
+      } else if (key === "r" && live && gates.canArm && !commandBusy && !blackout) {
         event.preventDefault();
         void sendCommand("arm");
-      } else if (key === "g" && live && gates.canStart && !commandBusy) {
+      } else if (key === "g" && live && gates.canStart && !commandBusy && !blackout) {
         event.preventDefault();
         void sendCommand("start");
-      } else if (key === "x" && live && gates.canAbort && !commandBusy) {
+      } else if (key === "x" && live && gates.canAbort && !commandBusy && !blackout) {
         event.preventDefault();
         void sendCommand("abort");
       }
@@ -98,18 +180,37 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  function visitPlanet(name: string) {
+    setFocusName(name);
+    const bodyId = bodyIdFromName(name);
+    if (!bodyId) return;
+    const docked = dockedAt(fleet, bodyId);
+    const first = docked[0] ?? null;
+    setShuttleId(first?.id ?? null);
+    setTrip({
+      origin: bodyId,
+      shuttleClass: first?.class ?? "standard",
+    });
+  }
+
+  function pickShuttle(shuttle: FleetShuttle) {
+    setShuttleId(shuttle.id);
+    setTrip({ shuttleClass: shuttle.class });
+  }
+
   return (
-    <div className="app-shell">
+    <div className="app-shell sci-fi">
       <div className="scene-layer">
         <OrbitScene
           selectedId={selectedId}
-          selectionEnabled={planetChoiceEnabled}
+          selectionEnabled={planetChoiceEnabled && !blackout}
           onSelect={(id) => {
             const name = id === "planet.399" ? "Earth" : "Mars";
             setFocusName(name);
             selectPlanet(id);
+            setTrip({ origin: id === "planet.399" ? "399" : "499" });
           }}
-          onFocusName={setFocusName}
+          onFocusName={(name) => visitPlanet(name)}
           focusName={focusName}
           plan={scenePlan}
           snapshot={sceneSnapshot}
@@ -121,6 +222,10 @@ export default function App() {
         <p className="brand-sub">{routeLabel}</p>
       </header>
 
+      <DateCorner dateUtc={dateUtc} estimated={dateEstimated} />
+
+      <BlackoutBanner visible={blackout} />
+
       <GlassStatus
         linkMode={linkMode}
         controllerLabel={controllerLabel}
@@ -130,34 +235,31 @@ export default function App() {
         destinationName={destinationLabel}
       />
 
-      <aside className="glass panel-left" aria-label="Route and launch">
-        <h2 className="panel-title">Choose a trip</h2>
-        <TripPicker
+      <aside className="glass panel-left launch-aside" aria-label="Launch">
+        <LaunchPanel
           originBodyId={originBodyId}
           destinationBodyId={destinationBodyId}
+          dockedShuttles={dockedShuttles}
+          shuttleId={shuttleId}
+          shuttleClass={shuttleClass}
+          leastFuel={routePlans.least_fuel}
+          earliestArrival={routePlans.earliest_arrival}
+          selectedPlanId={selectedPlan?.plan_id ?? null}
+          unavailableMessage={routeMsg}
           disabled={tripLocked}
-          onOrigin={(id) => setTrip({ origin: id })}
+          onShuttle={pickShuttle}
           onDestination={(id) => {
             setTrip({ destination: id });
             setFocusName(planetName(id));
           }}
+          onSelectPlan={(id) => void selectPlanById(id)}
         />
-        <h2 className="panel-title panel-title-sub">Choose a route</h2>
-        {routesAvailable ? (
-          <RouteCards
-            leastFuel={routePlans.least_fuel}
-            earliestArrival={routePlans.earliest_arrival}
-            selectedPlanId={selectedPlan?.plan_id ?? null}
-            disabled={commandBusy}
-            onSelect={(id) => void selectPlanById(id)}
-          />
-        ) : (
-          <p className="muted scenic-note">
-            Route being calculated / not available yet for {routeLabel}.
-            Earth→Mars plans are available today; other pairs arrive with
-            planner work (#38).
-          </p>
-        )}
+        <TripReadout
+          daysToArrival={daysToArrival}
+          tripDays={tripDays}
+          tMinusLabel={tMinus}
+          estimated={blackout}
+        />
         <GuidedLaunch
           live={live}
           busy={commandBusy}
@@ -166,6 +268,7 @@ export default function App() {
           gates={gates}
           simFaultsEnabled={simFaultsEnabled}
           routeLabel={routeLabel}
+          blackoutActive={blackout}
           onPrepare={() => void prepareMission()}
           onArm={() => void sendCommand("arm")}
           onLaunch={() => void sendCommand("start")}
@@ -174,6 +277,8 @@ export default function App() {
             clearSelection("mouse");
           }}
           onReset={() => void resetMission()}
+          onBlackoutStart={() => void sendCommand("blackout_start")}
+          onBlackoutEnd={() => void sendCommand("blackout_end")}
           onFaultSingle={() => void injectFault("single")}
           onFaultDivergence={() => void injectFault("divergence")}
         />
@@ -183,6 +288,8 @@ export default function App() {
           faultHistory={faultHistory}
         />
       </aside>
+
+      <ReconciliationCard data={reconciliation} />
 
       {card ? (
         <aside className="glass panel-right" aria-label="Planet information">
@@ -201,8 +308,8 @@ export default function App() {
       <PlanetBar
         focusName={focusName}
         selectedId={selectedId}
-        selectionEnabled={planetChoiceEnabled}
-        onVisit={setFocusName}
+        selectionEnabled={planetChoiceEnabled && !blackout}
+        onVisit={visitPlanet}
         onSelectEarthMars={selectPlanet}
       />
     </div>

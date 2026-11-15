@@ -32,7 +32,17 @@ export type MissionPlan = {
   tof_s?: number;
   dv?: { dv_total_km_s?: number };
   masses?: { propellant_required_kg?: number };
-  vehicle?: { propellant_capacity_kg?: number };
+  vehicle?: {
+    label?: string;
+    isp_s?: number;
+    propellant_capacity_kg?: number;
+  };
+  ticks?: {
+    tick_hz?: number;
+    departure_tick?: number;
+    arrival_tick?: number;
+    end_tick?: number;
+  };
   nominal_path: PathSample[];
   uncaptured_coast_path?: PathSample[];
   bodies?: PlanBodyState[];
@@ -57,7 +67,9 @@ export type MissionCommand =
   | "arm"
   | "start"
   | "abort"
-  | "clear";
+  | "clear"
+  | "blackout_start"
+  | "blackout_end";
 
 export type SimFaultKind = "single" | "divergence";
 
@@ -102,7 +114,34 @@ export type MissionSnapshot = {
     view?: string;
     delay_demo_s?: number | null;
     delay_physical_s?: number | null;
+    /** contracts 1.2.0 */
+    blackout?: boolean;
   };
+  /** contracts 1.2.0 — calendar of confirmed tick */
+  date_utc?: string | null;
+  trip?: {
+    trip_days: number | null;
+    days_to_arrival: number | null;
+  } | null;
+  estimate?: {
+    tick: number;
+    epoch_jd_tdb: number | null;
+    date_utc?: string | null;
+    days_to_arrival: number | null;
+    spacecraft: {
+      phase: string;
+      r_km: Vec3 | null;
+    };
+    fuel_remaining_g: number;
+    expected_events: Array<"departure" | "capture">;
+  } | null;
+  reconciliation?: {
+    blackout_start_tick: number;
+    blackout_end_tick: number;
+    events_during_blackout: Array<string | { event: string }>;
+    estimate_matched: boolean;
+    differences: string[];
+  } | null;
   epoch_jd_tdb: number | null;
   spacecraft: {
     phase: "at_origin" | "coast" | "captured" | "uncaptured_coast" | "unknown";

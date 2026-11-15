@@ -24,9 +24,13 @@ import type {
   SimFaultKind,
 } from "../api/missionTypes";
 import type { BodyId, PlanetTargetId, TargetId } from "../api/types";
+import type { ShuttleClass } from "./fleetMock";
 import { missionActionGates } from "./missionGates";
 import type { PlanetBodyId } from "./planetBodies";
-import { pickRoutePair } from "./pickRoutePair";
+import {
+  selectPresentationRoutes,
+  type RouteUnavailable,
+} from "./selectPresentationRoutes";
 
 export type LinkMode = "connecting" | "live" | "offline_mock";
 
@@ -136,7 +140,10 @@ export function useCoreBridge() {
   const [originBodyId, setOriginBodyId] = useState<PlanetBodyId>("399");
   const [destinationBodyId, setDestinationBodyId] =
     useState<PlanetBodyId>("499");
+  const [shuttleClass, setShuttleClass] = useState<ShuttleClass>("standard");
   const [routesAvailable, setRoutesAvailable] = useState(false);
+  const [routeUnavailable, setRouteUnavailable] =
+    useState<RouteUnavailable>("none");
   const [snapshot, setSnapshot] = useState<MissionSnapshot | null>(null);
   const [faultHistory, setFaultHistory] = useState<FaultHistoryEntry[]>([]);
 
@@ -166,55 +173,70 @@ export function useCoreBridge() {
   }, []);
 
   const loadPlans = useCallback(
-    async (origin = originBodyId, destination = destinationBodyId) => {
+    async (
+      origin = originBodyId,
+      destination = destinationBodyId,
+      vehicle: ShuttleClass = shuttleClass,
+    ) => {
       const { plans } = await listPlans();
       setPlanSummaries(plans);
-      const pair = pickRoutePair(plans, {
-        originBodyId: origin,
-        destinationBodyId: destination,
+      const pair = await selectPresentationRoutes(
+        plans,
+        {
+          originBodyId: origin,
+          destinationBodyId: destination,
+          shuttleClass: vehicle,
+        },
+        getPlan,
+      );
+      setRoutePlans({
+        least_fuel: pair.least_fuel,
+        earliest_arrival: pair.earliest_arrival,
       });
-
-      const [least, fast] = await Promise.all([
-        pair.least_fuel
-          ? getPlan(pair.least_fuel.plan_id)
-          : Promise.resolve(null),
-        pair.earliest_arrival
-          ? getPlan(pair.earliest_arrival.plan_id)
-          : Promise.resolve(null),
-      ]);
-      setRoutePlans({ least_fuel: least, earliest_arrival: fast });
-      setRoutesAvailable(Boolean(least || fast));
+      setRouteUnavailable(pair.unavailable);
+      setRoutesAvailable(Boolean(pair.least_fuel || pair.earliest_arrival));
       setSelectedPlan((current) => {
         if (current) {
           const still =
-            (least && least.plan_id === current.plan_id && least) ||
-            (fast && fast.plan_id === current.plan_id && fast);
+            (pair.least_fuel &&
+              pair.least_fuel.plan_id === current.plan_id &&
+              pair.least_fuel) ||
+            (pair.earliest_arrival &&
+              pair.earliest_arrival.plan_id === current.plan_id &&
+              pair.earliest_arrival);
           if (still) return still;
         }
-        return least ?? fast ?? null;
+        return pair.least_fuel ?? pair.earliest_arrival ?? null;
       });
     },
-    [destinationBodyId, originBodyId],
+    [destinationBodyId, originBodyId, shuttleClass],
   );
 
   const setTrip = useCallback(
-    (next: { origin?: PlanetBodyId; destination?: PlanetBodyId }) => {
+    (next: {
+      origin?: PlanetBodyId;
+      destination?: PlanetBodyId;
+      shuttleClass?: ShuttleClass;
+    }) => {
       const origin = next.origin ?? originBodyId;
       let destination = next.destination ?? destinationBodyId;
+      const vehicle = next.shuttleClass ?? shuttleClass;
       if (destination === origin) {
         destination = (origin === "399" ? "499" : "399") as PlanetBodyId;
       }
       setOriginBodyId(origin);
       setDestinationBodyId(destination);
+      setShuttleClass(vehicle);
       if (linkMode === "live") {
-        void loadPlans(origin, destination);
+        void loadPlans(origin, destination, vehicle);
       } else {
         setRoutePlans({ least_fuel: null, earliest_arrival: null });
         setSelectedPlan(null);
         setRoutesAvailable(false);
+        setRouteUnavailable("none");
       }
     },
-    [destinationBodyId, linkMode, loadPlans, originBodyId],
+    [destinationBodyId, linkMode, loadPlans, originBodyId, shuttleClass],
   );
 
   const applySelection = useCallback(
@@ -679,7 +701,9 @@ export function useCoreBridge() {
     selectedPlan,
     originBodyId,
     destinationBodyId,
+    shuttleClass,
     routesAvailable,
+    routeUnavailable,
     snapshot,
     faultHistory,
     gates,
