@@ -40,6 +40,7 @@ class Settings:
     serial_baud: int = 115200
     brain_enabled: bool = False
     sim_speed: float = 1.0
+    link_delay_demo: bool = False                # wrap the transport in DelayTransport (plan section 10)
     db_path: str = str(APP_DIR / "artifacts" / "runtime" / "interstellar.sqlite3")
     plans_dir: str = str(APP_DIR / "data" / "plans")
     extra_origins: list[str] = field(default_factory=list)
@@ -57,6 +58,7 @@ class Settings:
         s.serial_baud = int(env.get("SERIAL_BAUD", s.serial_baud))
         s.brain_enabled = env.get("BRAIN_ENABLED", "false").lower() == "true"
         s.sim_speed = float(env.get("SIM_SPEED", s.sim_speed))
+        s.link_delay_demo = env.get("LINK_DELAY_DEMO", "false").lower() == "true"
         s.db_path = env.get("INTERSTELLAR_DB", s.db_path)
         return s
 

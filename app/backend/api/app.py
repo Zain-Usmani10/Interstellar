@@ -61,6 +61,15 @@ class PlanningRequest(BaseModel):
 
 
 def make_transport(settings: Settings) -> Transport:
+    inner = _make_inner_transport(settings)
+    if not settings.link_delay_demo:
+        return inner
+    # The one artificial-delay layer (plan section 10). The runtime sets the delay from the geometry.
+    from app.backend.transport import DelayTransport
+    return DelayTransport(inner)
+
+
+def _make_inner_transport(settings: Settings) -> Transport:
     if settings.transport_mode == "simulator":
         return SimulatorTransport(SimulatedController(speed=settings.sim_speed))
     if settings.transport_mode == "fpga":
