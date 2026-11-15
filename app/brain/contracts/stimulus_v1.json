@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Brain-local widget messages v1 (synthetic milestone)",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "schema_version", "input_session_id", "context_id", "context_revision", "targets", "frequencies_hz", "synthetic_frequency_hz"],
+      "properties": {
+        "type": {"const": "configure"}, "schema_version": {"const": 1},
+        "input_session_id": {"type": "string"}, "context_id": {"type": "string"},
+        "context_revision": {"type": "integer", "minimum": 0},
+        "targets": {"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": {"enum": ["planet.399", "planet.499", "planet.more_details", "navigation.back"]}},
+        "frequencies_hz": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number", "minimum": 8, "maximum": 18}},
+        "synthetic_frequency_hz": {"enum": [10, 15, null]}
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "schema_version", "context_id", "context_revision", "sequence", "active", "visible", "focused", "frame_count", "dropped_frames", "largest_frame_gap_ms", "effective_frequencies_hz"],
+      "properties": {
+        "type": {"const": "stimulus_state"}, "schema_version": {"const": 1},
+        "context_id": {"type": "string"}, "context_revision": {"type": "integer", "minimum": 0},
+        "sequence": {"type": "integer", "minimum": 0},
+        "active": {"type": "boolean"}, "visible": {"type": "boolean"}, "focused": {"type": "boolean"},
+        "frame_count": {"type": "integer", "minimum": 0}, "dropped_frames": {"type": "integer", "minimum": 0},
+        "largest_frame_gap_ms": {"type": "number", "minimum": 0},
+        "effective_frequencies_hz": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}
+      }
+    },
+    {"type": "object", "additionalProperties": false, "required": ["type", "schema_version"],
+     "properties": {"type": {"const": "stop"}, "schema_version": {"const": 1}}}
+  ]
+}
