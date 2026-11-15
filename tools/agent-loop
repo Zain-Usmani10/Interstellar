@@ -8,9 +8,14 @@
 # Stop with Ctrl+C.
 #
 # Env:
+#   AGENT_SESSION   session id to resume (recommended). Without it the most recent session in
+#                   this folder is resumed, which is wrong if you opened another one since.
 #   AGENT_ARGS      extra flags for the agent CLI, e.g. AGENT_ARGS="--sandbox workspace-write"
 #   AGENT_COOLDOWN  minimum seconds between two wake-ups (default 60)
 #   AGENT_LOOP_DRY  1 = print the command instead of running it
+#
+# If the agent CLI fails, the posts are kept in .board/agent-loop.pending and delivered again
+# (up to 3 tries in a row, then together with the next mention), so a wake-up is never lost.
 #
 # The agent runs unattended, so it stops at the first approval prompt: allow its usual
 # commands (git, gh, tools/board, tests) in that CLI's own settings first.
@@ -46,9 +51,19 @@ cooldown="${AGENT_COOLDOWN:-60}"
 # shellcheck disable=SC2206
 extra=(${AGENT_ARGS:-})
 
+pending="$ROOT/.board/agent-loop.pending"
+retries=0
+
 echo "agent-loop: $handle is waiting for board posts that tag it. Ctrl+C to stop."
 while :; do
-  posts="$(tools/board wait --mentions-only)" || { sleep 30; continue; }
+  # Retry an undelivered wake-up first; otherwise block until a new mention arrives.
+  if [ -s "$pending" ] && [ "$retries" -gt 0 ] && [ "$retries" -lt 3 ]; then
+    posts=""
+  else
+    retries=0
+    posts="$(tools/board wait --mentions-only)" || { sleep 30; continue; }
+  fi
+  [ -n "$posts" ] && printf '%s\n' "$posts" >> "$pending"
   git fetch -q origin 2>/dev/null || true
 
   prompt="New posts on the team board tag you (@$handle). They are below.
@@ -57,19 +72,25 @@ Post on the board only when you have something to report (a blocker, a contract 
 a finished PR). Do not reply just to acknowledge. Do not merge anything.
 If a post does not need any action from you, do nothing and stop.
 
-$posts"
+$(cat "$pending")"
 
   echo "agent-loop: $(date '+%H:%M:%S') waking $agent"
   if [ "$agent" = codex ]; then
-    cmd=(codex exec "${extra[@]}" resume --last "$prompt")
+    if [ -n "${AGENT_SESSION:-}" ]; then target=("$AGENT_SESSION"); else target=(--last); fi
+    cmd=(codex exec "${extra[@]}" resume "${target[@]}" "$prompt")
   else
-    cmd=(claude -p --continue "${extra[@]}" "$prompt")
+    if [ -n "${AGENT_SESSION:-}" ]; then target=(--resume "$AGENT_SESSION"); else target=(--continue); fi
+    cmd=(claude -p "${target[@]}" "${extra[@]}" "$prompt")
   fi
   if [ "${AGENT_LOOP_DRY:-0}" = 1 ]; then
     printf 'DRY RUN: %q ' "${cmd[@]:0:${#cmd[@]}-1}"; echo '"<prompt>"'
     echo "$prompt"
+    rm -f "$pending"
+  elif "${cmd[@]}"; then
+    rm -f "$pending"; retries=0
   else
-    "${cmd[@]}" || echo "agent-loop: $agent exited with an error; still watching" >&2
+    retries=$((retries + 1))
+    echo "agent-loop: $agent failed (try $retries); posts kept in $pending" >&2
   fi
   sleep "$cooldown"
 done
