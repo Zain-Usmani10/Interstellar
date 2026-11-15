@@ -65,7 +65,8 @@ class StreamParser:
                 return
             version, kind, _, _, size = struct.unpack_from("<BBHIH", self.buffer, 2)
             if version != 1 or size > 128 or p.PAYLOAD_LEN.get(kind) != size:
-                self.errors["header"] += 1
+                reason = 'version' if version != 1 else 'oversize' if size > 128 else 'shape'
+                self.errors[reason] += 1
                 self._drop()
                 continue
             total = 14 + size

@@ -36,7 +36,12 @@ class SerialTransport:
             self._serial.reset_input_buffer()
         except Exception as exc:
             self.close()
-            raise TransportError(f"cannot open serial port {self.port}: {exc}") from exc
+            message = str(exc).lower()
+            missing = any(word in message for word in ('cannot find', 'not found', 'no such file'))
+            busy = any(word in message for word in ('access is denied', 'permission', 'busy'))
+            code = 'PORT_MISSING' if missing else 'PORT_BUSY' if busy else 'PORT_OPEN_FAILED'
+            hint = 'Check cable and COM number.' if missing else 'Close Serial Monitor and other serial owners; check permissions.' if busy else 'Check device and driver.'
+            raise TransportError(f"{code}: {self.port}. {hint} ({exc})") from exc
 
     def close(self):
         device, self._serial = self._serial, None
@@ -65,7 +70,7 @@ class SerialTransport:
             self._sent += 1
         except Exception as exc:
             self.close()
-            raise TransportError(str(exc)) from exc
+            raise TransportError(f"SERIAL_IO_FAILED: {self.port} closed after write failure; controller state unknown. Reconnect and reconcile STATUS. ({exc})") from exc
 
     def receive(self, timeout_s: float):
         self._require_open()
@@ -86,7 +91,7 @@ class SerialTransport:
                     return None
         except Exception as exc:
             self.close()
-            raise TransportError(str(exc)) from exc
+            raise TransportError(f"SERIAL_IO_FAILED: {self.port} closed after read failure. Reconnect and reconcile STATUS. ({exc})") from exc
 
     def stats(self):
         return {"frames_sent": self._sent, "frames_received": self._received,
