@@ -9,14 +9,21 @@ import { PlanetMesh } from "./PlanetMesh";
 import { CameraRig } from "./CameraRig";
 import { ScenePerformance } from "./ScenePerformance";
 import { Spacecraft } from "./Spacecraft";
-import { DockStation } from "./DockStation";
+import { PlanetSurfaceView } from "./surface";
 import { countdownProgress, dockedShuttles, estimatePosition, MOCK_FLEET } from "./dockState";
 import { VISUAL_PLANETS, planetPosition } from "./planets";
 import { flightView, routePoints, splitRouteAtCraft } from "./flightState";
 import { Starfield } from "./Starfield";
 import { sunGlow } from "./surfaces";
 import { loadTexture } from "./textureMaps";
-import type { ScenePlan, SceneSnapshot, SceneShuttle, ScenePlanetPosition, Vec3 } from "./types";
+import type {
+  SceneBodyId,
+  ScenePlan,
+  SceneSnapshot,
+  SceneShuttle,
+  ScenePlanetPosition,
+  Vec3,
+} from "./types";
 import { kmToScene } from "./axes";
 import { finiteVector } from "./flightState";
 import { positionQuery } from "./planetPositions";
@@ -133,6 +140,7 @@ export function OrbitScene({
   fetchPositions = true,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
+  const [surfaceApproach, setSurfaceApproach] = useState(0);
   const [performanceReport, setPerformanceReport] = useState(
     "Development frame probe: 5s warmup + 15s sample.",
   );
@@ -198,6 +206,14 @@ export function OrbitScene({
       : focusName === "Black Hole"
       ? { position: BLACK_HOLE_POS, body: { radius: 1.2 } }
       : (focused ?? selected);
+  const surfaceVisit = Boolean(
+    !overview &&
+      !followCraft &&
+      !compact &&
+      visitTarget &&
+      focusName !== "Black Hole" &&
+      (focused ?? selected)?.body.bodyId,
+  );
   const cameraFocus = overview
     ? null
     : followCraft
@@ -205,7 +221,18 @@ export function OrbitScene({
       : captured && !focused && !selected
         ? destination?.position ?? view.position
         : ((visitTarget?.position as Vec3 | null) ?? null);
-  const transitionKey = `${overview ? "overview" : focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${followCraft ? "follow" : "visit"}:${positions ? "dated" : "fallback"}`;
+  const transitionKey = `${overview ? "overview" : focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${followCraft ? "follow" : surfaceVisit ? "surface" : "visit"}:${positions ? "dated" : "fallback"}`;
+  const launchingId =
+    snapshot?.shuttle_id &&
+    view.mode === "docked" &&
+    launchProgress > 0 &&
+    !view.departed
+      ? snapshot.shuttle_id
+      : null;
+  const landedId =
+    view.mode === "captured" && snapshot?.shuttle_id
+      ? snapshot.shuttle_id
+      : null;
 
   return (
     <div
@@ -267,14 +294,48 @@ export function OrbitScene({
                 onFocus={() => onFocusName?.(body.name)}
                 showLabel={!compact}
               />
-              <group position={position}>
-                <DockStation
-                  radius={body.radius}
-                  showLabels={!overview && !compact && isFocus && !followCraft}
-                  shuttles={dockedShuttles(ships, body.bodyId ?? "", sceneSnapshot)
-                  .filter(ship => ship.id !== sceneSnapshot?.shuttle_id)}
-                />
-              </group>
+              {body.bodyId ? (
+                <group position={position}>
+                  <PlanetSurfaceView
+                    bodyId={body.bodyId as SceneBodyId}
+                    radius={body.radius}
+                    shuttles={dockedShuttles(
+                      ships,
+                      body.bodyId,
+                      sceneSnapshot,
+                    ).map((ship) => ({
+                      id: ship.id,
+                      name: ship.name,
+                      class: ship.class,
+                    }))}
+                    approach={
+                      isFocus && surfaceVisit ? surfaceApproach : 0
+                    }
+                    launchingShuttleId={
+                      isFocus && body.bodyId === plan?.origin_body_id
+                        ? launchingId
+                        : null
+                    }
+                    landedShuttleId={
+                      isFocus && body.bodyId === plan?.destination_body_id
+                        ? landedId
+                        : null
+                    }
+                    launchProgress={
+                      isFocus && body.bodyId === plan?.origin_body_id
+                        ? launchProgress
+                        : 0
+                    }
+                    landingProgress={
+                      isFocus && body.bodyId === plan?.destination_body_id && landedId
+                        ? 1
+                        : 1
+                    }
+                    showLabels={false}
+                    renderSurface={false}
+                  />
+                </group>
+              ) : null}
             </group>
             );
           })}
@@ -353,7 +414,9 @@ export function OrbitScene({
             transitionKey={transitionKey}
             extent={Math.max(95, ...planets.map(p => Math.hypot(...p.position) + p.body.radius))}
             follow={followCraft}
+            surface={surfaceVisit}
             overviewDistanceScale={1.05}
+            onApproach={setSurfaceApproach}
           />
         </Canvas>
       </SceneBoundary>
