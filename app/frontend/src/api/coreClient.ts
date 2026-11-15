@@ -145,8 +145,10 @@ export async function resetFleet(
 export type PlanetPositionsResponse = {
   epoch_jd_tdb: number;
   date_utc?: string;
-  frame?: string;
+  frame?: string | Record<string, unknown>;
   data_mode?: string;
+  start_jd_tdb?: number;
+  end_jd_tdb?: number;
   planets: Array<{ body_id: string; r_km: [number, number, number] }>;
 };
 

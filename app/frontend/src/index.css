@@ -512,6 +512,89 @@ button {
   color: #f0d4a0;
 }
 
+.date-corner-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+
+.calendar-speed {
+  position: absolute;
+  top: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  width: min(16rem, calc(100vw - 18rem));
+  padding: 0.45rem 0.7rem 0.55rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--glass-border);
+  background: rgba(6, 12, 22, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.calendar-speed-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+.calendar-speed input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.flight-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: min(14rem, 40vw);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.flight-progress.estimate {
+  color: #f0d4a0;
+}
+
+.flight-progress-bar {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(238, 243, 248, 0.12);
+  overflow: hidden;
+}
+
+.flight-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+
+.flight-progress.estimate .flight-progress-bar > span {
+  background: #e0b06a;
+}
+
+.flight-progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.flight-progress-speed {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
 .mini-system {
   position: absolute;
   top: 5.4rem;

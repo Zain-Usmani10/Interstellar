@@ -1,15 +1,15 @@
 /**
- * Plan §19.2 + issue #62 — date and time always top-right.
- * Mission on controller → snapshot.date_utc (estimate in blackout).
- * No mission → real UTC, ticking. Planets placed for the same date.
+ * Plan §19.2 + §19.3 — date always top-right.
+ * Mission → snapshot.date_utc (estimate in blackout).
+ * Overview → free-running calendar date from the NASA track.
  */
 
-import { useEffect, useState } from "react";
-
 type Props = {
-  /** Simulation / plan date when a mission is active; null → live UTC clock. */
-  missionDateUtc: string | null;
+  /** Absolute date to show (mission or calendar). */
+  dateUtc: string | null;
   estimated?: boolean;
+  /** Optional note under the date (e.g. track end). */
+  note?: string | null;
 };
 
 function pad(n: number): string {
@@ -28,33 +28,19 @@ function formatParts(d: Date): { date: string; time: string } {
   };
 }
 
-export function DateTimeCorner({ missionDateUtc, estimated }: Props) {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    if (missionDateUtc) return;
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, [missionDateUtc]);
-
+export function DateTimeCorner({ dateUtc, estimated, note }: Props) {
   let date = "—";
   let time = "";
-  if (missionDateUtc) {
-    const d = new Date(missionDateUtc);
+  if (dateUtc) {
+    const d = new Date(dateUtc);
     if (!Number.isNaN(d.getTime())) {
       const parts = formatParts(d);
       date = parts.date;
       time = parts.time;
     } else {
-      date = missionDateUtc.slice(0, 10);
-      time = missionDateUtc.slice(11, 19)
-        ? `${missionDateUtc.slice(11, 19)} UTC`
-        : "";
+      date = dateUtc.slice(0, 10);
+      time = dateUtc.slice(11, 19) ? `${dateUtc.slice(11, 19)} UTC` : "";
     }
-  } else {
-    const parts = formatParts(now);
-    date = parts.date;
-    time = parts.time;
   }
 
   return (
@@ -67,6 +53,7 @@ export function DateTimeCorner({ missionDateUtc, estimated }: Props) {
       </span>
       <span className="date-corner-value">{date}</span>
       {time ? <span className="date-corner-time">{time}</span> : null}
+      {note ? <span className="date-corner-note">{note}</span> : null}
     </div>
   );
 }
