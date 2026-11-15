@@ -19,6 +19,9 @@ app/tests/planet_data/ sadattanzim01/claude
 
 app/frontend/ sadattanzim01/cursor
 app/frontend/src/bci/ AffanSyed07/codex
+# 3D scene graphics handed to Affan's Codex for issue #19 (2026-11-14)
+app/frontend/src/scene/ AffanSyed07/codex
+app/frontend/public/ AffanSyed07/codex
 
 app/brain/ AffanSyed07/codex
 app/tests/brain/ AffanSyed07/codex
