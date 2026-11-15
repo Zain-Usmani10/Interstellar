@@ -2,6 +2,10 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.0.1 (2026-11-14): additive, nothing breaks
+
+- `api_v1.md`: added `POST /sim/faults`, `GET /session`, heartbeat rules per source, and the adapter imports the backend looks for.
+
 ## 1.0.0 (2026-11-14): first freeze
 
 - Wire protocol v1: `protocol_v1.json` and reference code `protocol_v1.py`.

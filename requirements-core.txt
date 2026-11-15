@@ -1,7 +1,7 @@
 # Core backend dependencies (no EEG packages here; the brain extension has its own environment).
 # Versions are the ones installed and tested on the leader's laptop with Python 3.10.11.
-# Numeric packages (numpy, scipy, astropy, lamberthub==1.0.0) get added and locked once the
-# NASA owner's smoke test passes; ask the leader on the board to change this file.
+# Needs Python 3.10 or newer (3.8/3.9 cannot run the core backend). Only 3.10.11 has been run with these pins so far.
+# Ask the leader on the board to change this file.
 fastapi==0.162.5
 uvicorn[standard]==0.54.0
 pydantic==2.14.3
@@ -9,3 +9,12 @@ jsonschema==4.26.0
 httpx==0.28.1
 pyserial==3.5
 pytest==9.2.0
+
+# Numeric stack for ephemeris/planner/physics. Installed and run on Python 3.10.11 (leader's
+# laptop, 2026-11-14). Use these exact versions on every machine: different numpy/scipy builds
+# change the last digits of computed plans, which changes plan_sha256.
+numpy==2.2.6
+scipy==1.15.3
+astropy==6.1.7
+lamberthub==1.0.0   # GPL-3.0, see THIRD_PARTY_NOTICES.md
+numba==0.68.1
