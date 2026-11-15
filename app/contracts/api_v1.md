@@ -100,3 +100,11 @@ MissionSnapshot fields added (see `schemas/mission_snapshot.schema.json`):
 | `GET /api/v1/planets/positions` | `?jd_tdb=<number>` or `?date_utc=<...Z>` | `{epoch_jd_tdb, date_utc, frame, data_mode, start_jd_tdb, end_jd_tdb, planets: [{body_id, r_km}]}` for all eight planets. 404 `DATE_OUTSIDE_TRACK`. |
 
 A plan's shuttle class: `vehicle.isp_s >= 900` is `long_range` ("Long-range shuttle"), otherwise `standard` ("Standard shuttle"). The WebSocket sends a `fleet` event whenever the fleet changes. Use `snapshot.date_utc` (or the selected plan's departure date before launch) as the date for the positions call so every planet moves by the same clock.
+
+## Added in contracts 1.4.0 (free-running calendar, plan section 19.3)
+
+| Route | Query | Returns |
+|---|---|---|
+| `GET /api/v1/planets/track` | `start_jd_tdb`, `end_jd_tdb`, `step_days` (default 1) | `{frame, data_mode, start_jd_tdb, end_jd_tdb, step_days, epochs_jd_tdb: [...], planets: [{body_id, r_km: [[x,y,z] per epoch]}]}`. At most 2000 samples per call; 404 `DATE_OUTSIDE_TRACK` outside the stored range (returned in the error). |
+
+Fetch a block (for example 400 days at 1-day steps), interpolate between samples in the browser for display, and fetch the next block before the calendar reaches the end. The stored range starts on 2026-11-15; `GET /api/v1/planets/positions` reports its exact limits.
