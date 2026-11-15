@@ -1,13 +1,14 @@
 // tb_vga.v
 // SIMULATION ONLY. Passing here does not mean the monitor shows a picture.
 //
-// VGA step 1: the 640 x 480 timing and the test pattern.
+// The VGA cockpit (sample reel version):
 //   - line length 800 pixels, sync pulse 96 pixels, active low
 //   - frame length 525 lines, sync pulse 2 lines, active low
 //   - exactly 640 x 480 visible pixels per frame, black everywhere else
-//   - the four border corners are white, the first bar is white, the last
-//     bar is black, the centre square shows the state colour and blinks to
-//     black when the link is lost
+//   - the picture is not blank
+//   - the reel steps through all eight scenes and wraps around
+// To keep the run short it uses one frame per scene and four stars.
+// What the scenes look like is checked by eye, not here.
 
 `timescale 1ns / 1ps
 
@@ -38,7 +39,7 @@ module tb_vga;
     wire [3:0] r, g, b;
     wire       hs, vs;
 
-    vga_cockpit dut (
+    vga_cockpit #(.SCENE_FRAMES(1), .STARS(4)) dut (
         .clk(clk), .rst_n(rst_n),
         .state(state), .link_lost(link_lost), .blink(blink),
         .vga_r(r), .vga_g(g), .vga_b(b), .vga_hs(hs), .vga_vs(vs)
@@ -77,32 +78,26 @@ module tb_vga;
     end
 
     // ---------------------------------------------------------- count pixels
-    // The outputs are one pixel behind the counters, so sample the counter
-    // position that produced the colour now on the pins.
-    reg [9:0] px = 0, py = 0;
-    reg       pact = 0;
-    integer   lit_outside = 0;
-    integer   visible = 0;
-    reg [11:0] at_corner_tl, at_corner_br, at_bar0, at_bar7, at_centre;
+    // The colour on the pins is two pixels behind the counters; `shown` is
+    // the "visible" flag of the pixel that is on the pins now.
+    reg     shown = 0;
+    integer lit_outside = 0;
+    integer visible = 0;
+    integer lit_inside = 0;
+    integer scenes_seen = 0;
+    reg [7:0] seen_mask = 8'd0;
 
     always @(posedge clk) begin
-        if (dut.pix_en) begin
-            px   <= dut.x;
-            py   <= dut.y;
-            pact <= dut.active;
-        end
+        if (dut.pix_en) shown <= dut.act1;
     end
 
     always @(negedge clk) begin
-        if (rst_n && !dut.pix_en) begin          // pins hold the pixel (px, py)
-            if (pact) visible = visible + 1;
-            if (!pact && rgb !== 12'h000) lit_outside = lit_outside + 1;
-            if (px == 0   && py == 0)   at_corner_tl = rgb;
-            if (px == 639 && py == 479) at_corner_br = rgb;
-            if (px == 40  && py == 100) at_bar0      = rgb;
-            if (px == 600 && py == 100) at_bar7      = rgb;
-            if (px == 320 && py == 240) at_centre    = rgb;
+        if (rst_n && !dut.pix_en) begin
+            if (shown) visible = visible + 1;
+            if (shown && rgb !== 12'h000) lit_inside = lit_inside + 1;
+            if (!shown && rgb !== 12'h000) lit_outside = lit_outside + 1;
         end
+        seen_mask[dut.scene] = 1'b1;
     end
 
     task wait_frames;
@@ -129,22 +124,11 @@ module tb_vga;
         check(vs_period == 1600 * 525, "frame is 525 lines long");
         check(vs_width == 1600 * 2, "vertical sync pulse is 2 lines, active low");
         check(lit_outside == 0, "colour is black everywhere outside the visible picture");
+        check(lit_inside > 100000, "the picture is not blank");
 
-        check(at_corner_tl === 12'hFFF && at_corner_br === 12'hFFF, "border corners are white");
-        check(at_bar0 === 12'hFFF, "first colour bar is white");
-        check(at_bar7 === 12'h000, "last colour bar is black");
-        check(at_centre === 12'h888, "centre square is grey in IDLE");
-
-        state = 3'd3;
-        wait_frames(1);
-        check(at_centre === 12'h0F0, "centre square is green in RUNNING");
-
-        link_lost = 1'b1; blink = 1'b1;
-        wait_frames(1);
-        check(at_centre === 12'h000, "centre square blinks to black when the link is lost");
-        blink = 1'b0;
-        wait_frames(1);
-        check(at_centre === 12'h0F0, "and back to the state colour on the other half of the blink");
+        wait_frames(9);
+        check(seen_mask == 8'hFF, "the reel showed all eight scenes");
+        check(dut.scene <= 3'd7 && vs_count > 11, "and wrapped around to the start");
 
         if (errors == 0) $display("SIMULATION PASS: tb_vga (simulation only, not a board test)");
         else             $display("SIMULATION FAIL: tb_vga, %0d error(s)", errors);

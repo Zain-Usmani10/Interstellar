@@ -396,6 +396,10 @@ module interstellar_top #(
     );
 
     // ------------------------------------------------------------ VGA cockpit (display only)
+    // The mission testbenches define SIM_NO_VGA (see run_sim.sh) to leave the
+    // picture logic out and run faster; tb_vga.v tests it by itself. Quartus
+    // never defines it, so the board always has the picture.
+`ifndef SIM_NO_VGA
     vga_cockpit u_vga (
         .clk       (clk),
         .rst_n     (rst_n),
@@ -408,6 +412,13 @@ module interstellar_top #(
         .vga_hs    (VGA_HS),
         .vga_vs    (VGA_VS)
     );
+`else
+    assign VGA_R  = 4'd0;
+    assign VGA_G  = 4'd0;
+    assign VGA_B  = 4'd0;
+    assign VGA_HS = 1'b1;
+    assign VGA_VS = 1'b1;
+`endif
 
     // ------------------------------------------------------------ LEDs
     assign LEDR[0] = heartbeat_led;
