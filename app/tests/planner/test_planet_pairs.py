@@ -37,6 +37,24 @@ def test_original_earth_mars_identities_unchanged():
         assert (plan["plan_id"], plan["plan_sha256"]) == identity
 
 
+@pytest.mark.parametrize("pair", [
+    ("199", "499"), ("399", "199"), ("499", "299"), ("499", "599"),
+    ("599", "399"), ("599", "499"),
+])
+def test_expanded_nearby_routes_are_qualified_with_explicit_demo_vehicle(pair):
+    catalog = json.loads((SEARCH_DIR / "planet_pairs.json").read_text())
+    demo = next(r for r in catalog["demo_pairs"]
+                if (r["origin_body_id"], r["destination_body_id"]) == pair)
+    default = next(r for r in catalog["pairs"]
+                   if (r["origin_body_id"], r["destination_body_id"]) == pair)
+    assert demo["status"] == "validated"
+    assert demo["vehicle"]["label"] == "Hypothetical demo vehicle (Isp 900 s)"
+    assert set(demo["objectives"]) == {"least_fuel", "earliest_arrival"}
+    # Qualifying the opt-in vehicle must not erase the chemical vehicle's failures.
+    assert default["status"] == "no_feasible_route"
+    assert default["rejection_counts"]["exceeds_propellant_capacity"] > 0
+
+
 @pytest.mark.parametrize("records_key,complete_key", [("pairs", "complete"), ("demo_pairs", "demo_complete")])
 def test_catalog_all_56_pairs_and_valid_plans(records_key, complete_key):
     catalog = json.loads((SEARCH_DIR / "planet_pairs.json").read_text())

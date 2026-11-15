@@ -86,8 +86,10 @@ def test_orbital_state_between_daily_rows_is_interpolated_and_physically_consist
     assert state["provenance"]["mode"] == "nasa_cached" and state["epoch_jd_tdb"] == epoch
 
 
-@pytest.mark.parametrize("epoch", [2440000.5, DEPARTURE - 400.0, ARRIVAL + 400.0])
-def test_orbital_state_outside_the_cache_is_unavailable_not_invented(epoch):
+@pytest.mark.parametrize("boundary,offset", [(0, -400.0), (0, -1.0), (1, 400.0)])
+def test_orbital_state_outside_the_cache_is_unavailable_not_invented(boundary, offset):
+    # New qualified routes extend the cache beyond the original Mars arrival.
+    epoch = info._cache().epoch_bounds("499")[boundary] + offset
     card = get_planet_info("499", epoch)
     state = card["orbital_state"]
     assert state["availability"] == "unavailable"

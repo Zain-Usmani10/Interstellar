@@ -1,12 +1,24 @@
 # Validated route choices and presentation timing (#38)
 
-Human scope update: a good variety for a two-minute presentation, not every
-possible route. The catalogue records all pair outcomes, but only seven pairs
-are qualified for presentation: Venus->Earth, Venus->Mars, Earth->Venus,
-Earth->Mars, Mars->Earth (450 s vehicle), plus Mercury->Earth and Earth->Jupiter
-(the explicitly hypothetical 900 s vehicle). Other pairs remain unavailable
-or infeasible on their recorded grids. Unused century-long track downloads
-were removed; no fabricated routes fill the gaps.
+Human scope update: expand nearby, easily validated choices for a two-minute
+presentation, without lengthy Saturn/Uranus/Neptune downloads. The catalogue
+now contains **33 flight options across 13 distinct directed routes** (previously
+12 options across seven routes). Count options by unique catalogue plan ID,
+and routes by origin/destination, independent of vehicle and objective.
+
+| Vehicle | Qualified directed routes | Flight options |
+|---|---|---|
+| Default 450 s | Venus->Earth/Mars; Earth->Venus/Mars; Mars->Earth | 9 |
+| Hypothetical demo vehicle (Isp 900 s) | Mercury->Earth/Mars; Venus->Earth/Mars; Earth->Mercury/Venus/Mars/Jupiter; Mars->Venus/Earth/Jupiter; Jupiter->Earth/Mars | 24 |
+
+The 43 fuel-feasible demo pairs are only a search-stage result: 13 are now
+fully qualified, 29 still lack locally cached validation tracks, and one
+(Venus->Neptune) fails the independent numerical gate (39.2 km position
+residual, 38.6 km convergence difference against a 10 km limit). The other
+13/56 demo pairs have no feasible cell on their recorded grids. Missing cache
+data is not a claim that NASA lacks data, and fuel feasibility alone is not
+mission readiness. No fabricated routes fill the gaps; all default vehicle
+failures remain recorded separately.
 
 `plan_pair`, `run_grid`, `Constants.from_source` and `build_plan` accept
 `origin_body_id` and `destination_body_id`. `run_search` accepts those keys in its
@@ -23,7 +35,10 @@ and must clear the sourced mean radius; no surface-launch claims are made.
 Run `python -m app.backend.planner.catalog --presentation` and then the same
 command with `--demo` to reproduce both catalogues offline. For a deliberate
 extension, add `--live --fetch-pair 399:599` (repeat the pair option as needed)
-to fetch only selected routes serially. The source uses
+to fetch only selected routes serially. This expansion fetched only
+199:499, 299:399, 299:499, 399:199, 399:299, 399:499, 499:299, 499:399,
+499:599, 599:399 and 599:499 with `--demo --presentation`; no outer-planet
+tracks were downloaded. The source uses
 the same validated raw-response/request hashes, units, frame and exact epoch
 checks as the Earth/Mars implementation. Mercury uses half-day rather than
 daily nodes because daily interpolation failed the unchanged 10 km gate.

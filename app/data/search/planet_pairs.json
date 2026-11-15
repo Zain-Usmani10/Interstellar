@@ -1630,9 +1630,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 216 epoch(s) for body 199 are not in the NASA cache (first missing JD TDB 2461551.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "31d8f90c-f7dc-5d5f-80a7-d728c0094c30",
+    "earliest_arrival": "18652a81-8b52-5f64-a9fd-7ac945924215"
+   }
   },
   {
    "origin_body_id": "199",
@@ -1794,9 +1796,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 11 epoch(s) for body 299 are not in the NASA cache (first missing JD TDB 2461369.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "40d2d05b-ff3f-5e26-963f-ccab2272c0f8",
+    "earliest_arrival": "95b1d969-1c5a-5495-a9f7-72efc63d1ab2"
+   }
   },
   {
    "origin_body_id": "299",
@@ -1818,9 +1822,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 11 epoch(s) for body 299 are not in the NASA cache (first missing JD TDB 2461374.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "ee748148-60cd-53ff-9530-70fb9f1fe136",
+    "earliest_arrival": "38253f76-95ae-560d-b511-1000ebeabeec"
+   }
   },
   {
    "origin_body_id": "299",
@@ -1941,9 +1947,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 106 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461725.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "93e9fc9a-beee-56ae-b609-863d6fccd41f",
+    "earliest_arrival": "93e9fc9a-beee-56ae-b609-863d6fccd41f"
+   }
   },
   {
    "origin_body_id": "399",
@@ -1965,9 +1973,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 5 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461369.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "4d844ece-9f8a-5abc-a011-4a6fb19a1842",
+    "earliest_arrival": "e014df55-6282-5114-be48-616a9754e2cf"
+   }
   },
   {
    "origin_body_id": "399",
@@ -1989,9 +1999,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 7 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461389.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "62a174f0-0102-5cae-adea-4dc58ba34d80",
+    "earliest_arrival": "2dcf0d94-de67-57f4-aa1b-f93097626fe6"
+   }
   },
   {
    "origin_body_id": "399",
@@ -2139,9 +2151,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 11 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461530.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "e8be0044-2c8a-549b-9c8c-307a70a655c4",
+    "earliest_arrival": "b3e0f7b2-e90f-5c81-a30b-4df3de1eb659"
+   }
   },
   {
    "origin_body_id": "499",
@@ -2163,9 +2177,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 10 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461369.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "ecbb83fb-8713-5814-bb01-07c311771ede",
+    "earliest_arrival": "2e014dad-95f1-530d-aeac-c82129fb75e6"
+   }
   },
   {
    "origin_body_id": "499",
@@ -2187,9 +2203,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 1878 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461357.500000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "0f3e003a-faae-55f1-b1b8-c806f5296519",
+    "earliest_arrival": "9a527b19-c42f-5773-b7e0-13a75551c239"
+   }
   },
   {
    "origin_body_id": "499",
@@ -2213,7 +2231,7 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "unavailable",
    "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 2752 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461824.500000000) and offline mode cannot fetch them"
+   "reason": "EPHEMERIS_UNAVAILABLE: 875 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2463701.500000000) and offline mode cannot fetch them"
   },
   {
    "origin_body_id": "499",
@@ -2237,7 +2255,7 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "unavailable",
    "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 4252 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461824.500000000) and offline mode cannot fetch them"
+   "reason": "EPHEMERIS_UNAVAILABLE: 2375 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2463701.500000000) and offline mode cannot fetch them"
   },
   {
    "origin_body_id": "499",
@@ -2261,7 +2279,7 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "unavailable",
    "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 13329 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461824.500000000) and offline mode cannot fetch them"
+   "reason": "EPHEMERIS_UNAVAILABLE: 11452 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2463701.500000000) and offline mode cannot fetch them"
   },
   {
    "origin_body_id": "599",
@@ -2339,9 +2357,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 697 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2462891.500000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "e0472ac0-3a95-58d2-b6d3-6872879c8af5",
+    "earliest_arrival": "bf93c0af-6487-52a7-ac46-a4ed4e0e5309"
+   }
   },
   {
    "origin_body_id": "599",
@@ -2363,9 +2383,11 @@
    },
    "position_reference": "NASA planet centres, not system barycentres",
    "scope": "bounded grid only; not a global feasibility conclusion",
-   "status": "unavailable",
-   "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 12 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461359.000000000) and offline mode cannot fetch them"
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "581ac764-b36c-5598-bbda-0d24abee7bf5",
+    "earliest_arrival": "025b9a5c-cc6a-5e0d-a5b2-8d9c5abe5a0e"
+   }
   },
   {
    "origin_body_id": "599",
@@ -2389,7 +2411,7 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "unavailable",
    "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 6875 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461352.500000000) and offline mode cannot fetch them"
+   "reason": "EPHEMERIS_UNAVAILABLE: 6065 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461352.500000000) and offline mode cannot fetch them"
   },
   {
    "origin_body_id": "599",
@@ -2413,7 +2435,7 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "unavailable",
    "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 19485 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461342.500000000) and offline mode cannot fetch them"
+   "reason": "EPHEMERIS_UNAVAILABLE: 18675 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461342.500000000) and offline mode cannot fetch them"
   },
   {
    "origin_body_id": "599",
@@ -2437,7 +2459,7 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "unavailable",
    "reason_code": "EPHEMERIS_UNAVAILABLE",
-   "reason": "EPHEMERIS_UNAVAILABLE: 12335 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2462891.500000000) and offline mode cannot fetch them"
+   "reason": "EPHEMERIS_UNAVAILABLE: 11525 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2463701.500000000) and offline mode cannot fetch them"
   },
   {
    "origin_body_id": "699",
