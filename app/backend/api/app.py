@@ -104,7 +104,8 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
         fleet_path = Path(tempfile.mkdtemp(prefix="interstellar-fleet-")) / "fleet.json"
     fleet = FleetStore(fleet_path or Path(settings.db_path).with_name("fleet.json"))
     runtime = MissionRuntime(transport or make_transport(settings), plans, hub, MissionDb(settings.db_path),
-                             on_state_change=lambda: inputs.bump("mission_state"), fleet=fleet)
+                             on_state_change=lambda: inputs.bump("mission_state"), fleet=fleet,
+                             auto_blackout=settings.auto_blackout)
     planet_tracks: dict = {}            # loaded and integrity-checked once, on first use
     jobs = JobManager(plans, hub)
     operator_token = secrets.token_urlsafe(24)

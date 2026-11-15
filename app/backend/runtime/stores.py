@@ -43,6 +43,7 @@ class Settings:
     link_delay_demo: bool = False                # wrap the transport in DelayTransport (plan section 10)
     db_path: str = str(APP_DIR / "artifacts" / "runtime" / "interstellar.sqlite3")
     plans_dir: str = str(APP_DIR / "data" / "plans")
+    auto_blackout: bool = False                  # every flight gets a blackout window (plan 18.5)
     fleet_path: str = ""                         # empty = fleet.json next to the mission database
     extra_origins: list[str] = field(default_factory=list)
 
@@ -59,6 +60,8 @@ class Settings:
         s.serial_baud = int(env.get("SERIAL_BAUD", s.serial_baud))
         s.brain_enabled = env.get("BRAIN_ENABLED", "false").lower() == "true"
         s.sim_speed = float(env.get("SIM_SPEED", s.sim_speed))
+        # On unless switched off: the demo shows the shuttle flying without the control station.
+        s.auto_blackout = env.get("AUTO_BLACKOUT", "true").lower() == "true"
         s.link_delay_demo = env.get("LINK_DELAY_DEMO", "false").lower() == "true"
         s.db_path = env.get("INTERSTELLAR_DB", s.db_path)
         return s

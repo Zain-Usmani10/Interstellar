@@ -39,6 +39,8 @@ T = p.MsgType
 STALE_AFTER_S = 1.0
 KEEPALIVE_S = 0.5            # the board calls the link lost after 2 s without a valid frame
 ESTIMATE_PUBLISH_S = 0.1     # how often the estimate is republished during a blackout
+BLACKOUT_START_FRACTION = 0.25   # automatic blackout begins this far into the flight ...
+BLACKOUT_END_FRACTION = 0.85     # ... and contact returns here, so the arrival is watched live
 LABELS = {"fpga": "FPGA", "simulator": "SIMULATED CONTROLLER"}
 SHUTTLE_LABELS = {"standard": "Standard shuttle", "long_range": "Long-range shuttle"}
 
@@ -55,7 +57,10 @@ class MissionBusy(Exception):
 
 class MissionRuntime:
     def __init__(self, transport: Transport, plans: PlanStore, hub: EventHub, db: MissionDb,
-                 on_state_change: Callable[[], None] | None = None, fleet: FleetStore | None = None):
+                 on_state_change: Callable[[], None] | None = None, fleet: FleetStore | None = None,
+                 auto_blackout: bool = False):
+        self.auto_blackout = auto_blackout        # start a blackout by itself on every flight
+        self._auto_blackout_for: str | None = None   # mission that already had its automatic blackout
         self.transport = transport
         self.fleet = fleet                        # None = no fleet bookkeeping (plain unit tests)
         self._fleet_seen: tuple | None = None      # last (mission, state, mask) handed to the fleet
@@ -175,6 +180,14 @@ class MissionRuntime:
             if mission and mission.get("uploaded") and (
                     board_session != self.link.session_id or status.mission_id != mission["wire_mission"]):
                 self._lost = True                  # board reset/reprogrammed: our mission is gone
+            elif (self.auto_blackout and mission and mission.get("uploaded")
+                  and self._auto_blackout_for != mission["uuid"] and status.state == p.State.RUNNING
+                  and status.executed_mask == p.MASK_DEPARTURE
+                  and self._blackout_window(mission)[0] <= status.tick < self._blackout_window(mission)[1]):
+                # Once per flight: cut contact so the shuttle is seen flying on its own.
+                self._auto_blackout_for = mission["uuid"]
+                self._blackout = {"status": status, "at": self._status_at}
+                self._reconcile = self._reconciliation = None
         self._fleet_evidence(status)
         self._publish()
         if previous != status.state:
@@ -253,6 +266,14 @@ class MissionRuntime:
 
     # ------------------------------------------------------------ blackout, estimate, sync
 
+    @staticmethod
+    def _blackout_window(mission: dict) -> tuple[int, int]:
+        """(tick where an automatic blackout starts, tick where contact returns), from the plan."""
+        ticks = mission["plan"]["ticks"]
+        flight = ticks["arrival_tick"] - ticks["departure_tick"]
+        return (ticks["departure_tick"] + int(flight * BLACKOUT_START_FRACTION),
+                ticks["departure_tick"] + int(flight * BLACKOUT_END_FRACTION))
+
     def _estimate(self) -> tuple[p.Status, list[str]]:
         """Dead reckoning from the last telemetry: what the shuttle is expected to be doing now.
 
@@ -292,12 +313,12 @@ class MissionRuntime:
                 "fuel_remaining_g": est.fuel_remaining_g, "expected_events": expected}
 
     def _tick_blackout(self) -> None:
-        """Worker thread: republish the moving estimate, and restore contact at the planned arrival."""
+        """Worker thread: republish the moving estimate, and restore contact shortly before arrival."""
         with self._lock:
             if self._blackout is None or self._mission is None:
                 return
             est, _ = self._estimate()
-            arrived = est.tick >= self._mission["plan"]["ticks"]["arrival_tick"]
+            arrived = est.tick >= self._blackout_window(self._mission)[1]    # contact returns near the end
             due = time.monotonic() - self._last_estimate >= ESTIMATE_PUBLISH_S
         if arrived:
             self._end_blackout()
@@ -353,6 +374,9 @@ class MissionRuntime:
                         and status.mission_id == mission["wire_mission"])
                 if not ours or status.state != p.State.RUNNING or self._status_at is None:
                     raise ValueError("a blackout can start only while the mission is RUNNING")
+                if status.tick >= self._blackout_window(mission)[1]:
+                    raise ValueError("too close to arrival for a blackout")
+                self._auto_blackout_for = mission["uuid"]      # a manual one replaces the automatic one
                 self._blackout = {"status": status, "at": self._status_at}
                 self._reconcile = self._reconciliation = None
             elif self._blackout is None:

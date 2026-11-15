@@ -632,7 +632,7 @@ Adopted by the humans from Zain's proposal, with the changes listed in 18.9. Thi
 ### 18.1 Roles and story
 
 - **CCS** = the laptop (backend + browser GUI). **Shuttle** = the DE10-Lite. **Radio link** = the XIAO bridge (unchanged, transparent).
-- The CCS plans the route, uploads it, arms and launches. After launch the operator starts a **blackout**. The shuttle flies and burns alone from its stored plan and counts down the days to arrival on its own displays. The CCS has no telemetry and shows only a labelled **estimate**. Contact returns **at the planned arrival** and the CCS replaces the estimate with what the shuttle really did.
+- The CCS plans the route, uploads it, arms and launches. After launch the operator starts a **blackout**. The shuttle flies and burns alone from its stored plan and counts down the days to arrival on its own displays. The CCS has no telemetry and shows only a labelled **estimate**. Contact returns **shortly before the planned arrival** (85 % of the flight) and the CCS replaces the estimate with what the shuttle really did.
 - Target presentation split: about 1 minute planning on the CCS, about 1 minute of flight on the shuttle. Run length is only a plan value (18.2); no code depends on a particular length.
 
 ### 18.2 Timing
@@ -679,7 +679,7 @@ Display value only: it never gates a burn. It keeps counting in SAFE and ABORTED
 1. **Keep-alive.** While the link is open and no blackout is active, send `GET_STATUS` every 0.5 s. The shuttle declares the link lost after 2 s without a valid frame.
 2. **Blackout is a button, never a pulled cable** (unplugging the XIAO removes its power while the FPGA still drives its pins). New mission commands `blackout_start` and `blackout_end` on `POST /api/v1/missions/{id}/commands`. `blackout_start` is accepted only in `RUNNING`. During a blackout the backend sends **nothing** to the board (no keep-alive, no commands; other commands are refused with a clear "no contact" error) and **discards** every frame it receives. The serial port stays open.
 3. **Estimate.** `tick_est = min(end_tick, last_tick + floor((now - last_status_time) * 100))`. From it the backend derives estimated epoch, estimated position on the plan's `nominal_path`, `days_to_arrival` (18.4) and expected events. Fuel changes only at the two burns, so the fuel estimate is the last confirmed value plus "capture burn expected" at `arrival_tick`; it is not a continuous gauge.
-4. **Sync at arrival.** The backend ends the blackout by itself when `tick_est >= arrival_tick` (the operator may end it earlier). It resumes the keep-alive; the first valid STATUS replaces the estimate completely. It then reports what happened out of contact: events whose executed tick lies inside the blackout, and every difference between the estimate and the truth (for example: estimate "arrived", truth SAFE with no capture).
+4. **Automatic window, sync near the end.** With `AUTO_BLACKOUT` on (the default when started from the environment) every flight gets one blackout by itself: it starts when confirmed telemetry is 25 % into the flight and contact returns when the estimate reaches 85 % of the flight, so the arrival is watched live. The operator may also start one by hand (not after 85 %) or end one early. It resumes the keep-alive; the first valid STATUS replaces the estimate completely. It then reports what happened out of contact: events whose executed tick lies inside the blackout, and every difference between the estimate and the truth (for example: estimate "arrived", truth SAFE with no capture).
 5. **Never** turn an estimate into a result. Until a STATUS confirms it, capture is "expected", not "done". `outcome` stays `pending` during a blackout.
 6. `LINK_DELAY_DEMO` stays **off** for this storyline (an added delay of seconds would trip the 2 s watchdog).
 
@@ -731,7 +731,7 @@ Built only from the snapshot fields above; the browser computes no mission value
 
 ### 18.9 Differences from Zain's original proposal
 
-- Contact returns **at arrival**, not before it.
+- Contact returns at 85 % of the flight, by itself; every flight has an automatic blackout from 25 % (decided 2026-11-15).
 - Blackout by button only; no cable pulling.
 - `SET_TRIP_DAYS` is sent inside `upload` (state LOADED), not as a separate operator step.
 - Keep-alive every 0.5 s rather than 1 s.
