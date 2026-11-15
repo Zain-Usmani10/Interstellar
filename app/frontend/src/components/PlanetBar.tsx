@@ -3,8 +3,10 @@ import type { PlanetTargetId } from "../api/types";
 
 type Props = {
   focusName: string | null;
+  overview: boolean;
   selectedId: PlanetTargetId | null;
   selectionEnabled: boolean;
+  onOverview: () => void;
   onVisit: (name: string) => void;
   onSelectEarthMars: (target: PlanetTargetId) => void;
 };
@@ -13,17 +15,29 @@ const EXTRA = [{ name: "Black Hole", color: "#1a0a08" }];
 
 export function PlanetBar({
   focusName,
+  overview,
   selectedId,
   selectionEnabled,
+  onOverview,
   onVisit,
   onSelectEarthMars,
 }: Props) {
   return (
     <nav className="planet-bar" aria-label="Fly to a planet">
+      <button
+        type="button"
+        className={overview ? "planet-chip active" : "planet-chip"}
+        title="Whole solar system"
+        onClick={onOverview}
+      >
+        <span className="chip-dot overview-dot" />
+        Overview
+      </button>
       {VISUAL_PLANETS.map((body) => {
         const active =
-          focusName === body.name ||
-          (body.target != null && selectedId === body.target);
+          !overview &&
+          (focusName === body.name ||
+            (body.target != null && selectedId === body.target));
         const routeEndpoint =
           body.target === "planet.399" || body.target === "planet.499";
         return (
@@ -49,7 +63,9 @@ export function PlanetBar({
           key={item.name}
           type="button"
           className={
-            focusName === item.name ? "planet-chip active" : "planet-chip"
+            !overview && focusName === item.name
+              ? "planet-chip active"
+              : "planet-chip"
           }
           title="Fly to the black hole"
           onClick={() => onVisit(item.name)}

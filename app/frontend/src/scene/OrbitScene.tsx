@@ -30,6 +30,10 @@ export type OrbitSceneProps = {
   onSelect: (target: PlanetTargetId) => void;
   onFocusName?: (name: string) => void;
   focusName?: string | null;
+  /** Force whole-system camera (Overview). */
+  overview?: boolean;
+  /** Compact inset: fewer stars, lower dpr, no HUD chrome. */
+  compact?: boolean;
   plan?: ScenePlan | null;
   snapshot?: SceneSnapshot | null;
   fleet?: SceneShuttle[];
@@ -120,6 +124,8 @@ export function OrbitScene({
   onSelect,
   onFocusName,
   focusName = null,
+  overview = false,
+  compact = false,
   plan,
   snapshot,
   fleet = [],
@@ -170,22 +176,33 @@ export function OrbitScene({
   const captured = view.mode === "captured";
   const sceneSnapshot = view.mode === "unavailable" ? null : snapshot;
   const destination = planets.find(p => p.body.bodyId === plan?.destination_body_id);
+  const followCraft = Boolean(
+    !overview && view.departed && view.position && !captured,
+  );
   const visitTarget =
-    sceneSnapshot && !view.departed
+    overview
+      ? null
+      : sceneSnapshot && !view.departed
       ? origin
       : focusName === "Black Hole"
       ? { position: BLACK_HOLE_POS, body: { radius: 1.2 } }
       : (focused ?? selected);
-  const cameraFocus = captured
-    ? destination?.position ?? view.position
-    : !view.departed
-      ? ((visitTarget?.position as Vec3 | null) ?? null)
-      : null;
-  const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${positions ? "dated" : "fallback"}`;
+  const cameraFocus = overview
+    ? null
+    : captured
+      ? destination?.position ?? view.position
+      : followCraft
+        ? view.position
+        : ((visitTarget?.position as Vec3 | null) ?? null);
+  const transitionKey = `${overview ? "overview" : focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${followCraft ? "follow" : "visit"}:${positions ? "dated" : "fallback"}`;
+  const starCount = compact ? 900 : 6200;
 
   return (
-    <div className="orbital-scene" aria-label="Three-dimensional solar system">
-      {performanceEnabled ? (
+    <div
+      className={compact ? "orbital-scene compact" : "orbital-scene"}
+      aria-label="Three-dimensional solar system"
+    >
+      {performanceEnabled && !compact ? (
         <pre
           aria-label="Scene frame measurement"
           style={{
@@ -206,12 +223,12 @@ export function OrbitScene({
       <SceneBoundary>
         <Canvas
           camera={{ position: [320, 500, 750], fov: 42, near: 0.03, far: 3000 }}
-          dpr={[1, 1.5]}
+          dpr={compact ? [1, 1] : [1, 1.5]}
           frameloop={visible ? "always" : "never"}
-          gl={{ antialias: true, powerPreference: "high-performance" }}
+          gl={{ antialias: !compact, powerPreference: "high-performance" }}
         >
-          <color attach="background" args={["#02050c"]} />
-          <fog attach="fog" args={["#02050c", 90, 1400]} />
+          <color attach="background" args={["#02040f"]} />
+          <fog attach="fog" args={["#02040f", 280, 1900]} />
           <ambientLight intensity={0.22} color="#8aa0c0" />
           <hemisphereLight args={["#b8d4ff", "#1a1010", 0.45]} />
           <directionalLight
@@ -225,16 +242,27 @@ export function OrbitScene({
             intensity={0.55}
           />
           <Stars
-            radius={1400}
-            depth={700}
-            count={4200}
-            factor={3.4}
+            radius={1600}
+            depth={900}
+            count={starCount}
+            factor={compact ? 3.2 : 5.5}
             saturation={0}
-            fade
+            fade={false}
             speed={0}
           />
+          {!compact ? (
+            <Stars
+              radius={1100}
+              depth={500}
+              count={2400}
+              factor={2.8}
+              saturation={0.35}
+              fade={false}
+              speed={0}
+            />
+          ) : null}
           <Sun />
-          {performanceEnabled ? (
+          {performanceEnabled && !compact ? (
             <ScenePerformance onSample={setPerformanceReport} />
           ) : null}
           {planets.map(({ body, position }) => (
@@ -244,9 +272,10 @@ export function OrbitScene({
                 body={body}
                 position={position}
                 selected={
-                  selectedId === body.target || focusName === body.name
+                  !overview &&
+                  (selectedId === body.target || focusName === body.name)
                 }
-                interactive={selectionEnabled}
+                interactive={selectionEnabled && !compact}
                 onSelect={onSelect}
                 onFocus={() => onFocusName?.(body.name)}
               />
@@ -258,7 +287,7 @@ export function OrbitScene({
           ))}
           <BlackHole
             position={BLACK_HOLE_POS}
-            selected={focusName === "Black Hole"}
+            selected={!overview && focusName === "Black Hole"}
             onSelect={() => onFocusName?.("Black Hole")}
           />
           {points.length > 1 && (
@@ -283,32 +312,38 @@ export function OrbitScene({
             {points.length > 1 && <Line points={points} color="#e8b875" dashed dashSize={0.22} gapSize={0.15} lineWidth={2} />}
             <group position={ghost}>
               <mesh><octahedronGeometry args={[0.24]} /><meshBasicMaterial color="#e8b875" transparent opacity={0.45} wireframe /></mesh>
-              <Html center position={[0, 0.65, 0]} style={{ pointerEvents: "none", color: "#f4cf98", font: "11px monospace", whiteSpace: "nowrap" }}>ESTIMATE · NO CONTACT</Html>
+              {!compact ? (
+                <Html center position={[0, 0.65, 0]} style={{ pointerEvents: "none", color: "#f4cf98", font: "11px monospace", whiteSpace: "nowrap" }}>ESTIMATE · NO CONTACT</Html>
+              ) : null}
             </group>
           </>}
           <CameraRig
             focus={cameraFocus}
             focusRadius={
-              captured
-                ? destination?.body.radius ?? 0.65
-                : focusName === "Black Hole"
-                  ? 1.4
-                  : ((visitTarget as { body?: { radius: number } })?.body
-                      ?.radius ?? 1)
+              followCraft
+                ? 0.55
+                : captured
+                  ? destination?.body.radius ?? 0.65
+                  : focusName === "Black Hole"
+                    ? 1.4
+                    : ((visitTarget as { body?: { radius: number } })?.body
+                        ?.radius ?? 1)
             }
             transitionKey={transitionKey}
             extent={Math.max(95, ...planets.map(p => Math.hypot(...p.position) + p.body.radius))}
+            follow={followCraft}
           />
         </Canvas>
       </SceneBoundary>
       <div className="scene-vignette" aria-hidden="true" />
-      {fetchPositions && !planetPositions && <div className="scene-position-status" role="status">
+      <div className="scene-nebula" aria-hidden="true" />
+      {fetchPositions && !planetPositions && !compact && <div className="scene-position-status" role="status">
         {datedPositions?.data ? `NASA/JPL cached · ${datedPositions.data.date_utc}${snapshot?.link.blackout ? " · estimate" : ""}${datedPositions.error ? " · update unavailable" : datedPositions.pending ? " · updating" : datedPositions.held ? " · date held" : ""}`
           : datedPositions?.error ? "Planet positions unavailable · illustrative overview"
           : query ? "Loading dated planet positions · illustrative overview"
           : "Scene date unavailable · illustrative overview"}
       </div>}
-      {mockFleet && <div style={{ position: "absolute", bottom: 12, left: 12, color: "#efce8e", font: "11px monospace" }}>MOCK FLEET · PREVIEW</div>}
+      {mockFleet && !compact && <div style={{ position: "absolute", bottom: 12, left: 12, color: "#efce8e", font: "11px monospace" }}>MOCK FLEET · PREVIEW</div>}
     </div>
   );
 }
