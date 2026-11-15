@@ -102,6 +102,7 @@ module frame_rx #(
                 8'h02, 8'h12, 8'h13, 8'h14, 8'h15: shape_ok = (l == 8'd4);   // OPEN_SESSION, ARM, START, ABORT, CLEAR
                 8'h10:                             shape_ok = (l == 8'd28);  // LOAD_PLAN
                 8'h11:                             shape_ok = (l == 8'd6);   // COMMIT_PLAN
+                8'h16:                             shape_ok = (l == 8'd8);   // SET_TRIP_DAYS (proposed extension)
                 default:                           shape_ok = 1'b0;
             endcase
         end

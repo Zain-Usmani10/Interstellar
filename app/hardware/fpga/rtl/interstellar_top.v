@@ -26,6 +26,9 @@
 //   LEDR7  - a session is open
 //   LEDR8  - flips each time a received frame is dropped
 //   LEDR9  - on while the design is held in reset
+//   HEX5-4 - mission state as two letters; alternates with "nL" when the
+//            link to the control station is lost
+//   HEX3-0 - T-minus before the departure burn, then days to arrival
 
 module interstellar_top #(
     // Overridden by testbenches so simulation runs fast. Never changed for
@@ -35,14 +38,21 @@ module interstellar_top #(
     parameter integer UART_CLKS_PER_BIT    = 434,        // 50 MHz -> 115200 baud
     parameter integer FRAME_TIMEOUT_CLKS   = 5_000_000,  // 100 ms
     parameter integer STATUS_PERIOD_TICKS  = 10,         // 100 Hz -> 10 Hz STATUS
-    parameter integer DEBOUNCE_CLKS        = 500_000     // 10 ms
+    parameter integer DEBOUNCE_CLKS        = 500_000,    // 10 ms
+    parameter integer LINK_TIMEOUT_TICKS   = 200         // 2 s without a frame = link lost
 ) (
     input  wire       MAX10_CLK1_50,  // 50 MHz oscillator, PIN_P11
     input  wire [1:0] KEY,            // push buttons, active low
     input  wire [1:0] SW,             // slide switches, up = 1
     input  wire       UART_RX,        // JP1 pin 1, PIN_V10
     output wire       UART_TX,        // JP1 pin 2, PIN_W10
-    output wire [9:0] LEDR            // red LEDs, active high
+    output wire [9:0] LEDR,           // red LEDs, active high
+    output wire [7:0] HEX0,           // seven-segment displays, active low,
+    output wire [7:0] HEX1,           //   bit 7 = decimal point
+    output wire [7:0] HEX2,
+    output wire [7:0] HEX3,
+    output wire [7:0] HEX4,
+    output wire [7:0] HEX5
 );
 
     wire clk = MAX10_CLK1_50;
@@ -165,6 +175,8 @@ module interstellar_top #(
 
     // ------------------------------------------------------------ commands and mission
     wire        do_commit, do_arm, do_start, do_abort, do_clear;
+    wire        do_set_days;
+    wire [31:0] set_days_value;
     wire [31:0] staged_mission_id, staged_departure_tick, staged_arrival_tick, staged_end_tick;
     wire [31:0] staged_initial_fuel_g, staged_departure_fuel_g, staged_capture_fuel_g;
     wire [15:0] staged_crc16;
@@ -214,6 +226,8 @@ module interstellar_top #(
         .do_start                (do_start),
         .do_abort                (do_abort),
         .do_clear                (do_clear),
+        .do_set_days             (do_set_days),
+        .set_days_value          (set_days_value),
         .staged_mission_id       (staged_mission_id),
         .staged_departure_tick   (staged_departure_tick),
         .staged_arrival_tick     (staged_arrival_tick),
@@ -317,6 +331,63 @@ module interstellar_top #(
         .tx_busy     (tx_busy),
         .tx_data     (tx_data),
         .tx_start    (tx_start)
+    );
+
+    // ------------------------------------------------------------ cockpit (display only)
+    // None of this feeds back into the mission.
+    wire        link_seen;
+    wire        link_lost;
+    wire        trip_days_valid;
+    wire [31:0] trip_days;
+    wire [31:0] days_to_arrival;
+    wire [31:0] plan_departure_tick;
+
+    link_watchdog #(
+        .TIMEOUT_TICKS (LINK_TIMEOUT_TICKS)
+    ) u_link_watchdog (
+        .clk         (clk),
+        .rst_n       (rst_n),
+        .tick        (tick_free),
+        .frame_valid (frame_valid),
+        .link_seen   (link_seen),
+        .link_lost   (link_lost)
+    );
+
+    trip_clock u_trip_clock (
+        .clk                   (clk),
+        .rst_n                 (rst_n),
+        .do_commit             (do_commit),
+        .staged_departure_tick (staged_departure_tick),
+        .staged_arrival_tick   (staged_arrival_tick),
+        .do_start              (do_start),
+        .do_clear              (do_clear),
+        .do_set_days           (do_set_days),
+        .set_days_value        (set_days_value),
+        .tick_count            (tick_count),
+        .trip_days_valid       (trip_days_valid),
+        .trip_days             (trip_days),
+        .days_to_arrival       (days_to_arrival),
+        .departure_tick        (plan_departure_tick)
+    );
+
+    cockpit_display u_cockpit (
+        .clk             (clk),
+        .rst_n           (rst_n),
+        .state           (state),
+        .departed        (executed_mask[0]),
+        .tick_count      (tick_count),
+        .departure_tick  (plan_departure_tick),
+        .trip_days_valid (trip_days_valid),
+        .trip_days       (trip_days),
+        .days_to_arrival (days_to_arrival),
+        .link_lost       (link_lost),
+        .blink           (heartbeat_led),
+        .hex0            (HEX0),
+        .hex1            (HEX1),
+        .hex2            (HEX2),
+        .hex3            (HEX3),
+        .hex4            (HEX4),
+        .hex5            (HEX5)
     );
 
     // ------------------------------------------------------------ LEDs
