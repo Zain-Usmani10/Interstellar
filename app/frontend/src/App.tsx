@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { ComponentProps } from "react";
+import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
 import { MockBanner } from "./components/MockBanner";
 import { MissionPanel } from "./components/MissionPanel";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
@@ -37,6 +38,9 @@ export default function App() {
     clearSelection,
   } = useCoreBridge();
 
+  const scenePlan = useMemo(() => toScenePlan(selectedPlan), [selectedPlan]);
+  const sceneSnapshot = useMemo(() => toSceneSnapshot(snapshot), [snapshot]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -55,8 +59,8 @@ export default function App() {
     selectedId,
     selectionEnabled: planetChoiceEnabled,
     onSelect: selectPlanet,
-    plan: selectedPlan,
-    snapshot,
+    plan: scenePlan,
+    snapshot: sceneSnapshot,
   } as OrbitSceneProps;
 
   return (
