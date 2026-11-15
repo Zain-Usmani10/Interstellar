@@ -76,17 +76,18 @@ export function CameraRig({
       orbit.target.add(focusOffset.current);
 
       if (follow) {
-        zoomOut.current = Math.min(1, zoomOut.current + delta / 18);
-        const near = Math.max(2.4, focusRadius * 3.2);
-        const far = Math.max(near * 2.2, extent * 0.28);
+        // Part B: pull back only a little — watch take-off, no system zoom-out.
+        zoomOut.current = Math.min(1, zoomOut.current + delta / 6);
+        const near = Math.max(2.2, focusRadius * 2.8);
+        const far = near * 1.45;
         const d = near + (far - near) * zoomOut.current;
         toTarget.current.fromArray(focus);
         to.current
           .copy(toTarget.current)
-          .add(new Vector3(d * 0.28, d * 0.42, d));
+          .add(new Vector3(d * 0.22, d * 0.32, d));
         if (progress.current >= 1) {
-          camera.position.lerp(to.current, Math.min(1, delta * 1.6));
-          orbit.target.lerp(toTarget.current, Math.min(1, delta * 1.6));
+          camera.position.lerp(to.current, Math.min(1, delta * 2.2));
+          orbit.target.lerp(toTarget.current, Math.min(1, delta * 2.2));
           orbit.update();
         }
       }
