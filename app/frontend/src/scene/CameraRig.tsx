@@ -12,6 +12,8 @@ type Props = {
   extent: number;
   /** After launch: track the craft and ease the camera outward. */
   follow?: boolean;
+  /** Overview pull-back multiplier (A4: keep planets detailed, not specks). */
+  overviewDistanceScale?: number;
 };
 
 /** Camera motion is presentation only. User drag cancels an in-progress fly-in. */
@@ -21,6 +23,7 @@ export function CameraRig({
   transitionKey,
   extent,
   follow = false,
+  overviewDistanceScale = 1.05,
 }: Props) {
   const controls = useRef<Controls>(null);
   const { camera, size } = useThree();
@@ -48,16 +51,19 @@ export function CameraRig({
         previousFocus.current.fromArray(focus);
         toTarget.current.fromArray(focus);
         if (!follow) {
-          toTarget.current.y += focusRadius * 0.75;
+          toTarget.current.y += focusRadius * 0.55;
         }
-        const d = Math.max(2.2, focusRadius * (follow ? 3.2 : 4));
+        const d = Math.max(2.2, focusRadius * (follow ? 3.2 : 3.6));
         to.current
           .copy(toTarget.current)
           .add(new Vector3(d * 0.25, d * 0.35, d));
       } else {
         toTarget.current.set(0, 0, 0);
-        const distance = extent * 2.1 * Math.max(1, size.height / size.width);
-        to.current.set(distance * 0.32, distance * 0.6, distance * 0.85);
+        const distance =
+          extent *
+          overviewDistanceScale *
+          Math.max(1, size.height / size.width);
+        to.current.set(distance * 0.28, distance * 0.48, distance * 0.72);
       }
     } else if (focus) {
       focusOffset.current.fromArray(focus).sub(previousFocus.current);
@@ -70,10 +76,9 @@ export function CameraRig({
       orbit.target.add(focusOffset.current);
 
       if (follow) {
-        // Slow zoom-out toward a system-scale chase distance (~18s).
         zoomOut.current = Math.min(1, zoomOut.current + delta / 18);
         const near = Math.max(2.4, focusRadius * 3.2);
-        const far = Math.max(near * 4, extent * 0.55);
+        const far = Math.max(near * 2.2, extent * 0.28);
         const d = near + (far - near) * zoomOut.current;
         toTarget.current.fromArray(focus);
         to.current
@@ -104,9 +109,9 @@ export function CameraRig({
       makeDefault
       enablePan
       enableDamping
-      dampingFactor={0.09}
+      dampingFactor={0.12}
       minDistance={1.5}
-      maxDistance={1400}
+      maxDistance={900}
       maxPolarAngle={Math.PI * 0.95}
       onStart={() => {
         progress.current = 1;

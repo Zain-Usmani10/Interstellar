@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
 import { Group, Quaternion, Vector3 } from "three";
 import type { Vec3, SceneSnapshot } from "./types";
 import type { FlightView } from "./flightState";
@@ -172,26 +171,6 @@ export function Spacecraft({ view, snapshot, origin, originRadius, destination, 
       <group>
         <RocketModel warning={view.mode === "uncaptured"} />
       </group>
-      {view.departed && (
-        <Html
-          center
-          sprite
-          distanceFactor={10}
-          position={[0, 0.85, 0]}
-          style={{ pointerEvents: "none" }}
-        >
-          <span
-            style={{
-              color: view.mode === "uncaptured" ? "#f0ac77" : "#a5eadb",
-              font: "10px monospace",
-              whiteSpace: "nowrap",
-              textShadow: "0 1px 6px rgba(0,0,0,0.9)",
-            }}
-          >
-            {view.mode === "captured" ? "CAPTURED" : "◇ SPACECRAFT"}
-          </span>
-        </Html>
-      )}
       <group
         ref={flame}
         visible={false}

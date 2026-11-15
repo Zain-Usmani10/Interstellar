@@ -36,8 +36,9 @@ export function PlanetBar({
       {VISUAL_PLANETS.map((body) => {
         const active =
           !overview &&
-          (focusName === body.name ||
-            (body.target != null && selectedId === body.target));
+          (focusName != null
+            ? focusName === body.name
+            : body.target != null && selectedId === body.target);
         const routeEndpoint =
           body.target === "planet.399" || body.target === "planet.499";
         return (

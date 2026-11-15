@@ -468,6 +468,17 @@ button {
   padding: 0;
   overflow: hidden;
   border-radius: 0.85rem;
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  appearance: none;
+  background: rgba(6, 12, 22, 0.55);
+  color: inherit;
+}
+
+.mini-system:hover,
+.mini-system:focus-visible {
+  border-color: rgba(126, 200, 192, 0.55);
+  outline: none;
 }
 
 .mini-system .orbital-scene {

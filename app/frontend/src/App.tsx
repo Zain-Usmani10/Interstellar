@@ -294,6 +294,14 @@ export default function App() {
     setOverview(false);
     setFocusName(name);
     setFocusTab("about");
+    if (name === "Earth") {
+      selectPlanet("planet.399");
+    } else if (name === "Mars") {
+      selectPlanet("planet.499");
+    } else {
+      // Clear a leftover Earth/Mars info card so About does not show Earth on Jupiter.
+      clearSelection("mouse");
+    }
     const bodyId = bodyIdFromName(name);
     if (!bodyId) return;
     const docked = dockedAt(fleet, bodyId);
@@ -304,8 +312,6 @@ export default function App() {
       shuttleClass: first?.class ?? "standard",
       shuttleId: first?.id ?? null,
     });
-    if (name === "Earth") selectPlanet("planet.399");
-    if (name === "Mars") selectPlanet("planet.499");
   }
 
   function pickShuttle(shuttle: FleetShuttle) {
@@ -329,7 +335,7 @@ export default function App() {
           onSelect={(id) => {
             const name = id === "planet.399" ? "Earth" : "Mars";
             visitPlanet(name);
-            selectPlanet(id);
+            if (planetChoiceEnabled && !blackout) selectPlanet(id);
           }}
           onFocusName={(name) => visitPlanet(name)}
           focusName={overview ? null : focusName}
@@ -352,7 +358,13 @@ export default function App() {
       />
 
       {showMiniSystem ? (
-        <div className="mini-system glass" aria-label="Solar system overview">
+        <button
+          type="button"
+          className="mini-system glass"
+          aria-label="Overview — whole solar system"
+          title="Overview"
+          onClick={goOverview}
+        >
           <OrbitScene
             selectedId={null}
             selectionEnabled={false}
@@ -368,7 +380,7 @@ export default function App() {
             dateUtc={positionsDateUtc}
             fetchPositions={false}
           />
-        </div>
+        </button>
       ) : null}
 
       <BlackoutBanner visible={blackout} />
@@ -399,8 +411,10 @@ export default function App() {
               setTrip({ origin: from, destination: bodyId });
             }
           }}
-          card={card}
-          cardStatus={cardStatus}
+          card={card && focusName && card.name === focusName ? card : null}
+          cardStatus={
+            card && focusName && card.name === focusName ? cardStatus : "idle"
+          }
           originBodyId={originBodyId}
           destinationBodyId={destinationBodyId}
           dockedShuttles={dockedShuttles}

@@ -97,21 +97,12 @@ export function BlackHole({
           depthWrite={false}
         />
       </mesh>
-      {selected ? (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[3.6, 3.75, 64]} />
-          <meshBasicMaterial
-            color="#b8fff6"
-            side={DoubleSide}
-            transparent
-            opacity={0.85}
-          />
-        </mesh>
-      ) : null}
       {showLabel ? (
         <Html
           position={[0, 4.2, 0]}
           center
+          sprite
+          distanceFactor={28}
           zIndexRange={[8, 0]}
           style={{ pointerEvents: "none" }}
         >
@@ -124,8 +115,6 @@ export function BlackHole({
               textTransform: "uppercase",
               whiteSpace: "nowrap",
               textShadow: "0 2px 12px rgba(0,0,0,0.85)",
-              borderBottom: selected ? "1px solid #7de8da" : "none",
-              paddingBottom: 3,
             }}
           >
             Black Hole
