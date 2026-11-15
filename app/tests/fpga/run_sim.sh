@@ -17,7 +17,9 @@ fail=0
 for tb in "$here"/tb_*.v; do
     name="$(basename "$tb" .v)"
     echo "=== $name ==="
-    iverilog -g2001 -Wall -Wno-timescale -o "$build/$name.vvp" -s "$name" "$tb" "$rtl"/*.v
+    # SIM_NO_VGA: the mission testbenches leave the VGA picture logic out of the top
+    # level (it is display only and slow to simulate). tb_vga tests it by itself.
+    iverilog -g2001 -Wall -Wno-timescale -DSIM_NO_VGA -o "$build/$name.vvp" -s "$name" "$tb" "$rtl"/*.v
     # Fixture files are shorter than the 256-byte test arrays; that warning is expected.
     out="$(vvp -n "$build/$name.vvp" | grep -v "Not enough words in the file")"
     echo "$out"

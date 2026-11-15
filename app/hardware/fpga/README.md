@@ -24,6 +24,10 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `rtl/link_watchdog.v` | Display only: "link lost" when no good frame arrived for 2 s |
 | `rtl/trip_clock.v` | Display only: days to arrival from the tick counter and SET_TRIP_DAYS |
 | `rtl/cockpit_display.v`, `rtl/seg7.v`, `rtl/bin2bcd.v` | Display only: the six seven-segment digits |
+| `rtl/vga_cockpit.v` | Display only: the cockpit picture on a VGA monitor (640 x 480). Picks the scene from the mission state and shows board values |
+| `rtl/vga_sync.v` | Display only: VGA timing (pixel position and the two sync pulses) |
+| `rtl/vga_stars.v`, `rtl/vga_text.v`, `rtl/vga_font.v`, `rtl/vga_bcd8.v` | Display only: stars, the words on the dashboard, the letter shapes, fuel as decimal digits |
+| `tools/gen_vga_tables.py` | Writes the word tables in `rtl/vga_text.v` |
 | `docs/SHUTTLE_CCS_EXTENSION.md` | PROPOSAL: shuttle / control-station storyline, what each owner would build, the proposed SET_TRIP_DAYS command |
 | `../../tests/fpga/` | Testbenches and `run_sim.sh` (simulation only) |
 
@@ -39,6 +43,7 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `UART_TX` | `PIN_W10` | JP1 pin 2 (GPIO1), to XIAO D7/RX, idles high |
 | `LEDR[0]`..`LEDR[8]` | `PIN_A8` `A9` `A10` `B10` `D13` `C13` `E14` `D14` `A11` | Status LEDs, see below |
 | `LEDR[9]` | `PIN_B11` | On while in reset |
+| `VGA_R[3:0]`, `VGA_G[3:0]`, `VGA_B[3:0]`, `VGA_HS`, `VGA_VS` | see `interstellar.qsf` | Onboard VGA socket. Picture seen on a monitor (see the board log) |
 | `HEX0`..`HEX5` | see `interstellar.qsf` | Seven-segment digits, active low, bit 7 = decimal point. Pin numbers typed from memory of the Terasic manual: not confirmed on the board yet |
 
 All I/O is 3.3 V. Unused pins are high-impedance inputs.
@@ -88,6 +93,20 @@ With nothing connected only LEDR0 blinks. The board sends a STATUS frame out of 
 
 With nothing connected it shows `Id----`. None of this feeds back into the mission: the burns, the STATUS frame and the golden-frame behaviour are unchanged.
 
+### VGA cockpit (extension, display only)
+Plug a monitor into the board's VGA socket. The picture follows the mission:
+
+| Mission | Picture |
+|---|---|
+| Idle, loaded, armed | Docked at the launch tower (the default view) |
+| Running, before the departure burn | Countdown, engine glow in the last 2 s |
+| After the departure burn | Liftoff for about 7 s, then cruise, fast cruise in the middle half of the trip, the destination growing in the last eighth |
+| Capture burn done / complete | Arrived: the planet fills the view |
+| Safe / aborted | Alert view with a banner |
+| Link lost | Red "NO LINK" banner over whatever is shown |
+
+Dashboard: the centre screen shows state, T-minus, days to arrival, fuel in kg and link; the left screen is the fuel history (one column per 128 mission ticks, dotted line = fuel now); the right screen is lamps for faults, mission steps and trip progress. Every value is a board value. Nothing here feeds back into the mission.
+
 `SET_TRIP_DAYS` (type `0x16`, payload `mission_id:u32, trip_days:u32`) is a **proposed** command, not in `app/contracts/protocol_v1.json`. A backend that never sends it sees exactly the old behaviour. The control station must send a frame at least once a second (GET_STATUS is enough) or the shuttle shows `nL`.
 
 ## Fault tolerance: what is and is not protected
@@ -106,3 +125,5 @@ Record real-board results here, separately from simulation.
 | 2026-11-14 | frames + STATUS (milestone B) | KEY1 self-test with jumper JP1 pin 1 to pin 2: LEDR1 and LEDR2 flip per press, nothing without the jumper | Reported working on the DE10-Lite | Zain |
 | 2026-11-15 | cockpit build (dev, PR #39 RTL) | Seven-segment and loopback: `Id----` shown, LEDR0 blinks, LEDR8 flickers with JP1 pins 1-2 jumpered and stays off without | Reported working on the DE10-Lite | Zain |
 | 2026-11-15 | same build | Round trip through the XIAO ESP32S3 bridge on COM10 (D6 to JP1 pin 1, D7 to JP1 pin 2, common ground): 21 CRC-valid STATUS frames in 2 s; `python -m app.hardware.xiao.probe --port COM10 --seconds 3` run three times, exit 0 each time, OPEN_SESSION ACK applied, STATUS shows the session, state IDLE. No plan loaded, no mission run yet | Passed (probe output) | Zain's Claude, wiring by Zain |
+| 2026-11-15 | VGA cockpit (branch `8-fpga-vga`, commit `57a75f0`) | Monitor on the VGA socket, no mission running: docked view and dashboard | Reported looking right on the monitor. Scene changes during a real mission not checked yet | Zain |
+| 2026-11-15 | same build | `python -m app.hardware.xiao.probe --port COM10 --seconds 3`: CRC-valid STATUS frames about ten a second, OPEN_SESSION applied (session shown in STATUS), exit 0 | Passed (probe output) | Zain's Claude |

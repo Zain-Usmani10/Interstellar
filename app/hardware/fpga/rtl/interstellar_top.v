@@ -52,7 +52,12 @@ module interstellar_top #(
     output wire [7:0] HEX2,
     output wire [7:0] HEX3,
     output wire [7:0] HEX4,
-    output wire [7:0] HEX5
+    output wire [7:0] HEX5,
+    output wire [3:0] VGA_R,          // VGA monitor, 4 bits per colour
+    output wire [3:0] VGA_G,
+    output wire [3:0] VGA_B,
+    output wire       VGA_HS,         // sync pulses, active low
+    output wire       VGA_VS
 );
 
     wire clk = MAX10_CLK1_50;
@@ -341,6 +346,7 @@ module interstellar_top #(
     wire [31:0] trip_days;
     wire [31:0] days_to_arrival;
     wire [31:0] plan_departure_tick;
+    wire [31:0] plan_trip_ticks;
 
     link_watchdog #(
         .TIMEOUT_TICKS (LINK_TIMEOUT_TICKS)
@@ -367,7 +373,8 @@ module interstellar_top #(
         .trip_days_valid       (trip_days_valid),
         .trip_days             (trip_days),
         .days_to_arrival       (days_to_arrival),
-        .departure_tick        (plan_departure_tick)
+        .departure_tick        (plan_departure_tick),
+        .trip_ticks            (plan_trip_ticks)
     );
 
     cockpit_display u_cockpit (
@@ -389,6 +396,44 @@ module interstellar_top #(
         .hex4            (HEX4),
         .hex5            (HEX5)
     );
+
+    // ------------------------------------------------------------ VGA cockpit (display only)
+    // The mission testbenches define SIM_NO_VGA (see run_sim.sh) to leave the
+    // picture logic out and run faster; tb_vga.v tests it by itself. Quartus
+    // never defines it, so the board always has the picture.
+`ifndef SIM_NO_VGA
+    vga_cockpit u_vga (
+        .clk              (clk),
+        .rst_n            (rst_n),
+        .state            (state),
+        .departed         (executed_mask[0]),
+        .captured         (executed_mask[1]),
+        .tick_count       (tick_count),
+        .departure_tick   (plan_departure_tick),
+        .trip_ticks       (plan_trip_ticks),
+        .trip_days_valid  (trip_days_valid),
+        .days_to_arrival  (days_to_arrival),
+        .fuel_g           (fuel_g),
+        .link_seen        (link_seen),
+        .link_lost        (link_lost),
+        .session_open     (session != 32'd0),
+        .masked_seen      (masked_fault_count != 32'd0),
+        .no_majority_seen (no_majority_count != 32'd0),
+        .rx_error_seen    (rx_error_count != 32'd0),
+        .blink            (heartbeat_led),
+        .vga_r            (VGA_R),
+        .vga_g            (VGA_G),
+        .vga_b            (VGA_B),
+        .vga_hs           (VGA_HS),
+        .vga_vs           (VGA_VS)
+    );
+`else
+    assign VGA_R  = 4'd0;
+    assign VGA_G  = 4'd0;
+    assign VGA_B  = 4'd0;
+    assign VGA_HS = 1'b1;
+    assign VGA_VS = 1'b1;
+`endif
 
     // ------------------------------------------------------------ LEDs
     assign LEDR[0] = heartbeat_led;
