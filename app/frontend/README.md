@@ -4,18 +4,25 @@ Owner: `@sadattanzim01/cursor` — everything here except `src/bci/` (Affan).
 
 ## Run locally
 
+Terminal A — backend (from repo root):
+
+```bash
+app/scripts/start-backend.sh simulator
+```
+
+Terminal B — UI:
+
 ```bash
 cd app/frontend
 npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`).
+Open `http://localhost:5173` (Vite proxies `/api` → `127.0.0.1:8000`).
 
-- Click **Earth** or **Mars** in the 3D scene (or the top buttons, or keys `1` / `2`).
-- The selected planet highlights and an info card opens.
-- Banner says **MOCK DATA** — fixtures only until backend contracts exist.
-- `Esc` closes the card.
+- Click **Earth** / **Mars** (or keys `1` / `2`). Live mode posts a `SelectionIntent`, waits for WS `selection`, then loads `GET /api/v1/planets/{id}/info` (stale responses ignored).
+- Without a backend the UI falls back to labelled offline mock.
+- `Esc` / Close sends `navigation.back` on the same path.
 
 ```bash
 npm run build    # typecheck + production build

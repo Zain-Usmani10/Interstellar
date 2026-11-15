@@ -1,18 +1,14 @@
-import {
-  formatFactSource,
-  formatFactValue,
-  type PlanetInfo,
-} from "../mock/planetInfo";
+import type { PlanetCardModel } from "../api/mapPlanetInfo";
 
 type Props = {
-  planet: PlanetInfo;
+  planet: PlanetCardModel;
+  status?: "loading" | "ready" | "error";
   onClose: () => void;
 };
 
-export function PlanetInfoCard({ planet, onClose }: Props) {
-  const orbital = planet.orbital_state;
-  const pos = orbital.r_km;
-  const vel = orbital.v_km_s;
+export function PlanetInfoCard({ planet, status = "ready", onClose }: Props) {
+  const pos = planet.orbital.r_km;
+  const vel = planet.orbital.v_km_s;
 
   return (
     <aside className="info-card" aria-label={`${planet.name} information`}>
@@ -26,7 +22,13 @@ export function PlanetInfoCard({ planet, onClose }: Props) {
         </button>
       </header>
 
-      <p className="mode-chip">data_mode: {planet.data_mode}</p>
+      <p className="mode-chip">data: {planet.data_mode_label}</p>
+      {status === "loading" ? (
+        <p className="muted">Loading planet info…</p>
+      ) : null}
+      {status === "error" ? (
+        <p className="muted">Planet info fetch failed — showing fallback card.</p>
+      ) : null}
 
       <section>
         <h3>Scene epoch</h3>
@@ -41,10 +43,10 @@ export function PlanetInfoCard({ planet, onClose }: Props) {
             <li key={fact.key}>
               <div className="fact-row">
                 <span>{fact.label}</span>
-                <strong>{formatFactValue(fact.value, fact.unit)}</strong>
+                <strong>{fact.display_value}</strong>
               </div>
               {fact.note ? <p className="muted">{fact.note}</p> : null}
-              <p className="source">{formatFactSource(fact.source)}</p>
+              <p className="source">{fact.source_label}</p>
             </li>
           ))}
         </ul>
@@ -52,8 +54,8 @@ export function PlanetInfoCard({ planet, onClose }: Props) {
 
       <section>
         <h3>Orbital state</h3>
-        <p className="availability">availability: {orbital.availability}</p>
-        <p className="muted">{orbital.frame_label}</p>
+        <p className="availability">availability: {planet.orbital.availability}</p>
+        <p className="muted">{planet.orbital.frame_label}</p>
         {pos && vel ? (
           <>
             <p>
@@ -68,7 +70,7 @@ export function PlanetInfoCard({ planet, onClose }: Props) {
         ) : (
           <p className="muted">Position/velocity unavailable for this epoch.</p>
         )}
-        <p className="source">{orbital.provenance_note}</p>
+        <p className="source">{planet.orbital.provenance_note}</p>
       </section>
 
       <section className="conditions-block">

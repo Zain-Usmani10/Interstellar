@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Line, OrbitControls, Stars } from "@react-three/drei";
-import { PLANETS, type PlanetTargetId } from "../mock/planetInfo";
+import { PLANETS } from "../mock/planetInfo";
+import type { PlanetTargetId } from "../api/types";
 import { sciToThree } from "./axes";
 import { PlanetMesh } from "./PlanetMesh";
 

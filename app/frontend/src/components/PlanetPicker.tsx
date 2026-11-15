@@ -1,4 +1,5 @@
-import { PLANETS, type PlanetTargetId } from "../mock/planetInfo";
+import { PLANETS } from "../mock/planetInfo";
+import type { PlanetTargetId } from "../api/types";
 
 type Props = {
   selectedId: PlanetTargetId | null;
