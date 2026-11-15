@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { getPlanetPositions } from "./api/coreClient";
 import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
 import { BlackoutBanner } from "./components/BlackoutBanner";
 import { BrandBlock } from "./components/BrandBlock";
+import { CalendarSpeedSlider } from "./components/CalendarSpeedSlider";
 import { DateTimeCorner } from "./components/DateTimeCorner";
 import { DetailsTray } from "./components/DetailsTray";
+import { FlightProgress } from "./components/FlightProgress";
 import { LinkLight } from "./components/LinkLight";
 import {
   PlanetFocusPanel,
@@ -15,7 +16,6 @@ import { ReconciliationCard } from "./components/ReconciliationCard";
 import { TripReadout } from "./components/TripReadout";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
-import type { SceneBodyId, ScenePlanetPosition } from "./scene/types";
 import {
   dockedAt,
   toSceneFleet,
@@ -28,6 +28,7 @@ import {
 } from "./state/planetBodies";
 import { unavailableMessage } from "./state/selectPresentationRoutes";
 import { useCoreBridge } from "./state/useCoreBridge";
+import { useRunningCalendar } from "./state/useRunningCalendar";
 
 function bodyIdFromName(name: string | null): PlanetBodyId | null {
   if (!name) return null;
@@ -52,21 +53,6 @@ function formatTMinus(
   const whole = Math.floor(seconds);
   const centi = Math.floor((seconds - whole) * 100);
   return `T−${String(whole).padStart(2, "0")}.${String(centi).padStart(2, "0")}`;
-}
-
-const BODY_IDS: SceneBodyId[] = [
-  "199",
-  "299",
-  "399",
-  "499",
-  "599",
-  "699",
-  "799",
-  "899",
-];
-
-function isoUtcMinute(d: Date): string {
-  return d.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 export default function App() {
@@ -109,10 +95,6 @@ export default function App() {
   const [overview, setOverview] = useState(true);
   const [focusTab, setFocusTab] = useState<FocusTab>("about");
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [clockIso, setClockIso] = useState(() => isoUtcMinute(new Date()));
-  const [planetPositions, setPlanetPositions] = useState<
-    ScenePlanetPosition[]
-  >([]);
 
   const scenePlan = useMemo(() => toScenePlan(selectedPlan), [selectedPlan]);
   const sceneSnapshot = useMemo(() => toSceneSnapshot(snapshot), [snapshot]);
@@ -160,17 +142,22 @@ export default function App() {
       snapshot.state !== "UNKNOWN" &&
       snapshot.mission_id,
   );
-  const missionDateUtc = missionActive
+  /** Snapshot drives the date during upload/arm/flight; overview after COMPLETE resumes the calendar. */
+  const missionDrivesDate = Boolean(
+    missionActive &&
+      !(
+        overview &&
+        (snapshot?.state === "COMPLETE" || snapshot?.state === "ABORTED")
+      ),
+  );
+  const missionDateUtc = missionDrivesDate
     ? blackout
       ? (snapshot?.estimate?.date_utc ?? snapshot?.date_utc ?? null)
       : (snapshot?.date_utc ?? null)
     : null;
   const dateEstimated = Boolean(
-    missionActive && blackout && snapshot?.estimate?.date_utc,
+    missionDrivesDate && blackout && snapshot?.estimate?.date_utc,
   );
-
-  /** Same date used for positions: mission clock, else live UTC (minute). */
-  const positionsDateUtc = missionDateUtc ?? clockIso;
 
   const routeMsg = unavailableMessage(
     routeUnavailable,
@@ -210,41 +197,26 @@ export default function App() {
   const showPlanetPanel =
     !overview && !followFlight && focusName != null && focusName !== "Black Hole";
   const showMiniSystem = showPlanetPanel;
+  const overviewRunning =
+    overview && !followFlight && !missionDrivesDate && live;
+  const departed = Boolean(snapshot && (snapshot.executed_mask & 1) !== 0);
+  const flightSimDaysPerSecond =
+    departed && tripDays != null && tripDays > 0 ? tripDays / 30 : null;
 
-  useEffect(() => {
-    if (missionDateUtc) return;
-    const id = window.setInterval(
-      () => setClockIso(isoUtcMinute(new Date())),
-      30_000,
-    );
-    return () => window.clearInterval(id);
-  }, [missionDateUtc]);
+  const {
+    daysPerSecond,
+    setDaysPerSecond,
+    calendarDateUtc,
+    positions: planetPositions,
+    atTrackEnd,
+    jumpToUtc,
+  } = useRunningCalendar({
+    live,
+    overviewRunning,
+    missionDateUtc,
+  });
 
-  useEffect(() => {
-    if (linkMode !== "live" || !positionsDateUtc) {
-      setPlanetPositions([]);
-      return;
-    }
-    let cancelled = false;
-    void getPlanetPositions({ date_utc: positionsDateUtc })
-      .then((res) => {
-        if (cancelled) return;
-        setPlanetPositions(
-          (res.planets ?? [])
-            .filter((p) => (BODY_IDS as string[]).includes(p.body_id))
-            .map((p) => ({
-              body_id: p.body_id as SceneBodyId,
-              r_km: p.r_km,
-            })),
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setPlanetPositions([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [positionsDateUtc, linkMode]);
+  const displayDateUtc = missionDateUtc ?? calendarDateUtc;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -322,6 +294,8 @@ export default function App() {
   }
 
   function handleLaunch() {
+    const launchUtc = selectedPlan?.departure?.utc ?? null;
+    jumpToUtc(launchUtc);
     void sendCommand("start").then(() => {
       setOverview(false);
       setFocusName(null);
@@ -347,7 +321,7 @@ export default function App() {
           fleet={sceneFleet}
           mockFleet={false}
           planetPositions={planetPositions}
-          dateUtc={positionsDateUtc}
+          dateUtc={displayDateUtc}
           fetchPositions={false}
         />
       </div>
@@ -355,8 +329,17 @@ export default function App() {
       <BrandBlock />
 
       <DateTimeCorner
-        missionDateUtc={missionDateUtc}
+        dateUtc={displayDateUtc}
         estimated={dateEstimated}
+        note={atTrackEnd && overviewRunning ? "End of stored track" : null}
+      />
+
+      <CalendarSpeedSlider
+        daysPerSecond={daysPerSecond}
+        onChange={setDaysPerSecond}
+        paused={!overviewRunning}
+        atTrackEnd={atTrackEnd}
+        visible={overview && !followFlight}
       />
 
       <LinkLight
@@ -384,7 +367,7 @@ export default function App() {
             fleet={sceneFleet}
             mockFleet={false}
             planetPositions={planetPositions}
-            dateUtc={positionsDateUtc}
+            dateUtc={displayDateUtc}
             fetchPositions={false}
           />
         </button>
@@ -459,7 +442,10 @@ export default function App() {
           gates={gates}
           simFaultsEnabled={simFaultsEnabled}
           routeLabel={routeLabel}
-          onPrepare={() => void prepareMission()}
+          onPrepare={() => {
+            jumpToUtc(selectedPlan?.departure?.utc ?? null);
+            void prepareMission();
+          }}
           onArm={() => void sendCommand("arm")}
           onLaunch={handleLaunch}
           onAbort={() => {
@@ -482,6 +468,14 @@ export default function App() {
             tripDays={tripDays}
             tMinusLabel={tMinus}
             estimated={blackout}
+          />
+          <FlightProgress
+            tripDays={tripDays}
+            daysToArrival={daysToArrival}
+            dateUtc={displayDateUtc}
+            daysPerSecond={flightSimDaysPerSecond}
+            estimated={blackout}
+            visible={departed || blackout}
           />
           <button
             type="button"
