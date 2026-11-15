@@ -39,3 +39,27 @@ Dates outside the cached range raise `EPHEMERIS_UNAVAILABLE` offline; nothing is
 Earth hazard events stay on the saved snapshot unless `INTERSTELLAR_EONET_LIVE=1` is set (then: one bounded request, reused for 15 minutes).
 
 Dependencies: numpy, scipy, astropy, httpx, `lamberthub==1.0.0` (GPL-3.0; its package metadata says otherwise, the LICENSE file is GPL-3.0).
+
+
+## Retimed catalogue and all-planet tracks (#46)
+
+Every stored plan now uses departure/arrival/end ticks 500/6500/6800. All plan
+identities changed, including the two legacy Earth/Mars ids. Nine slower duplicate
+files were removed; 33 plans remain. Physical paths, burns and fuel are unchanged.
+`python -m app.backend.planner.retime` reapplies the migration idempotently.
+
+`planet_tracks.json` covers JD TDB 2461359.5 through 2463700.5 for all eight
+planet centres in the existing Sun-centred ICRF/ecliptic KM-S frame. Mercury uses
+half-day nodes; other planets use daily nodes. Every interval was checked against
+a separately requested NASA midpoint (21,069 checks; maximum 7.152 km, Jupiter).
+This is an interpolation consistency gate, not spacecraft navigation accuracy.
+The track has a content digest and source provenance. Raw replies are in
+`planet_track_cache/`, deliberately isolated from the planner cache so a newly
+fetched overlapping epoch cannot alter old plan provenance. Some already-cached
+rows are reused from `ephemeris/` and retain their original source filenames.
+
+Backend hook: `app.backend.ephemeris.planet_tracks.planet_positions(jd_tdb)`
+returns the common date/frame and eight `{body_id,r_km,v_km_s}` entries. Out-of-range
+or nonfinite dates raise `EPHEMERIS_UNAVAILABLE`; no extrapolation or synthetic
+fallback is used. Build with `python -m app.backend.ephemeris.planet_tracks`
+(offline) or add `--live` to fetch missing ranges through the serialized client.

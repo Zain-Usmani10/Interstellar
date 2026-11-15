@@ -38,10 +38,13 @@ export function CameraRig({
       fromTarget.current.copy(orbit.target);
       if (focus) {
         toTarget.current.fromArray(focus);
-        const d = Math.max(3.5, focusRadius * 6);
+        // Aim above the centre so the surface occupies the lower half, leaving
+        // room for the owning panel's launch controls.
+        toTarget.current.y += focusRadius * 0.75;
+        const d = Math.max(2.2, focusRadius * 4);
         to.current
           .copy(toTarget.current)
-          .add(new Vector3(d * 0.7, d * 0.45, d));
+          .add(new Vector3(d * 0.25, d * 0.25, d));
       } else {
         toTarget.current.set(0, 0, 0);
         const distance = extent * 2.1 * Math.max(1, size.height / size.width);

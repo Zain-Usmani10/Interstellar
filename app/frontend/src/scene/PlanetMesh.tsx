@@ -20,6 +20,7 @@ type Props = {
   selected: boolean;
   interactive: boolean;
   onSelect: (target: PlanetTargetId) => void;
+  onFocus?: () => void;
 };
 
 function AtmosphereShell({
@@ -54,6 +55,7 @@ export function PlanetMesh({
   selected,
   interactive,
   onSelect,
+  onFocus,
 }: Props) {
   const sphere = useRef<Mesh>(null);
   const clouds = useRef<Mesh>(null);
@@ -79,7 +81,7 @@ export function PlanetMesh({
     if (clouds.current) clouds.current.rotation.y += d * 0.09;
   });
 
-  const clickable = interactive && !!body.target;
+  const clickable = interactive && (!!body.target || !!onFocus);
   const atmosphereColor =
     body.name === "Earth"
       ? "#6ec8ff"
@@ -95,9 +97,10 @@ export function PlanetMesh({
         ref={sphere}
         rotation={[0, 0, body.name === "Uranus" ? 1.5 : 0.08]}
         onClick={(e) => {
-          if (clickable && body.target) {
+          if (clickable) {
             e.stopPropagation();
-            onSelect(body.target);
+            if (body.target) onSelect(body.target);
+            onFocus?.();
           }
         }}
         onPointerOver={(e) => {

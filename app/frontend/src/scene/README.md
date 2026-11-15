@@ -53,3 +53,28 @@ executed mask 3) through the browser controls. A second mission was aborted afte
 departure and displayed ABORTED / uncaptured coast with mask 1. These runs used
 the synthetic plan, an isolated database and SIM_SPEED=100; they are software
 simulator checks, not real hardware. The combined frontend production build passed.
+
+
+## Section 19/20 dock interface (2026-11-15)
+
+`OrbitScene` accepts optional `fleet: SceneShuttle[]`, `mockFleet: boolean`
+(default false), and `planetPositions: {body_id, r_km}[]`. The parent maps fleet
+API locations to `{id, name, class, body_id, status}` and provides positions at
+one backend date. The scene does not fetch or advance planetary epochs. Without
+fleet data no inventory is invented; the fixture viewer explicitly labels its
+mock fleet. Outer-planet clicks use the existing `onFocusName` callback.
+
+Supply `snapshot.shuttle_id`, `snapshot.link.blackout`, `snapshot.estimate` and
+`plan.ticks` through the existing props. The five-second pad lift uses received
+countdown ticks only; the camera pulls back after departure evidence. Landing
+on the destination pad requires COMPLETE plus the captured phase, outcome and
+executed burn bits. The blackout ghost and dashed nominal route remain separate
+from the frozen confirmed ship. Sync removes them. Missing/mismatched telemetry
+cannot launch, land, or show an estimate.
+
+`node --test app/frontend/src/scene/*.test.mjs` checks these rendering gates.
+Browser fixture evidence in `evidence/dock-preview.jpg` shows the mock dock;
+this is not evidence of live fleet integration or hardware execution.
+`evidence/dock-capture.jpg` records a complete browser simulator run through
+prepare, arm, start and confirmed capture using the local backend. The parent
+owner still wires fleet/date API responses and the launch approval fast-forward.

@@ -53,7 +53,7 @@ export function Station({ radius }: { radius: number }) {
   );
 }
 
-function RocketModel({ warning }: { warning: boolean }) {
+export function RocketModel({ warning }: { warning: boolean }) {
   return (
     <group scale={0.14}>
       <mesh>
@@ -97,8 +97,11 @@ type Props = {
   snapshot?: SceneSnapshot | null;
   origin: Vec3;
   originRadius: number;
+  destination?: Vec3;
+  destinationRadius?: number;
+  launchProgress?: number;
 };
-export function Spacecraft({ view, snapshot, origin, originRadius }: Props) {
+export function Spacecraft({ view, snapshot, origin, originRadius, destination, destinationRadius = 1, launchProgress = 0 }: Props) {
   const group = useRef<Group>(null),
     flame = useRef<Group>(null);
   const target = useRef(new Vector3()),
@@ -109,8 +112,10 @@ export function Spacecraft({ view, snapshot, origin, originRadius }: Props) {
     departure = useRef<{ mission: string | null; departed: boolean } | null>(null),
     flash = useRef(0),
     initialized = useRef(false);
-  const dock: Vec3 = [origin[0], origin[1] + originRadius + 0.42, origin[2]];
-  const [x, y, z] = view.position ?? dock;
+  const dock: Vec3 = [origin[0], origin[1] + originRadius + 0.42 + launchProgress * 0.55, origin[2]];
+  const landing: Vec3 | null = destination && view.mode === "captured"
+    ? [destination[0], destination[1] + destinationRadius + 0.42, destination[2]] : null;
+  const [x, y, z] = landing ?? view.position ?? dock;
   const velocity = snapshot?.spacecraft.v_km_s,
     stale = view.stale;
   useEffect(() => {
@@ -141,11 +146,11 @@ export function Spacecraft({ view, snapshot, origin, originRadius }: Props) {
     if (!group.current) return;
     elapsed.current = Math.min(
       1,
-      elapsed.current + Math.min(delta, 0.05) / 0.18,
+      elapsed.current + Math.min(delta, 0.05) / (view.mode === "captured" ? 1.5 : 0.18),
     );
     const t = elapsed.current * elapsed.current * (3 - 2 * elapsed.current);
     group.current.position.lerpVectors(from.current, target.current, t);
-    if (view.departed && velocity) {
+    if (view.departed && view.mode !== "captured" && velocity) {
       direction.current.set(velocity[0], velocity[2], -velocity[1]);
       if (direction.current.lengthSq() > 0)
         group.current.quaternion.slerp(
@@ -159,12 +164,12 @@ export function Spacecraft({ view, snapshot, origin, originRadius }: Props) {
     flash.current = Math.max(0, flash.current - Math.min(delta, 0.05));
     if (flame.current)
       flame.current.visible =
-        flash.current > 0 && !stale && view.mode === "coast";
+        !stale && ((flash.current > 0 && view.mode === "coast") || launchProgress > 0);
   });
   if (view.mode === "unavailable") return null;
   return (
     <group ref={group}>
-      <group position={view.mode === "captured" ? [0, 0.95, 0] : [0, 0, 0]}>
+      <group>
         <RocketModel warning={view.mode === "uncaptured"} />
       </group>
       {view.departed && (
@@ -192,7 +197,7 @@ export function Spacecraft({ view, snapshot, origin, originRadius }: Props) {
       </group>
       {view.mode === "captured" && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.9, 0.012, 6, 48]} />
+          <torusGeometry args={[0.25, 0.012, 6, 48]} />
           <meshBasicMaterial color="#88e5be" />
         </mesh>
       )}

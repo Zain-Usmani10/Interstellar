@@ -21,9 +21,9 @@
    "propellant_capacity_kg": 10000.0
   },
   "ticks": {
-   "departure_tick": 10,
-   "arrival_tick": 12010,
-   "end_tick": 12610
+   "departure_tick": 500,
+   "arrival_tick": 6500,
+   "end_tick": 6800
   }
  }
 }

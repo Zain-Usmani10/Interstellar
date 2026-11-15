@@ -94,9 +94,9 @@
  },
  "ticks": {
   "tick_hz": 100,
-  "departure_tick": 5,
-  "arrival_tick": 6005,
-  "end_tick": 6305,
+  "departure_tick": 500,
+  "arrival_tick": 6500,
+  "end_tick": 6800,
   "seconds_per_tick": 3826.2857142828407
  },
  "residuals": {
@@ -14624,9 +14624,9 @@
   }
  },
  "run_interval": {
-  "start_jd_tdb": 2461505.2793721547,
+  "start_jd_tdb": 2461505.5007428555,
   "end_jd_tdb": 2461784.500800726,
-  "real_demo_seconds": 63.05,
+  "real_demo_seconds": 68.0,
   "simulated_flight_days": 265.71428571408615
  },
  "provenance": {
@@ -14921,6 +14921,6 @@
   ],
   "notes": "Planet positions/velocities and GM values are NASA/JPL Horizons data read from the local verified cache (data_mode says cached or live). The transfer arc, burns and propellant are computed by this project with a simplified model: Sun-only two-body coast, zero-revolution prograde Lambert arc, impulsive burns from circular 12-hour parking orbits, no launch, atmosphere, third bodies or finite burns. NASA did not compute or certify this route. Lambert solver: lamberthub 1.0.0 izzo2015 (GPL-3.0)."
  },
- "plan_id": "e8be0044-2c8a-549b-9c8c-307a70a655c4",
- "plan_sha256": "9c14387c5d4748090fcadb872a93f8a619ac2c1f517f99258ddc16fe2cedc6d0"
+ "plan_id": "256ad897-c1b5-5c6d-a138-565ea425e014",
+ "plan_sha256": "1a19e2463b11ee3a6448215d98fde0b6ce54beb9604c20a133022759c0fa65ee"
 }

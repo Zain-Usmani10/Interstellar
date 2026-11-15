@@ -1,19 +1,23 @@
 import { Component, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Line, Stars } from "@react-three/drei";
+import { Html, Line, Stars } from "@react-three/drei";
 import { AdditiveBlending } from "three";
 import type { PlanetTargetId } from "../api/types";
 import { BlackHole } from "./BlackHole";
 import { PlanetMesh } from "./PlanetMesh";
 import { CameraRig } from "./CameraRig";
 import { ScenePerformance } from "./ScenePerformance";
-import { Spacecraft, Station } from "./Spacecraft";
+import { Spacecraft } from "./Spacecraft";
+import { DockStation } from "./DockStation";
+import { countdownProgress, dockedShuttles, estimatePosition, MOCK_FLEET } from "./dockState";
 import { VISUAL_PLANETS, planetPosition } from "./planets";
 import { flightView, routePoints } from "./flightState";
 import { sunGlow } from "./surfaces";
 import { loadTexture } from "./textureMaps";
-import type { ScenePlan, SceneSnapshot, Vec3 } from "./types";
+import type { ScenePlan, SceneSnapshot, SceneShuttle, ScenePlanetPosition, Vec3 } from "./types";
+import { kmToScene } from "./axes";
+import { finiteVector } from "./flightState";
 import "./scene.css";
 
 export type { ScenePlan, SceneSnapshot } from "./types";
@@ -26,6 +30,9 @@ export type OrbitSceneProps = {
   focusName?: string | null;
   plan?: ScenePlan | null;
   snapshot?: SceneSnapshot | null;
+  fleet?: SceneShuttle[];
+  mockFleet?: boolean;
+  planetPositions?: ScenePlanetPosition[];
 };
 
 const BLACK_HOLE_POS: Vec3 = [Math.cos(5.1) * 92, 0, -Math.sin(5.1) * 92];
@@ -111,6 +118,9 @@ export function OrbitScene({
   focusName = null,
   plan,
   snapshot,
+  fleet = [],
+  mockFleet = false,
+  planetPositions,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
   const [performanceReport, setPerformanceReport] = useState(
@@ -126,10 +136,15 @@ export function OrbitScene({
   }, []);
 
   const view = flightView(snapshot, plan);
+  const ghost = estimatePosition(snapshot, plan);
+  const launchProgress = countdownProgress(snapshot, plan);
+  const ships = mockFleet ? MOCK_FLEET : fleet;
   const points = useMemo(() => routePoints(plan), [plan]);
   const planets = VISUAL_PLANETS.map((body) => ({
     body,
-    position: planetPosition(
+    position: planetPositions?.find(p => p.body_id === body.bodyId && finiteVector(p.r_km))
+      ? kmToScene(planetPositions.find(p => p.body_id === body.bodyId)!.r_km)
+      : planetPosition(
       body,
       plan,
       view.mode === "unavailable" ? null : snapshot,
@@ -144,15 +159,19 @@ export function OrbitScene({
   ) ?? planets.find((p) => p.body.bodyId === "399")!;
 
   const captured = view.mode === "captured";
+  const sceneSnapshot = view.mode === "unavailable" ? null : snapshot;
+  const destination = planets.find(p => p.body.bodyId === plan?.destination_body_id);
   const visitTarget =
-    focusName === "Black Hole"
+    sceneSnapshot && !view.departed
+      ? origin
+      : focusName === "Black Hole"
       ? { position: BLACK_HOLE_POS, body: { radius: 1.2 } }
       : (focused ?? selected);
   const cameraFocus = captured
-    ? view.position
+    ? destination?.position ?? view.position
     : !view.departed
       ? ((visitTarget?.position as Vec3 | null) ?? null)
-      : view.position;
+      : null;
   const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}`;
 
   return (
@@ -220,7 +239,12 @@ export function OrbitScene({
                 }
                 interactive={selectionEnabled}
                 onSelect={onSelect}
+                onFocus={() => onFocusName?.(body.name)}
               />
+              <group position={position}>
+                <DockStation radius={body.radius} shuttles={dockedShuttles(ships, body.bodyId ?? "", sceneSnapshot)
+                  .filter(ship => ship.id !== sceneSnapshot?.shuttle_id)} />
+              </group>
             </group>
           ))}
           <BlackHole
@@ -237,31 +261,39 @@ export function OrbitScene({
               opacity={0.8}
             />
           )}
-          <group position={origin.position}>
-            <Station radius={origin.body.radius} />
-          </group>
-          <Spacecraft
+          {snapshot && <Spacecraft
             view={view}
             snapshot={snapshot}
             origin={origin.position}
             originRadius={origin.body.radius}
-          />
+            destination={destination?.position}
+            destinationRadius={destination?.body.radius}
+            launchProgress={launchProgress}
+          />}
+          {ghost && <>
+            {points.length > 1 && <Line points={points} color="#e8b875" dashed dashSize={0.22} gapSize={0.15} lineWidth={2} />}
+            <group position={ghost}>
+              <mesh><octahedronGeometry args={[0.24]} /><meshBasicMaterial color="#e8b875" transparent opacity={0.45} wireframe /></mesh>
+              <Html center position={[0, 0.65, 0]} style={{ pointerEvents: "none", color: "#f4cf98", font: "11px monospace", whiteSpace: "nowrap" }}>ESTIMATE · NO CONTACT</Html>
+            </group>
+          </>}
           <CameraRig
             focus={cameraFocus}
             focusRadius={
               captured
-                ? 0.65
+                ? destination?.body.radius ?? 0.65
                 : focusName === "Black Hole"
                   ? 1.4
                   : ((visitTarget as { body?: { radius: number } })?.body
                       ?.radius ?? 1)
             }
             transitionKey={transitionKey}
-            extent={95}
+            extent={Math.max(95, ...planets.map(p => Math.hypot(...p.position) + p.body.radius))}
           />
         </Canvas>
       </SceneBoundary>
       <div className="scene-vignette" aria-hidden="true" />
+      {mockFleet && <div style={{ position: "absolute", bottom: 12, left: 12, color: "#efce8e", font: "11px monospace" }}>MOCK FLEET · PREVIEW</div>}
     </div>
   );
 }
