@@ -18,6 +18,12 @@ type Props = {
   gates: Gates;
   simFaultsEnabled: boolean;
   routeLabel: string;
+  /** §18.7 — enabled only in RUNNING after contracts 1.2.0 */
+  blackoutActive?: boolean;
+  canStartBlackout?: boolean;
+  canEndBlackout?: boolean;
+  onBlackoutStart?: () => void;
+  onBlackoutEnd?: () => void;
   onPrepare: () => void;
   onArm: () => void;
   onLaunch: () => void;
@@ -35,6 +41,11 @@ export function GuidedLaunch({
   gates,
   simFaultsEnabled,
   routeLabel,
+  blackoutActive = false,
+  canStartBlackout = false,
+  canEndBlackout = false,
+  onBlackoutStart,
+  onBlackoutEnd,
   onPrepare,
   onArm,
   onLaunch,
@@ -116,12 +127,41 @@ export function GuidedLaunch({
         <button
           type="button"
           className="abort-btn"
-          disabled={locked || !(live && gates.canAbort)}
+          disabled={locked || blackoutActive || !(live && gates.canAbort)}
           onClick={onAbort}
         >
           Abort
         </button>
-        <button type="button" disabled={locked} onClick={onReset}>
+        {blackoutActive ? (
+          <button
+            type="button"
+            className="blackout-btn end"
+            disabled={locked || !canEndBlackout}
+            title={
+              canEndBlackout
+                ? "End blackout early"
+                : "Awaits contracts 1.2.0 blackout_end"
+            }
+            onClick={onBlackoutEnd}
+          >
+            End blackout
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="blackout-btn"
+            disabled={locked || !canStartBlackout}
+            title={
+              canStartBlackout
+                ? "Start blackout (RUNNING only)"
+                : "Awaits contracts 1.2.0 · RUNNING only"
+            }
+            onClick={onBlackoutStart}
+          >
+            Start blackout
+          </button>
+        )}
+        <button type="button" disabled={locked || blackoutActive} onClick={onReset}>
           Start over
         </button>
         {simFaultsEnabled ? (

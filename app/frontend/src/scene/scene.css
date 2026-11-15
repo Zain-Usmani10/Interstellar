@@ -28,3 +28,13 @@
   color: #cad7e2;
   font: 13px/1.6 var(--font-body, sans-serif);
 }
+
+.estimate-ghost-label {
+  display: block;
+  color: #f0d4a0;
+  font: 600 10px/1 Avenir Next, Segoe UI, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}

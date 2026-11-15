@@ -102,7 +102,37 @@ export type MissionSnapshot = {
     view?: string;
     delay_demo_s?: number | null;
     delay_physical_s?: number | null;
+    /** contracts 1.2.0 / plan §18.5 — present when blackout is active */
+    blackout?: boolean;
   };
+  /** contracts 1.2.0 / plan §18.5 — confirmed trip display from telemetry */
+  trip?: {
+    trip_days: number | null;
+    days_to_arrival: number | null;
+  } | null;
+  /**
+   * contracts 1.2.0 / plan §18.5 — moves only during blackout.
+   * Never treat estimate capture as "Arrived".
+   */
+  estimate?: {
+    tick: number;
+    epoch_jd_tdb: number | null;
+    days_to_arrival: number | null;
+    spacecraft: {
+      phase: string;
+      r_km: Vec3 | null;
+    };
+    fuel_remaining_g: number;
+    expected_events: Array<"departure" | "capture">;
+  } | null;
+  /** contracts 1.2.0 / plan §18.5 — filled after blackout sync */
+  reconciliation?: {
+    blackout_start_tick: number;
+    blackout_end_tick: number;
+    events_during_blackout: string[];
+    estimate_matched: boolean;
+    differences: string[];
+  } | null;
   epoch_jd_tdb: number | null;
   spacecraft: {
     phase: "at_origin" | "coast" | "captured" | "uncaptured_coast" | "unknown";

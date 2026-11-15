@@ -372,6 +372,130 @@ button {
   color: #f0b4a8;
 }
 
+.blackout-btn {
+  border-color: rgba(224, 176, 106, 0.5) !important;
+  color: #f0d4a0;
+}
+
+.blackout-btn.end {
+  border-color: rgba(126, 200, 192, 0.45) !important;
+  color: #b8efe8;
+}
+
+.blackout-banner {
+  position: absolute;
+  top: 4.6rem;
+  left: 50%;
+  z-index: 8;
+  width: min(34rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(224, 176, 106, 0.45);
+  background: rgba(28, 16, 8, 0.82);
+  backdrop-filter: blur(14px);
+  pointer-events: none;
+}
+
+.blackout-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  color: #f0d4a0;
+}
+
+.blackout-copy {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #d8c4a4;
+}
+
+.blackout-preview-tag,
+.trip-preview-tag,
+.reconciliation-preview-tag {
+  margin: 0.45rem 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+
+.trip-readout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin: 0.35rem 0 0.75rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(8, 14, 24, 0.45);
+}
+
+.trip-readout.estimate {
+  border-color: rgba(224, 176, 106, 0.4);
+}
+
+.trip-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.trip-metric-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.trip-metric-value {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.trip-metric-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.reconciliation-card {
+  position: absolute;
+  right: 1rem;
+  bottom: 4.5rem;
+  z-index: 6;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  pointer-events: auto;
+}
+
+.reconciliation-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.reconciliation-meta {
+  margin: 0.35rem 0 0.55rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.reconciliation-list,
+.reconciliation-diffs {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.reconciliation-diffs {
+  color: var(--warn);
+}
+
 .engineer-drawer {
   margin-top: 0.85rem;
 }

@@ -1,7 +1,7 @@
 import { Component, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Line, Stars } from "@react-three/drei";
+import { Html, Line, Stars } from "@react-three/drei";
 import { AdditiveBlending } from "three";
 import type { PlanetTargetId } from "../api/types";
 import { BlackHole } from "./BlackHole";
@@ -18,6 +18,13 @@ import "./scene.css";
 
 export type { ScenePlan, SceneSnapshot } from "./types";
 
+/** §18.7 ghost + dashed estimate path — values from snapshot.estimate only. */
+export type EstimateOverlay = {
+  position: Vec3;
+  path: Vec3[];
+  label?: string;
+};
+
 export type OrbitSceneProps = {
   selectedId: PlanetTargetId | null;
   selectionEnabled?: boolean;
@@ -26,6 +33,7 @@ export type OrbitSceneProps = {
   focusName?: string | null;
   plan?: ScenePlan | null;
   snapshot?: SceneSnapshot | null;
+  estimateOverlay?: EstimateOverlay | null;
 };
 
 const BLACK_HOLE_POS: Vec3 = [Math.cos(5.1) * 92, 0, -Math.sin(5.1) * 92];
@@ -103,6 +111,35 @@ class SceneBoundary extends Component<
   }
 }
 
+function GhostMarker({
+  position,
+  label,
+}: {
+  position: Vec3;
+  label: string;
+}) {
+  return (
+    <group position={position}>
+      <mesh>
+        <sphereGeometry args={[0.22, 16, 12]} />
+        <meshBasicMaterial color="#e0b06a" transparent opacity={0.55} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.42, 16, 12]} />
+        <meshBasicMaterial color="#e0b06a" transparent opacity={0.18} />
+      </mesh>
+      <Html
+        position={[0, 0.7, 0]}
+        center
+        zIndexRange={[8, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <span className="estimate-ghost-label">{label}</span>
+      </Html>
+    </group>
+  );
+}
+
 export function OrbitScene({
   selectedId,
   selectionEnabled = true,
@@ -111,6 +148,7 @@ export function OrbitScene({
   focusName = null,
   plan,
   snapshot,
+  estimateOverlay = null,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
   const [performanceReport, setPerformanceReport] = useState(
@@ -237,6 +275,24 @@ export function OrbitScene({
               opacity={0.8}
             />
           )}
+          {estimateOverlay && estimateOverlay.path.length > 1 ? (
+            <Line
+              points={estimateOverlay.path}
+              color="#e0b06a"
+              lineWidth={1.4}
+              transparent
+              opacity={0.7}
+              dashed
+              dashSize={0.85}
+              gapSize={0.55}
+            />
+          ) : null}
+          {estimateOverlay ? (
+            <GhostMarker
+              position={estimateOverlay.position}
+              label={estimateOverlay.label ?? "estimate"}
+            />
+          ) : null}
           <group position={origin.position}>
             <Station radius={origin.body.radius} />
           </group>
