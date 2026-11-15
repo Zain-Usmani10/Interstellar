@@ -7,12 +7,12 @@
 //      ignored.
 //   3. rose / fell pulse for one clock when the clean level changes.
 //
-// IDLE_LEVEL is the level at reset: 1 for the DE10-Lite keys (active low),
-// 0 for a slide switch that starts down.
+// After reset the module first waits STABLE_CLKS clocks and then simply
+// takes over whatever level the pin has, without a rose / fell pulse. So a
+// switch that is already up when the board starts does not count as a flip.
 
 module debounce #(
-    parameter integer STABLE_CLKS = 500_000,
-    parameter         IDLE_LEVEL  = 1'b1
+    parameter integer STABLE_CLKS = 500_000
 ) (
     input  wire clk,
     input  wire rst_n,
@@ -24,20 +24,30 @@ module debounce #(
 
     reg [1:0]  sync;
     reg [31:0] count;
+    reg        started;    // the starting level has been taken over
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            sync  <= {2{IDLE_LEVEL}};
-            level <= IDLE_LEVEL;
-            count <= 32'd0;
-            rose  <= 1'b0;
-            fell  <= 1'b0;
+            sync    <= 2'b00;
+            level   <= 1'b0;
+            count   <= 32'd0;
+            started <= 1'b0;
+            rose    <= 1'b0;
+            fell    <= 1'b0;
         end else begin
             sync <= {sync[0], raw};
             rose <= 1'b0;
             fell <= 1'b0;
 
-            if (sync[1] == level) begin
+            if (!started) begin
+                if (count == STABLE_CLKS - 1) begin
+                    count   <= 32'd0;
+                    level   <= sync[1];
+                    started <= 1'b1;
+                end else begin
+                    count <= count + 32'd1;
+                end
+            end else if (sync[1] == level) begin
                 count <= 32'd0;                 // no change pending
             end else if (count == STABLE_CLKS - 1) begin
                 count <= 32'd0;

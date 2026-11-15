@@ -2,7 +2,8 @@
 // Top level for the DE10-Lite (MAX 10 10M50DAF484C7G).
 // This is the only file that connects modules to each other and to pins.
 //
-// Stage (issue #8, milestone C): the full command path.
+// Stage (issue #8, milestone D): the full command path with a triplicated,
+// voted control tuple and fault-injection switches.
 //
 //   UART_RX -> uart_rx -> frame_rx -+-> cmd_handler -> sequencer
 //                                   |        |             |
@@ -10,16 +11,18 @@
 //                                   |        v             v
 //   UART_TX <- uart_tx <- frame_tx <-------- + <------ status_gen
 //
-// Not here yet: triplicated registers and fault switches (milestone D).
-//
 // Board controls:
 //   KEY0   - reset (hold to reset, release to run)
+//   KEY1   - local abort
+//   SW0    - flip up: INJECT_SINGLE (corrupt one of the three copies)
+//   SW1    - flip up: INJECT_DIVERGENCE (corrupt two copies differently)
 //   LEDR0  - heartbeat, blinks once per second
 //   LEDR1  - READY     (plan LOADED or ARMED)
 //   LEDR2  - RUNNING
 //   LEDR3  - COMPLETE
 //   LEDR4  - SAFE
 //   LEDR5  - ABORTED
+//   LEDR6  - a fault was seen since reset (stays on)
 //   LEDR7  - a session is open
 //   LEDR8  - flips each time a received frame is dropped
 //   LEDR9  - on while the design is held in reset
@@ -31,10 +34,12 @@ module interstellar_top #(
     parameter integer HEARTBEAT_HALF_TICKS = 50,         // 100 Hz -> 1 Hz blink
     parameter integer UART_CLKS_PER_BIT    = 434,        // 50 MHz -> 115200 baud
     parameter integer FRAME_TIMEOUT_CLKS   = 5_000_000,  // 100 ms
-    parameter integer STATUS_PERIOD_TICKS  = 10          // 100 Hz -> 10 Hz STATUS
+    parameter integer STATUS_PERIOD_TICKS  = 10,         // 100 Hz -> 10 Hz STATUS
+    parameter integer DEBOUNCE_CLKS        = 500_000     // 10 ms
 ) (
     input  wire       MAX10_CLK1_50,  // 50 MHz oscillator, PIN_P11
-    input  wire [1:0] KEY,            // push buttons, active low (KEY1 unused)
+    input  wire [1:0] KEY,            // push buttons, active low
+    input  wire [1:0] SW,             // slide switches, up = 1
     input  wire       UART_RX,        // JP1 pin 1, PIN_V10
     output wire       UART_TX,        // JP1 pin 2, PIN_W10
     output wire [9:0] LEDR            // red LEDs, active high
@@ -81,6 +86,26 @@ module interstellar_top #(
         .rst_n (rst_n),
         .tick  (tick_free),
         .led   (heartbeat_led)
+    );
+
+    // ------------------------------------------------------------ buttons and switches
+    wire local_abort;         // KEY1 pressed (keys are active low: press = falling)
+    wire inject_single;       // SW0 flipped up
+    wire inject_divergence;   // SW1 flipped up
+
+    debounce #(.STABLE_CLKS(DEBOUNCE_CLKS)) u_key1 (
+        .clk(clk), .rst_n(rst_n), .raw(KEY[1]),
+        .level(), .rose(), .fell(local_abort)
+    );
+
+    debounce #(.STABLE_CLKS(DEBOUNCE_CLKS)) u_sw0 (
+        .clk(clk), .rst_n(rst_n), .raw(SW[0]),
+        .level(), .rose(inject_single), .fell()
+    );
+
+    debounce #(.STABLE_CLKS(DEBOUNCE_CLKS)) u_sw1 (
+        .clk(clk), .rst_n(rst_n), .raw(SW[1]),
+        .level(), .rose(inject_divergence), .fell()
     );
 
     // ------------------------------------------------------------ UART bytes
@@ -155,6 +180,8 @@ module interstellar_top #(
     wire [31:0] departure_executed_tick;
     wire [31:0] capture_executed_tick;
     wire [2:0]  safe_reason;
+    wire [31:0] masked_fault_count;
+    wire [31:0] no_majority_count;
     wire        mission_changed;
 
     // Frame transmitter handshake (declared here, used below).
@@ -214,6 +241,9 @@ module interstellar_top #(
         .do_start                (do_start),
         .do_abort                (do_abort),
         .do_clear                (do_clear),
+        .local_abort             (local_abort),
+        .inject_single           (inject_single),
+        .inject_divergence       (inject_divergence),
         .staged_mission_id       (staged_mission_id),
         .staged_departure_tick   (staged_departure_tick),
         .staged_arrival_tick     (staged_arrival_tick),
@@ -232,6 +262,8 @@ module interstellar_top #(
         .departure_executed_tick (departure_executed_tick),
         .capture_executed_tick   (capture_executed_tick),
         .safe_reason             (safe_reason),
+        .masked_fault_count      (masked_fault_count),
+        .no_majority_count       (no_majority_count),
         .tick_restart            (mission_tick_restart),
         .changed                 (mission_changed)
     );
@@ -258,8 +290,8 @@ module interstellar_top #(
         .fuel_remaining_g        (fuel_g),
         .departure_executed_tick (departure_executed_tick),
         .capture_executed_tick   (capture_executed_tick),
-        .masked_fault_count      (32'd0),          // milestone D
-        .no_majority_count       (32'd0),          // milestone D
+        .masked_fault_count      (masked_fault_count),
+        .no_majority_count       (no_majority_count),
         .rx_error_count          (rx_error_count),
         .plan_crc16              (plan_crc16),
         .tx_start                (st_start),
@@ -294,7 +326,7 @@ module interstellar_top #(
     assign LEDR[3] = (state == 3'd5);                       // COMPLETE
     assign LEDR[4] = (state == 3'd4);                       // SAFE
     assign LEDR[5] = (state == 3'd6);                       // ABORTED
-    assign LEDR[6] = 1'b0;
+    assign LEDR[6] = (masked_fault_count != 32'd0) || (no_majority_count != 32'd0);
     assign LEDR[7] = (session != 32'd0);
     assign LEDR[8] = rx_error_count[0];
     assign LEDR[9] = ~rst_n;

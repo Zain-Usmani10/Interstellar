@@ -17,8 +17,10 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `rtl/frame_tx.v` | Sends one protocol v1 frame |
 | `rtl/status_gen.v` | Builds the 40-byte STATUS frame: on request, on change, and at 10 Hz |
 | `rtl/cmd_handler.v` | Checks each command (session, sequence, state, plan) and answers with an ACK |
-| `rtl/sequencer.v` | The mission: active plan, state, tick counter, fuel, the two burns |
-| `rtl/debounce.v` | Cleans up a button or switch (used from milestone D) |
+| `rtl/sequencer.v` | The mission: active plan, state, tick counter, fuel, the two burns, fault handling |
+| `rtl/tmr_lanes.v` | Three stored copies of the control tuple (state, mask, fuel, burn ticks) |
+| `rtl/voter.v` | Whole-tuple majority vote over the three copies |
+| `rtl/debounce.v` | Cleans up a button or switch |
 | `../../tests/fpga/` | Testbenches and `run_sim.sh` (simulation only) |
 
 ## Pins
@@ -26,7 +28,9 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 |---|---|---|
 | `MAX10_CLK1_50` | `PIN_P11` | Onboard 50 MHz oscillator |
 | `KEY[0]` | `PIN_B8` | Reset, active low (hold to reset) |
-| `KEY[1]` | `PIN_A7` | Not used yet |
+| `KEY[1]` | `PIN_A7` | Local abort |
+| `SW[0]` | `PIN_C10` | Flip up: INJECT_SINGLE (corrupt one copy) |
+| `SW[1]` | `PIN_C11` | Flip up: INJECT_DIVERGENCE (corrupt two copies differently) |
 | `UART_RX` | `PIN_V10` | JP1 pin 1 (GPIO0), from XIAO D6/TX, weak pull-up |
 | `UART_TX` | `PIN_W10` | JP1 pin 2 (GPIO1), to XIAO D7/RX, idles high |
 | `LEDR[0]`..`LEDR[8]` | `PIN_A8` `A9` `A10` `B10` `D13` `C13` `E14` `D14` `A11` | Status LEDs, see below |
@@ -55,7 +59,7 @@ Plug in the DE10-Lite USB-Blaster cable, then:
 ```
 Or use **Tools > Programmer** in Quartus. A `.sof` is volatile: reprogram after every power cycle.
 
-## What to expect on the board (milestone C)
+## What to expect on the board (milestone D)
 | LED | Meaning |
 |---|---|
 | LEDR0 | Heartbeat, blinks once per second |
@@ -64,11 +68,18 @@ Or use **Tools > Programmer** in Quartus. A `.sof` is volatile: reprogram after 
 | LEDR3 | COMPLETE |
 | LEDR4 | SAFE |
 | LEDR5 | ABORTED |
+| LEDR6 | A fault was seen since reset (stays on until KEY0) |
 | LEDR7 | A session is open |
 | LEDR8 | Flips each time a received frame is dropped |
 | LEDR9 | On while KEY0 holds the board in reset |
 
 With nothing connected only LEDR0 blinks. The board sends a STATUS frame out of UART_TX ten times a second.
+
+## Fault tolerance: what is and is not protected
+- Triplicated and voted: mission state, executed mask, remaining fuel, the two burn ticks.
+- Not triplicated (single points of failure): the plan, the tick counter, the voter, the supervisor logic, UART and I/O.
+- Two wrong copies that agree would outvote the correct one. This is a fault-injection demonstration, not radiation hardening.
+- Quartus 25.1std Lite kept all three copies: 101 registers each for `reg_a`, `reg_b`, `reg_c` in the fitted netlist, none under "Registers Removed During Synthesis".
 
 ## Board test log
 Record real-board results here, separately from simulation.

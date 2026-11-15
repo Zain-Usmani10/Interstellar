@@ -47,6 +47,7 @@ module tb_heartbeat;
     ) dut (
         .MAX10_CLK1_50 (clk),
         .KEY           (key),
+        .SW            (2'b00),
         .UART_RX       (1'b1),
         .UART_TX       (uart_tx),
         .LEDR          (ledr)

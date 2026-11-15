@@ -6,6 +6,7 @@ derive_clock_uncertainty
 # Push buttons and the UART receive line are asynchronous to clk50. They are
 # synchronised inside the design, so their pin arrival time is not analysed.
 set_false_path -from [get_ports {KEY[*]}]
+set_false_path -from [get_ports {SW[*]}]
 set_false_path -from [get_ports {UART_RX}]
 
 # LEDs and the UART transmit line are slow, human/115200-baud outputs with no

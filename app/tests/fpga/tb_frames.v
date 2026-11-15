@@ -53,6 +53,7 @@ module tb_frames;
     ) dut (
         .MAX10_CLK1_50 (clk),
         .KEY           (key),
+        .SW            (2'b00),
         .UART_RX       (line),
         .UART_TX       (tx_line),
         .LEDR          (ledr)

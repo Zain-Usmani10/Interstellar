@@ -24,6 +24,8 @@ set_global_assignment -name VERILOG_FILE rtl/status_gen.v
 set_global_assignment -name VERILOG_FILE rtl/debounce.v
 set_global_assignment -name VERILOG_FILE rtl/cmd_handler.v
 set_global_assignment -name VERILOG_FILE rtl/sequencer.v
+set_global_assignment -name VERILOG_FILE rtl/tmr_lanes.v
+set_global_assignment -name VERILOG_FILE rtl/voter.v
 set_global_assignment -name SDC_FILE interstellar.sdc
 
 # ---------------------------------------------------------------- Pin policy
@@ -40,6 +42,12 @@ set_location_assignment PIN_B8 -to KEY[0]
 set_location_assignment PIN_A7 -to KEY[1]
 set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to KEY[0]
 set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to KEY[1]
+
+# ---------------------------------------------------------------- Slide switches (up = 1)
+set_location_assignment PIN_C10 -to SW[0]
+set_location_assignment PIN_C11 -to SW[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[1]
 
 # ---------------------------------------------------------------- UART on JP1 (to the XIAO bridge)
 # UART_RX = JP1 pin 1 (GPIO0), driven by XIAO D6/TX
