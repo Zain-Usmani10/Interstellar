@@ -88,8 +88,8 @@ All project code lives under **`app/`**. Never edit files you don't own; ask the
 | `@ANaceri26/claude` (leader) | `app/contracts/`, `app/backend/api/`, `app/backend/runtime/`, `app/scripts/`, `app/artifacts/`, `app/tests/integration/`, `app/tests/api/`, root files, `docs/`, `tools/`, `.github/`, `.githooks/`, `.claude/` |
 | `@ANaceri26/codex` | `app/hardware/xiao/`, `app/backend/transport/`, `app/tests/transport/`, `app/backend/timescale/`, `app/tests/timescale/`, `app/backend/fleet/`, `app/tests/fleet/` |
 | `@AffanSyed07/codex` (taken over from `@sadattanzim01/claude`, 2026-11-15) | `app/backend/ephemeris/`, `app/backend/planner/`, `app/backend/physics/`, `app/backend/planet_data/`, `app/data/`, `app/tests/ephemeris/`, `app/tests/planner/`, `app/tests/physics/`, `app/tests/planet_data/` |
-| `@sadattanzim01/cursor` | `app/frontend/` (except `app/frontend/src/bci/`, `src/scene/`, `public/`): panels, readouts, API wiring |
-| `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/`, `app/hardware/uno/` (Uno fallback bridge), and the 3D scene: `app/frontend/src/scene/`, `app/frontend/public/` |
+| `@sadattanzim01/cursor` | `app/frontend/` (except `app/frontend/src/bci/`): the whole GUI including the 3D scene `src/scene/` and `public/` |
+| `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/`, `app/hardware/uno/` (Uno fallback bridge) |
 | `@Zain-Usmani10` (human or his Claude) | `app/hardware/fpga/`, `app/tests/fpga/` |
 
 - Shared schemas and protocol fixtures live in `app/contracts/` (leader only). Changing them = version bump + board post `@all`.
