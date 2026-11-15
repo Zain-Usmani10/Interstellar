@@ -62,14 +62,17 @@ def test_loopback_bridge_origin_auth_and_decoded_ack(monkeypatch):
                             "effective_frequencies_hz": [10, 15]}))
                         await asyncio.sleep(0.1)
                 sender = asyncio.create_task(frames())
+                async def receive_decision():
+                    async for raw in ws:
+                        message = json.loads(raw)
+                        if message["type"] == "decision_result":
+                            assert message["result"]["accepted"], message
+                            assert backend.state.inputs.selected_body_id == "499"
+                            return
+                    raise AssertionError("bridge closed before a core decision")
+
                 try:
-                    async with asyncio.timeout(8):
-                        async for raw in ws:
-                            message = json.loads(raw)
-                            if message["type"] == "decision_result":
-                                assert message["result"]["accepted"], message
-                                assert backend.state.inputs.selected_body_id == "499"
-                                break
+                    await asyncio.wait_for(receive_decision(), timeout=8)
                 finally:
                     sender.cancel()
                     await asyncio.gather(sender, return_exceptions=True)
