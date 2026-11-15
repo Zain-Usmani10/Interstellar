@@ -3,10 +3,15 @@ import type { PlanetTargetId } from "../api/types";
 
 type Props = {
   selectedId: PlanetTargetId | null;
+  enabled?: boolean;
   onSelect: (targetId: PlanetTargetId) => void;
 };
 
-export function PlanetPicker({ selectedId, onSelect }: Props) {
+export function PlanetPicker({
+  selectedId,
+  enabled = true,
+  onSelect,
+}: Props) {
   return (
     <div className="planet-picker" role="group" aria-label="Select planet">
       {PLANETS.map((planet) => {
@@ -17,6 +22,12 @@ export function PlanetPicker({ selectedId, onSelect }: Props) {
             type="button"
             className={active ? "planet-btn active" : "planet-btn"}
             aria-pressed={active}
+            disabled={!enabled}
+            title={
+              enabled
+                ? undefined
+                : "Close the info card (Esc) before choosing another planet"
+            }
             onClick={() => onSelect(planet.target_id)}
           >
             <span

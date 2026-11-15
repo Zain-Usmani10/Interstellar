@@ -14,6 +14,7 @@ export default function App() {
     controllerLabel,
     dataMode,
     selectedId,
+    planetChoiceEnabled,
     card,
     cardStatus,
     lastError,
@@ -23,13 +24,17 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        clearSelection("keyboard");
+        return;
+      }
+      if (!planetChoiceEnabled) return;
       if (event.key === "1") selectPlanet("planet.399", "keyboard");
       if (event.key === "2") selectPlanet("planet.499", "keyboard");
-      if (event.key === "Escape") clearSelection("keyboard");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [clearSelection, selectPlanet]);
+  }, [clearSelection, planetChoiceEnabled, selectPlanet]);
 
   return (
     <div className="app-shell">
@@ -49,12 +54,25 @@ export default function App() {
             same core selection path when the backend is live.
           </p>
         </div>
-        <PlanetPicker selectedId={selectedId} onSelect={selectPlanet} />
+        <PlanetPicker
+          selectedId={selectedId}
+          enabled={planetChoiceEnabled}
+          onSelect={selectPlanet}
+        />
       </header>
 
       <main className="stage">
-        <div className="canvas-wrap">
-          <OrbitScene selectedId={selectedId} onSelect={selectPlanet} />
+        <div className="canvas-column">
+          <div className="canvas-wrap">
+            <OrbitScene
+              selectedId={selectedId}
+              selectionEnabled={planetChoiceEnabled}
+              onSelect={selectPlanet}
+            />
+          </div>
+          <div className="bci-dock" aria-label="Optional brain widget">
+            <BciSlot />
+          </div>
         </div>
         <div className="side-stack">
           {card ? (
@@ -77,8 +95,6 @@ export default function App() {
           <MissionPanel />
         </div>
       </main>
-
-      <BciSlot />
     </div>
   );
 }

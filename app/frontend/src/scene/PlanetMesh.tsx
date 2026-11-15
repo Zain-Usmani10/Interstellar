@@ -7,10 +7,16 @@ import { sciToThree } from "./axes";
 type Props = {
   planet: PlanetInfo;
   selected: boolean;
+  interactive?: boolean;
   onSelect: (targetId: PlanetInfo["target_id"]) => void;
 };
 
-export function PlanetMesh({ planet, selected, onSelect }: Props) {
+export function PlanetMesh({
+  planet,
+  selected,
+  interactive = true,
+  onSelect,
+}: Props) {
   const meshRef = useRef<Mesh>(null);
   const [sx, sy, sz] = sciToThree(...planet.display_position_au_scaled);
 
@@ -26,10 +32,10 @@ export function PlanetMesh({ planet, selected, onSelect }: Props) {
         ref={meshRef}
         onClick={(e) => {
           e.stopPropagation();
-          onSelect(planet.target_id);
+          if (interactive) onSelect(planet.target_id);
         }}
         onPointerOver={() => {
-          document.body.style.cursor = "pointer";
+          if (interactive) document.body.style.cursor = "pointer";
         }}
         onPointerOut={() => {
           document.body.style.cursor = "default";

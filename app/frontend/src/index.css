@@ -154,10 +154,15 @@ button {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.planet-btn:hover,
+.planet-btn:hover:not(:disabled),
 .planet-btn.active {
   border-color: rgba(216, 163, 92, 0.7);
   background: rgba(216, 163, 92, 0.08);
+}
+
+.planet-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .planet-btn .swatch {
@@ -179,10 +184,32 @@ button {
   height: 100%;
 }
 
-.canvas-wrap {
-  min-height: 28rem;
+.canvas-column {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
   height: 100%;
   border-right: 1px solid var(--line);
+}
+
+.canvas-wrap {
+  min-height: 22rem;
+  height: 100%;
+  min-width: 0;
+}
+
+.bci-dock {
+  border-top: 1px solid var(--line);
+  padding: 0.65rem 0.85rem;
+  background: rgba(0, 0, 0, 0.28);
+  max-height: 40%;
+  overflow: auto;
+}
+
+.bci-dock:not(:has([data-bci-slot="mounted"])) {
+  display: none;
+  padding: 0;
+  border: 0;
 }
 
 .side-stack {
@@ -349,11 +376,9 @@ button {
 }
 
 .bci-slot[data-bci-slot="mounted"] {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 20;
-  max-width: min(22rem, calc(100vw - 2rem));
+  position: static;
+  max-width: none;
+  width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -367,7 +392,7 @@ button {
     grid-template-rows: minmax(18rem, 45vh) auto;
   }
 
-  .canvas-wrap {
+  .canvas-column {
     border-right: none;
     border-bottom: 1px solid var(--line);
   }

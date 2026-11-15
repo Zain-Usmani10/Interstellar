@@ -29,6 +29,9 @@ export function useCoreBridge() {
   const [controllerLabel, setControllerLabel] = useState("unknown");
   const [dataMode, setDataMode] = useState("unknown");
   const [selectedId, setSelectedId] = useState<PlanetTargetId | null>(null);
+  const [screen, setScreen] = useState<"planet_choice" | "planet_info" | string>(
+    "planet_choice",
+  );
   const [card, setCard] = useState<PlanetCardModel | null>(null);
   const [cardStatus, setCardStatus] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
@@ -42,10 +45,18 @@ export function useCoreBridge() {
   const socketRef = useRef<WebSocket | null>(null);
 
   const applySelection = useCallback(
-    (bodyId: BodyId | null, contextRevision: number, offline: boolean) => {
+    (
+      bodyId: BodyId | null,
+      contextRevision: number,
+      offline: boolean,
+      nextScreen?: string,
+    ) => {
       contextRevisionRef.current = contextRevision;
       const target = bodyToTarget(bodyId);
       setSelectedId(target);
+      setScreen(
+        nextScreen ?? (bodyId ? "planet_info" : "planet_choice"),
+      );
 
       if (!bodyId || !target) {
         fetchGenRef.current += 1;
@@ -149,14 +160,21 @@ export function useCoreBridge() {
               if (data.controller_label) setControllerLabel(data.controller_label);
               if (data.data_mode) setDataMode(data.data_mode);
               if (data.selection && sessionRef.current) {
-                if (data.selection.context_id) {
-                  sessionRef.current.context_id = data.selection.context_id;
+                const sel = data.selection as {
+                  selected_body_id: BodyId | null;
+                  context_id?: string;
+                  context_revision: number;
+                  screen?: string;
+                };
+                if (sel.context_id) {
+                  sessionRef.current.context_id = sel.context_id;
                 }
-                sessionRef.current.revision = data.selection.context_revision;
+                sessionRef.current.revision = sel.context_revision;
                 applySelection(
-                  data.selection.selected_body_id,
-                  data.selection.context_revision,
+                  sel.selected_body_id,
+                  sel.context_revision,
                   false,
+                  sel.screen,
                 );
               }
               return;
@@ -166,8 +184,14 @@ export function useCoreBridge() {
               const data = msg.data as {
                 selected_body_id: BodyId | null;
                 context_revision: number;
+                screen?: string;
               };
-              applySelection(data.selected_body_id, data.context_revision, false);
+              applySelection(
+                data.selected_body_id,
+                data.context_revision,
+                false,
+                data.screen,
+              );
               // Refresh local context revision for the next intent.
               if (sessionRef.current) {
                 sessionRef.current.revision = data.context_revision;
@@ -199,11 +223,16 @@ export function useCoreBridge() {
 
       if (offline) {
         if (targetId === "navigation.back") {
-          applySelection(null, contextRevisionRef.current + 1, true);
+          applySelection(null, contextRevisionRef.current + 1, true, "planet_choice");
           return;
         }
         if (targetId === "planet.399" || targetId === "planet.499") {
-          applySelection(targetId.slice("planet.".length) as BodyId, contextRevisionRef.current + 1, true);
+          applySelection(
+            targetId.slice("planet.".length) as BodyId,
+            contextRevisionRef.current + 1,
+            true,
+            "planet_info",
+          );
         }
         return;
       }
@@ -232,9 +261,14 @@ export function useCoreBridge() {
 
   const selectPlanet = useCallback(
     (targetId: PlanetTargetId, source: "mouse" | "keyboard" = "mouse") => {
+      // On planet_info only navigation.back / more_details are allowed — avoid action_unavailable noise.
+      if (screen === "planet_info") {
+        setLastError("select_unavailable_on_info_screen");
+        return;
+      }
       void proposeTarget(targetId, source);
     },
-    [proposeTarget],
+    [proposeTarget, screen],
   );
 
   const clearSelection = useCallback(
@@ -262,6 +296,8 @@ export function useCoreBridge() {
     controllerLabel,
     dataMode,
     selectedId,
+    screen,
+    planetChoiceEnabled: screen === "planet_choice",
     card,
     cardStatus,
     lastError,

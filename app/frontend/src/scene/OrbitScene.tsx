@@ -8,6 +8,7 @@ import { PlanetMesh } from "./PlanetMesh";
 
 type Props = {
   selectedId: PlanetTargetId | null;
+  selectionEnabled?: boolean;
   onSelect: (targetId: PlanetTargetId) => void;
 };
 
@@ -50,7 +51,11 @@ function MockTransferPreview() {
   return <Line points={points} color="#9bb6d4" lineWidth={1.5} transparent opacity={0.55} />;
 }
 
-export function OrbitScene({ selectedId, onSelect }: Props) {
+export function OrbitScene({
+  selectedId,
+  selectionEnabled = true,
+  onSelect,
+}: Props) {
   return (
     <Canvas
       camera={{ position: [18, 12, 18], fov: 42, near: 0.1, far: 500 }}
@@ -77,6 +82,7 @@ export function OrbitScene({ selectedId, onSelect }: Props) {
           key={planet.target_id}
           planet={planet}
           selected={selectedId === planet.target_id}
+          interactive={selectionEnabled}
           onSelect={onSelect}
         />
       ))}
