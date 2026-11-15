@@ -24,7 +24,7 @@ Status: the routes marked **mock** are served from the contract fixtures until t
 | `DELETE /api/v1/planning/jobs/{id}` | | `{job_id, status}` |
 | `POST /api/v1/missions` | `{plan_id}` | `201 MissionSnapshot`. 409 if another mission controls the board. |
 | `GET /api/v1/missions/{id}` | | `MissionSnapshot` |
-| `POST /api/v1/missions/{id}/commands` | `{command: "upload"\|"arm"\|"start"\|"abort"\|"clear"}` | `{command, applied, detail, snapshot}`. `applied` is true only after the controller's ACK. |
+| `POST /api/v1/missions/{id}/commands` | `{command: "upload"\|"arm"\|"start"\|"abort"\|"clear"\|"blackout_start"\|"blackout_end"}` | `{command, applied, detail, snapshot}`. `applied` is true only after the controller's ACK. |
 | `POST /api/v1/sim/faults` | `{kind: "single"\|"divergence"}` | Simulated controller only (409 in fpga mode; the real board uses its switches). |
 | `GET /api/v1/session` | | `{operator_token}` for our own browser origin |
 | `POST /api/v1/input/sessions` | `{source, adapter: {name, version, device}}` | `201 {input_session_id, token, capability: "planet_explore", context: InputContext}` |
@@ -66,3 +66,26 @@ Selecting a planet never changes the mission destination, starts planning or sen
 | `app.backend.planet_data.get_planet_info(body_id: str, scene_epoch_jd_tdb: float \| None) -> dict` (valid `PlanetInfo`) | `@sadattanzim01/claude` | contract fixture, labelled synthetic |
 | `app.backend.planner.run_search(params: dict, progress: Callable[[float], None], cancelled: Callable[[], bool]) -> list[dict]` (valid `MissionPlan`s) | `@sadattanzim01/claude` | `POST /planning/jobs` answers 503 `PLANNER_UNAVAILABLE` |
 | Plan files `app/data/plans/*.json` (valid `MissionPlan` with correct `plan_sha256`) | `@sadattanzim01/claude` | only the synthetic fixture plan is listed |
+
+## Added in contracts 1.2.0 (Shuttle and CCS, plan section 18)
+
+`POST /api/v1/missions/{id}/commands` accepts two more commands (operator token as before):
+
+| Command | Allowed when | Effect |
+|---|---|---|
+| `blackout_start` | Mission RUNNING on the controller | The backend stops sending (no keep-alive, no commands) and discards received frames. `link.blackout` becomes true and `estimate` appears. |
+| `blackout_end` | A blackout is active | Contact is restored now. Also happens by itself when the estimate reaches the arrival tick. |
+
+While a blackout is active every other command answers HTTP 409 with a "no contact" message.
+
+MissionSnapshot fields added (see `schemas/mission_snapshot.schema.json`):
+
+| Field | Use |
+|---|---|
+| `date_utc` | Calendar date of the confirmed tick. Show it in a screen corner at all times; during a blackout show `estimate.date_utc` marked as an estimate. |
+| `trip.trip_days`, `trip.days_to_arrival` | Countdown from confirmed telemetry. |
+| `link.blackout` | Show the "Contact lost" banner while true. |
+| `estimate` | Ghost marker (`spacecraft.r_km`), dashed path, estimated days, fuel and expected events. Estimate only. |
+| `reconciliation` | "While out of contact" summary after contact returns; `differences` lists where the estimate was wrong. |
+
+`upload` now also sends `SET_TRIP_DAYS` to the controller (wire type `0x16`).

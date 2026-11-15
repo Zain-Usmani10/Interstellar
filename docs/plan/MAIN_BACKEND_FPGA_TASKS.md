@@ -654,7 +654,7 @@ Additive. Every existing frame, ACK and STATUS stays byte for byte the same.
 | Lifetime | Forgotten on CLEAR, on a new COMMIT_PLAN and on reset. Not reported in STATUS |
 | Retry | An identical retry (same sequence) returns the cached ACK and is not applied twice, like every mutation |
 
-When the backend sends it: as the **third step of `upload`**, directly after the COMMIT_PLAN ACK, while the board is `LOADED`. `upload` succeeds only if LOAD_PLAN, COMMIT_PLAN and SET_TRIP_DAYS are all applied. ARM and START are unchanged.
+When the backend sends it: as the **third step of `upload`**, directly after the COMMIT_PLAN ACK, while the board is `LOADED`. `upload` is applied when LOAD_PLAN and COMMIT_PLAN are applied; if SET_TRIP_DAYS is refused or unanswered the plan stays loaded and `trip.trip_days` is null (the shuttle then has no days display). ARM and START are unchanged.
 
 Golden frame (session `0x1A2B3C4D`, sequence 3, mission `0x00C0FFEE`, 300 days), to be added to `contracts/fixtures/frames/` with its ACK:
 
@@ -689,7 +689,8 @@ Snapshot additions (MissionSnapshot, contracts 1.2.0; names are fixed here so th
 |---|---|
 | `link.blackout` | `true` while a blackout is active |
 | `trip` | `{ "trip_days": int or null, "days_to_arrival": int or null }` from confirmed telemetry |
-| `estimate` | `null`, or during a blackout `{ "tick", "epoch_jd_tdb", "days_to_arrival", "spacecraft": { "phase", "r_km" }, "fuel_remaining_g", "expected_events": ["departure" / "capture"] }` |
+| `date_utc` | Calendar date-time of the confirmed tick on the plan's real NASA timeline |
+| `estimate` | `null`, or during a blackout `{ "tick", "epoch_jd_tdb", "date_utc", "days_to_arrival", "spacecraft": { "phase", "r_km" }, "fuel_remaining_g", "expected_events": ["departure" / "capture"] }` |
 | `reconciliation` | `null`, or after a sync `{ "blackout_start_tick", "blackout_end_tick", "events_during_blackout": [...], "estimate_matched": bool, "differences": [text] }` |
 
 During a blackout the existing top-level fields (`state`, `tick`, `spacecraft`, `fuel_remaining_g`) keep the **last received** values. Only `estimate` moves.
@@ -722,8 +723,9 @@ Built only from the snapshot fields above; the browser computes no mission value
 |---|---|
 | FPGA watchdog, `0x16`, days counter, seven-segment | Merged, simulation only |
 | VGA cockpit | Not built |
-| Contracts 1.2.0 (golden frame, snapshot fields, commands) | Not written |
-| Backend keep-alive, blackout, estimate, sync; simulator support for `0x16` | Not built |
+| Contracts 1.2.0 (golden frames 31 to 33, snapshot fields, commands) | Merged |
+| Backend keep-alive, blackout, estimate, sync; simulator support for `0x16` | Merged; tested on the simulated controller only |
+| Fleet endpoints (section 20) | Not built |
 | GUI elements of 18.7 | Not built |
 | Real board round trip | Not done |
 
@@ -755,7 +757,7 @@ Whatever the route maths produces, it ends in one number: the trip length in day
 
 ### 19.2 What each clock shows
 
-- **CCS (laptop):** an absolute calendar date (day, month, year). It is the real date of the plan's NASA data (`epoch_jd_tdb` of the confirmed tick; of `estimate.tick` in a blackout). Plans currently depart in 2026 to 2027; moving the story to another year means refetching and revalidating the NASA data, so it is not done by relabelling.
+- **CCS (laptop):** an absolute calendar date (day, month, year), **shown in a screen corner at all times** so the viewer can see how fast simulated time is moving in each phase. It comes from the snapshot's `date_utc` (`estimate.date_utc`, marked as an estimate, during a blackout). It is the real date of the plan's NASA data (`epoch_jd_tdb` of the confirmed tick; of `estimate.tick` in a blackout). Plans currently depart in 2026 to 2027; moving the story to another year means refetching and revalidating the NASA data, so it is not done by relabelling.
 - **Shuttle (FPGA):** relative time only: days to arrival, starting at `trip_days` and counting down uniformly to 0 (18.4). No calendar.
 
 ### 19.3 When time moves (GUI behaviour)

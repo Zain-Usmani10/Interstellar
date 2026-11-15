@@ -44,6 +44,7 @@ class MsgType(IntEnum):
     START = 0x13
     ABORT = 0x14
     CLEAR = 0x15
+    SET_TRIP_DAYS = 0x16      # contracts 1.2.0: display only, plan section 18.3
     ACK = 0x80
     STATUS = 0x81
 
@@ -59,13 +60,16 @@ PAYLOAD_LEN = {
     MsgType.START: 4,
     MsgType.ABORT: 4,
     MsgType.CLEAR: 4,
+    MsgType.SET_TRIP_DAYS: 8,
     MsgType.ACK: 16,
     MsgType.STATUS: 40,
 }
 
 READ_ONLY_TYPES = (MsgType.DISCOVER, MsgType.GET_STATUS)
 MUTATION_TYPES = (MsgType.LOAD_PLAN, MsgType.COMMIT_PLAN, MsgType.ARM,
-                  MsgType.START, MsgType.ABORT, MsgType.CLEAR)
+                  MsgType.START, MsgType.ABORT, MsgType.CLEAR, MsgType.SET_TRIP_DAYS)
+
+MAX_TRIP_DAYS = 9999
 
 
 class State(IntEnum):
@@ -282,6 +286,29 @@ def pack_u32(value: int) -> bytes:
 
 def unpack_u32(payload: bytes) -> int:
     return struct.unpack("<I", payload)[0]
+
+
+def pack_trip_days(mission_id: int, trip_days: int) -> bytes:
+    """Payload of SET_TRIP_DAYS: the planned trip (departure to arrival tick) lasts trip_days days."""
+    return struct.pack("<II", mission_id, trip_days)
+
+
+def unpack_trip_days(payload: bytes) -> tuple[int, int]:
+    return struct.unpack("<II", payload)
+
+
+def trip_days_from_tof(tof_s: float) -> int:
+    """Whole days of the trip, rounded half up and kept inside 1..MAX_TRIP_DAYS."""
+    return max(1, min(MAX_TRIP_DAYS, int(tof_s / 86400.0 + 0.5)))
+
+
+def days_to_arrival(tick: int, departure_tick: int, arrival_tick: int, trip_days: int) -> int:
+    """Shared countdown formula (integers only); the board computes the same value."""
+    if tick <= departure_tick:
+        return trip_days
+    if tick >= arrival_tick:
+        return 0
+    return trip_days - (tick - departure_tick) * trip_days // (arrival_tick - departure_tick)
 
 
 def pack_commit(mission_id: int, plan_crc16: int) -> bytes:

@@ -43,7 +43,7 @@ class MissionRequest(BaseModel):
 
 
 class CommandRequest(BaseModel):
-    command: Literal["upload", "arm", "start", "abort", "clear"]
+    command: Literal["upload", "arm", "start", "abort", "clear", "blackout_start", "blackout_end"]
 
 
 class FaultRequest(BaseModel):

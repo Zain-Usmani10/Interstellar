@@ -46,6 +46,7 @@
     "START":        { "type_hex": "13", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
     "ABORT":        { "type_hex": "14", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
     "CLEAR":        { "type_hex": "15", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
+    "SET_TRIP_DAYS": { "type_hex": "16", "direction": "host_to_board", "payload_length": 8, "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"], ["trip_days", "u32"]] },
     "ACK":          { "type_hex": "80", "direction": "board_to_host", "payload_length": 16,
                       "payload": [["original_type", "u8"], ["result", "u8"], ["detail", "u16"], ["mission_id", "u32"],
                                   ["applied_tick", "u32"], ["plan_crc16", "u16"], ["reserved", "u16", 0]] },
