@@ -3,8 +3,8 @@
 Three sections, each with its own provenance so nothing can be mislabelled:
   facts          stable numbers (radius, mass, ...) transcribed from the cached NASA/JPL Horizons pages
   orbital_state  where the planet is at the scene epoch, from the cached NASA vectors
-  conditions     dated observations. Earth hazard events (NASA EONET) are not wired in yet and Mars has
-                 no current-weather source, so both honestly say 'unavailable'.
+  conditions     dated observations. Earth: NASA EONET storm/wildfire events (see eonet.py). Mars has no
+                 current-weather source, so it honestly says 'unavailable'.
 Missing data stays null/unavailable. A data problem never raises: the card still opens.
 """
 from __future__ import annotations
@@ -19,6 +19,7 @@ import numpy as np
 from ..ephemeris.cache import DEFAULT_CACHE_DIR, EphemerisCache
 from ..ephemeris.horizons import FRAME, HORIZONS_URL, HorizonsError
 from ..ephemeris.interp import hermite_state
+from . import eonet
 
 SCHEMA_VERSION = 1
 FACTS_FILE = Path(__file__).resolve().parents[2] / "data" / "planet_facts.json"
@@ -110,9 +111,11 @@ def _conditions(body_id: str) -> dict:
     blank = {"availability": "unavailable", "delivery": None, "observed_from_utc": None, "observed_to_utc": None,
              "retrieved_utc": None, "items": [], "provenance": {"mode": None, "source": None}}
     if body_id == "399":
-        return {"scope": "earth", "kind": "natural_hazard_events", "label": "Earth natural hazard events", **blank,
-                "note": "NASA EONET event retrieval is not connected in this build. Unavailable is not an all-clear, "
-                        "and such events would be dated observations, not a description of the simulated mission epoch."}
+        try:
+            return eonet.earth_conditions()
+        except Exception as exc:                          # noqa: BLE001 - hazard data must never break the card
+            return {"scope": "earth", "kind": "natural_hazard_events", "label": eonet.LABEL, **blank, "availability": "error",
+                    "note": f"Earth hazard events could not be prepared ({type(exc).__name__}). An error is not zero hazards."}
     return {"scope": "mars", "kind": "current_weather", "label": "Mars current weather", **blank,
             "note": "No current Mars weather source is connected. NASA's InSight lander stopped reporting in 2022, "
                     "so its old measurements are not shown as live. The mean temperature above is a long-term average."}

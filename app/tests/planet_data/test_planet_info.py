@@ -104,18 +104,30 @@ def test_sparse_cached_rows_are_not_interpolated_across_large_gaps():
     assert get_planet_info("499", late - 0.9)["orbital_state"]["availability"] == "unavailable"    # inside a gap
 
 
-def test_conditions_are_honest_per_planet():
+def test_conditions_are_honest_per_planet(monkeypatch):
+    monkeypatch.delenv("INTERSTELLAR_EONET_LIVE", raising=False)          # offline: the saved snapshot
+    info.eonet.reset_memory()
     earth = get_planet_info("399", DEPARTURE)["conditions"]
     assert earth["scope"] == "earth" and earth["kind"] == "natural_hazard_events"
     assert earth["label"] == "Earth natural hazard events"
-    assert earth["availability"] == "unavailable" and earth["items"] == [] and earth["delivery"] is None
-    assert "not an all-clear" in earth["note"]
+    assert earth["availability"] in ("available", "empty") and earth["delivery"] == "cached"
+    assert earth["provenance"]["mode"] == "nasa_cached" and "EONET" in earth["provenance"]["source"]["name"]
+    assert "not an all-clear" in earth["note"] and "NOT LIVE" in earth["note"]
     mars = get_planet_info("499", DEPARTURE)["conditions"]
     assert mars["scope"] == "mars" and mars["kind"] == "current_weather"
-    assert mars["availability"] == "unavailable" and mars["items"] == []
+    assert mars["availability"] == "unavailable" and mars["items"] == [] and mars["delivery"] is None
     assert "InSight" in mars["note"] and "2022" in mars["note"]
-    for section in (earth, mars):
-        assert section["retrieved_utc"] is None and section["provenance"] == {"mode": None, "source": None}
+    assert mars["retrieved_utc"] is None and mars["provenance"] == {"mode": None, "source": None}
+
+
+def test_a_hazard_data_crash_does_not_break_the_earth_card(monkeypatch):
+    def crash():
+        raise RuntimeError("boom")
+    monkeypatch.setattr(info.eonet, "earth_conditions", crash)
+    card = get_planet_info("399", DEPARTURE)
+    assert card["conditions"]["availability"] == "error" and card["conditions"]["items"] == []
+    assert "not zero hazards" in card["conditions"]["note"]
+    assert card["facts"] and card["orbital_state"]["availability"] == "available"
 
 
 def test_default_epoch_and_bad_input():
