@@ -22,6 +22,7 @@ from ..ephemeris.timeconv import jd_tdb_to_utc
 from ..physics.burns import G0_M_S2, Vehicle, parking_radius_km
 from ..physics.twobody import propagate
 from .search import DESTINATION_ID, ORIGIN_ID, Cell, Constants, GridSpec, validate_pair
+from .timing import DEPARTURE_TICK, ARRIVAL_TICK, END_TICK, TICK_HZ, epoch_jd_tdb
 
 MODEL_VERSION = "two-body-lambert-v1"
 SCHEMA_VERSION = 1
@@ -42,9 +43,9 @@ class PlanRejected(Exception):
 @dataclass(frozen=True)
 class TickMap:
     """Board time. The FPGA counts 100 ticks per real second; the flight is compressed to fit a demo."""
-    departure_tick: int = 10
-    arrival_tick: int = 12010          # about two minutes of real time after departure
-    end_tick: int = 12610              # six more real seconds: room to show a missed capture
+    departure_tick: int = DEPARTURE_TICK
+    arrival_tick: int = ARRIVAL_TICK
+    end_tick: int = END_TICK
 
     def __post_init__(self):
         if not 0 < self.departure_tick < self.arrival_tick < self.end_tick <= MAX_END_TICK:
@@ -54,7 +55,7 @@ class TickMap:
         return tof_s / (self.arrival_tick - self.departure_tick)
 
     def epoch_jd_tdb(self, tick: int, departure_jd_tdb: float, tof_s: float) -> float:
-        return departure_jd_tdb + (tick - self.departure_tick) * self.seconds_per_tick(tof_s) / 86400.0
+        return epoch_jd_tdb(tick, departure_jd_tdb, tof_s, self.departure_tick, self.arrival_tick)
 
 
 def canonical_json(obj) -> str:
@@ -136,7 +137,10 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
     bodies, interpolation = [], {"method": "cubic_hermite", "node_spacing_days": spacing, "limit_km": INTERPOLATION_LIMIT_KM}
     for body_id in (origin_body_id, destination_body_id):
         name = BODY_NAMES[body_id]
-        states, check = _body_track(source, body_id, start_jd, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb], spacing)
+        # Retain the original cache's leading coverage and held-out epochs.
+        # This padding is data coverage only, not the countdown's time scale.
+        cache_start = min(start_jd, cell.departure_jd_tdb - tof_s / 1200 / 86400)
+        states, check = _body_track(source, body_id, cache_start, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb], spacing)
         if check["max_error_km"] >= INTERPOLATION_LIMIT_KM:
             raise PlanRejected(f"PLAN_REJECTED: {name} interpolation error {check['max_error_km']:.3g} km")
         bodies.append({"body_id": body_id, "name": name, "states": states})
@@ -227,7 +231,7 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
 
 
 def presentation_plan(plan: dict) -> dict:
-    """Halve board duration without changing physical epochs, paths or fuel.
+    """Apply section 19 timing without changing flight epochs, paths or fuel.
 
     Return a new immutable identity; never mutate the legacy source plan.
     """
@@ -235,12 +239,13 @@ def presentation_plan(plan: dict) -> dict:
     if errors:
         raise PlanRejected("; ".join(errors))
     result = deepcopy(plan)
-    for key in ("departure_tick", "arrival_tick", "end_tick"):
-        if result["ticks"][key] % 2:
-            raise PlanRejected("presentation conversion requires even source ticks")
-        result["ticks"][key] //= 2
-    result["ticks"]["seconds_per_tick"] *= 2
-    result["run_interval"]["real_demo_seconds"] /= 2
+    ticks = TickMap()
+    start = ticks.epoch_jd_tdb(0, plan["departure"]["jd_tdb"], plan["tof_s"])
+    end = ticks.epoch_jd_tdb(ticks.end_tick, plan["departure"]["jd_tdb"], plan["tof_s"])
+    if abs(end - plan["run_interval"]["end_jd_tdb"]) > 1e-8:
+        raise PlanRejected("retiming would change the validated uncaptured coast interval")
+    result["ticks"].update(asdict(ticks), seconds_per_tick=ticks.seconds_per_tick(plan["tof_s"]))
+    result["run_interval"].update(start_jd_tdb=start, real_demo_seconds=ticks.end_tick / TICK_HZ)
     result.pop("plan_id")
     result.pop("plan_sha256")
     result["plan_id"] = str(uuid.uuid5(_PLAN_NAMESPACE, plan_digest(result)))

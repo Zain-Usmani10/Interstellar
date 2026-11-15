@@ -27,14 +27,16 @@ def test_invalid_pairs_refused(pair):
         validate_pair(*pair)
 
 
-def test_original_earth_mars_identities_unchanged():
+def test_earth_mars_retiming_replaces_legacy_identities():
     expected = {
         "least_fuel": ("a3d74b41-a59e-587b-9454-4d1c8695b100", "808801a450cb2845b6692dd511ff1acb655599a5282e421c4dfa877d57a51ac0"),
         "earliest_arrival": ("f4f9cac8-e8be-5e07-9a0c-0987815d937b", "5e70bbb7a82d54db4ebbba6b6322cf1c5baf332fa7d222fcfe9e3a8a012c6d39"),
     }
     for objective, identity in expected.items():
         plan = load_demo_plan(objective)
-        assert (plan["plan_id"], plan["plan_sha256"]) == identity
+        assert (plan["plan_id"], plan["plan_sha256"]) != identity
+        assert not verify_plan(plan)
+        assert [plan["ticks"][key] for key in ("departure_tick", "arrival_tick", "end_tick")] == [500, 6500, 6800]
 
 
 @pytest.mark.parametrize("pair", [
@@ -81,8 +83,8 @@ def test_catalog_all_56_pairs_and_valid_plans(records_key, complete_key):
         for objective, plan_id in row["objectives"].items():
             plan = plans[plan_id]
             assert plan["vehicle"]["isp_s"] == row["vehicle"]["isp_s"]
-            assert plan["ticks"]["arrival_tick"] / plan["ticks"]["tick_hz"] == 60.05
-            assert plan["run_interval"]["real_demo_seconds"] == 63.05
+            assert plan["ticks"]["arrival_tick"] / plan["ticks"]["tick_hz"] == 65
+            assert plan["run_interval"]["real_demo_seconds"] == 68
             validator.validate(plan)
             assert not verify_plan(plan)
             assert (plan["origin_body_id"], plan["destination_body_id"]) == pair

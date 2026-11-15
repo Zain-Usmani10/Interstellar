@@ -15,7 +15,7 @@ from ..ephemeris.horizons import HorizonsClient, HorizonsError, PLANET_IDS
 from ..physics.burns import Vehicle, BurnModelError, DEMO_VEHICLE_LABEL
 from ..runtime.stores import load_validators
 from .demo import PLANS_DIR, SEARCH_DIR, load_demo_plan, plan_pair
-from .plan import PlanRejected, verify_plan, presentation_plan
+from .plan import PlanRejected, TickMap, verify_plan, presentation_plan
 from .search import GridSpec, NoFeasibleRoute
 
 
@@ -89,7 +89,7 @@ def build_catalog(live=False, demo=False, output_path=None, presentation=False, 
             print(f"  {record['status']}", flush=True)
             catalog_path.parent.mkdir(parents=True, exist_ok=True)
             manifest.update({complete_key: len(records) == 56, records_key: records})
-            manifest["presentation_max_seconds"] = 63.05 if presentation else None
+            manifest["presentation_max_seconds"] = TickMap().end_tick / 100
             catalog_path.write_text(json.dumps(manifest, indent=1)+"\n", encoding="utf-8")
     return records
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--demo", action="store_true", help="Build the separate opt-in 900 s vehicle records")
     parser.add_argument("--output", type=Path, help="Write a separate manifest for independent qualification")
-    parser.add_argument("--presentation", action="store_true", help="Emit new 63.05-second plan identities")
+    parser.add_argument("--presentation", action="store_true", help="Apply the section 19 demo timing")
     parser.add_argument("--fetch-pair", action="append", help="Limit live fetches to origin:destination (repeatable)")
     args = parser.parse_args()
     build_catalog(args.live, args.demo, args.output, args.presentation, args.fetch_pair)

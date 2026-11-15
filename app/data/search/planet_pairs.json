@@ -249,8 +249,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "8a1c67c1-d29a-5453-8bf8-3978da7de9c4",
-    "earliest_arrival": "ec173777-f3c2-5538-bf98-fc89a2e47dad"
+    "least_fuel": "7295fb2a-595a-5973-b515-960350b7ec5d",
+    "earliest_arrival": "76ad0398-a4a5-5231-a55d-1b627e015808"
    }
   },
   {
@@ -275,8 +275,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "c81717cb-624f-5e3c-8c5c-fef7bf276149",
-    "earliest_arrival": "c81717cb-624f-5e3c-8c5c-fef7bf276149"
+    "least_fuel": "2acec2ca-2ef1-5b51-aa61-1e5102e7b0d5",
+    "earliest_arrival": "2acec2ca-2ef1-5b51-aa61-1e5102e7b0d5"
    }
   },
   {
@@ -440,8 +440,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "3cc5e7a5-ae73-5d4f-a0ce-bb060e9d4fd9",
-    "earliest_arrival": "66fd851d-68dc-5796-bbfd-0ee5d66a63b2"
+    "least_fuel": "93002acd-f81f-5daf-824c-1858f2ffa7fa",
+    "earliest_arrival": "a88bc3a0-7894-5fbb-9e72-0e512b2040ef"
    }
   },
   {
@@ -470,8 +470,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "4459f41a-e1ca-55a3-ab93-6cfd7d9de777",
-    "earliest_arrival": "c3c24c82-d7dd-5449-92bd-f63032b7b843"
+    "least_fuel": "d2a29e78-ed10-505f-90b2-81094ccf547e",
+    "earliest_arrival": "035b6a16-4eba-5146-9e2f-440f107c7277"
    }
   },
   {
@@ -663,8 +663,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "ad8459f6-43a6-561c-8009-870215588131",
-    "earliest_arrival": "6eb3a90a-fb18-530d-8ba9-d79d27210af6"
+    "least_fuel": "345c78dd-599a-5ca0-8401-ab2a61aa0bf0",
+    "earliest_arrival": "b43e5037-c59d-5f3d-ad3f-62745952db40"
    }
   },
   {
@@ -1553,7 +1553,7 @@
    "reason": "EPHEMERIS_UNAVAILABLE: 42036 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461325.500000000) and offline mode cannot fetch them"
   }
  ],
- "presentation_max_seconds": 63.05,
+ "presentation_max_seconds": 68.0,
  "demo_complete": true,
  "demo_pairs": [
   {
@@ -1606,8 +1606,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "59b2d577-81c3-58ed-a6a2-b941f48f7668",
-    "earliest_arrival": "59b2d577-81c3-58ed-a6a2-b941f48f7668"
+    "least_fuel": "ed013b48-1050-5950-b6d6-79987c84b279",
+    "earliest_arrival": "ed013b48-1050-5950-b6d6-79987c84b279"
    }
   },
   {
@@ -1632,8 +1632,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "31d8f90c-f7dc-5d5f-80a7-d728c0094c30",
-    "earliest_arrival": "18652a81-8b52-5f64-a9fd-7ac945924215"
+    "least_fuel": "4bf8ac81-8a40-59a4-89f3-65a4ffd2af7d",
+    "earliest_arrival": "49b2be3a-413e-5936-a4a1-89461dc56890"
    }
   },
   {
@@ -1798,8 +1798,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "40d2d05b-ff3f-5e26-963f-ccab2272c0f8",
-    "earliest_arrival": "95b1d969-1c5a-5495-a9f7-72efc63d1ab2"
+    "least_fuel": "efc887fa-230c-5d50-ae54-45e6c078258a",
+    "earliest_arrival": "f6534e65-e5f8-5029-bdbc-9ce8610c22a0"
    }
   },
   {
@@ -1824,8 +1824,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "ee748148-60cd-53ff-9530-70fb9f1fe136",
-    "earliest_arrival": "38253f76-95ae-560d-b511-1000ebeabeec"
+    "least_fuel": "27ed87ee-59e8-54ca-acc8-7618cab26ee5",
+    "earliest_arrival": "5b0735d3-f6e6-5bce-9b24-2fa719d25c64"
    }
   },
   {
@@ -1949,8 +1949,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "93e9fc9a-beee-56ae-b609-863d6fccd41f",
-    "earliest_arrival": "93e9fc9a-beee-56ae-b609-863d6fccd41f"
+    "least_fuel": "d66d1f57-3523-51e3-a9d5-8e6275eaef0f",
+    "earliest_arrival": "d66d1f57-3523-51e3-a9d5-8e6275eaef0f"
    }
   },
   {
@@ -1975,8 +1975,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "4d844ece-9f8a-5abc-a011-4a6fb19a1842",
-    "earliest_arrival": "e014df55-6282-5114-be48-616a9754e2cf"
+    "least_fuel": "784c05bf-1f39-5767-896d-ba52919a5ae3",
+    "earliest_arrival": "42068266-a03e-5d6d-8264-e8aff941ccf0"
    }
   },
   {
@@ -2001,8 +2001,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "62a174f0-0102-5cae-adea-4dc58ba34d80",
-    "earliest_arrival": "2dcf0d94-de67-57f4-aa1b-f93097626fe6"
+    "least_fuel": "e7e95ea3-7617-5ff5-9e5e-11627fc1ba75",
+    "earliest_arrival": "42ef10ff-275c-5e0d-8eaa-9e6403a036eb"
    }
   },
   {
@@ -2027,8 +2027,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "1ce46147-9fab-5460-b541-77519ad8b021",
-    "earliest_arrival": "a3ad201a-9b61-51c6-a22a-c4fc9a052b6b"
+    "least_fuel": "2e8c7c79-c031-5fe8-9cc7-ff2b44e1707a",
+    "earliest_arrival": "a732c306-9601-53b1-9339-628130f331e6"
    }
   },
   {
@@ -2153,8 +2153,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "e8be0044-2c8a-549b-9c8c-307a70a655c4",
-    "earliest_arrival": "b3e0f7b2-e90f-5c81-a30b-4df3de1eb659"
+    "least_fuel": "256ad897-c1b5-5c6d-a138-565ea425e014",
+    "earliest_arrival": "72450265-a303-5332-9d48-93b19223aa22"
    }
   },
   {
@@ -2179,8 +2179,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "ecbb83fb-8713-5814-bb01-07c311771ede",
-    "earliest_arrival": "2e014dad-95f1-530d-aeac-c82129fb75e6"
+    "least_fuel": "9ec15dfa-455d-511b-944e-7905157522f6",
+    "earliest_arrival": "0521c899-e462-5238-9134-a50f7e1744e3"
    }
   },
   {
@@ -2205,8 +2205,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "0f3e003a-faae-55f1-b1b8-c806f5296519",
-    "earliest_arrival": "9a527b19-c42f-5773-b7e0-13a75551c239"
+    "least_fuel": "5be00542-7ea7-5c0e-a754-880085cfd031",
+    "earliest_arrival": "bb1e60d3-4b63-5618-9761-8f16c73c6d21"
    }
   },
   {
@@ -2359,8 +2359,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "e0472ac0-3a95-58d2-b6d3-6872879c8af5",
-    "earliest_arrival": "bf93c0af-6487-52a7-ac46-a4ed4e0e5309"
+    "least_fuel": "97c24ca7-7c44-5835-a9fe-7eaa2f8bbcd7",
+    "earliest_arrival": "8af58091-a8d1-5e55-8a79-4fe14af4dcfa"
    }
   },
   {
@@ -2385,8 +2385,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "581ac764-b36c-5598-bbda-0d24abee7bf5",
-    "earliest_arrival": "025b9a5c-cc6a-5e0d-a5b2-8d9c5abe5a0e"
+    "least_fuel": "e9986283-b415-5cde-bb13-9ac93888b34d",
+    "earliest_arrival": "d46b0277-d5aa-5e61-8750-3944bcc483cb"
    }
   },
   {
