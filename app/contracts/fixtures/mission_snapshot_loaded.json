@@ -1,0 +1,67 @@
+{
+ "schema_version": 1,
+ "server_seq": 3,
+ "mission_id": "5d0c9a54-3f1e-4b7a-8a66-2c1e9f4d7b03",
+ "plan_id": "0b7f1c3e-5a2d-4e8b-9c41-7d6a2f3b8e10",
+ "plan_sha256": "d1ec44e181215938cf6567076a33ad549dc6b4dc789d340683fceb222935e7f9",
+ "wire": {
+  "session_id": 439041101,
+  "mission_id": 12648430,
+  "plan_crc16": 61175
+ },
+ "controller_source": "simulator",
+ "controller_label": "SIMULATED CONTROLLER",
+ "state": "LOADED",
+ "tick": 0,
+ "executed_mask": 0,
+ "departure_executed_tick": null,
+ "capture_executed_tick": null,
+ "fuel_remaining_g": 1760979,
+ "safe_reason": "NONE",
+ "faults": {
+  "masked_fault_count": 0,
+  "no_majority_count": 0,
+  "rx_error_count": 0
+ },
+ "link": {
+  "transport_state": "connected",
+  "observed_age_ms": 40,
+  "view": "ground_delayed",
+  "delay_demo_s": 0.1,
+  "delay_physical_s": 0.0
+ },
+ "epoch_jd_tdb": 2461359.284279,
+ "spacecraft": {
+  "phase": "at_origin",
+  "r_km": [
+   93425740.185,
+   116838152.968,
+   0.0
+  ],
+  "v_km_s": [
+   -23.262285515,
+   18.600912351,
+   0.0
+  ]
+ },
+ "planets": [
+  {
+   "body_id": "399",
+   "r_km": [
+    93425740.185,
+    116838152.968,
+    0.0
+   ]
+  },
+  {
+   "body_id": "499",
+   "r_km": [
+    -23024101.768,
+    226773321.977,
+    0.0
+   ]
+  }
+ ],
+ "outcome": "pending",
+ "failure": null
+}

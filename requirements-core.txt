@@ -1,0 +1,11 @@
+# Core backend dependencies (no EEG packages here; the brain extension has its own environment).
+# Versions are the ones installed and tested on the leader's laptop with Python 3.10.11.
+# Numeric packages (numpy, scipy, astropy, lamberthub==1.0.0) get added and locked once the
+# NASA owner's smoke test passes; ask the leader on the board to change this file.
+fastapi==0.162.5
+uvicorn[standard]==0.54.0
+pydantic==2.14.3
+jsonschema==4.26.0
+httpx==0.28.1
+pyserial==3.5
+pytest==9.2.0
