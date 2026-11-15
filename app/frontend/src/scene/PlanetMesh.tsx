@@ -12,6 +12,7 @@ import type { PlanetTargetId } from "../api/types";
 import type { Vec3 } from "./types";
 import type { VisualPlanet } from "./planets";
 import { planetBump, planetTexture } from "./surfaces";
+import { loadPlanetMap, loadTexture } from "./textureMaps";
 
 type Props = {
   body: VisualPlanet;
@@ -55,20 +56,27 @@ export function PlanetMesh({
   onSelect,
 }: Props) {
   const sphere = useRef<Mesh>(null);
-  const maps = useMemo(
-    () => ({
-      map: planetTexture(body),
-      bumpMap: planetBump(body),
-    }),
-    [body],
-  );
+  const clouds = useRef<Mesh>(null);
+  const maps = useMemo(() => {
+    const photo = loadPlanetMap(body.name);
+    return {
+      map: photo ?? planetTexture(body),
+      bumpMap: photo ? null : planetBump(body),
+      clouds:
+        body.name === "Earth" ? loadTexture("/textures/2k_earth_clouds.jpg") : null,
+      rings:
+        body.rings ? loadTexture("/textures/2k_saturn_ring_alpha.png") : null,
+    };
+  }, [body]);
 
   useFrame((_, delta) => {
+    const d = Math.min(delta, 0.05);
     if (sphere.current) {
       const speed =
         body.surface === "gas" ? 0.085 : body.name === "Earth" ? 0.07 : 0.05;
-      sphere.current.rotation.y += Math.min(delta, 0.05) * speed;
+      sphere.current.rotation.y += d * speed;
     }
+    if (clouds.current) clouds.current.rotation.y += d * 0.09;
   });
 
   const clickable = interactive && !!body.target;
@@ -85,8 +93,6 @@ export function PlanetMesh({
     <group position={position}>
       <mesh
         ref={sphere}
-        castShadow
-        receiveShadow
         rotation={[0, 0, body.name === "Uranus" ? 1.5 : 0.08]}
         onClick={(e) => {
           if (clickable && body.target) {
@@ -107,46 +113,58 @@ export function PlanetMesh({
         <sphereGeometry args={[body.radius, 96, 64]} />
         <meshStandardMaterial
           map={maps.map}
-          bumpMap={maps.bumpMap}
-          bumpScale={body.surface === "gas" ? 0.012 : 0.045}
-          roughness={body.surface === "gas" ? 0.55 : 0.78}
-          metalness={body.surface === "gas" ? 0.08 : 0.04}
+          bumpMap={maps.bumpMap ?? undefined}
+          bumpScale={maps.bumpMap ? (body.surface === "gas" ? 0.012 : 0.045) : 0}
+          roughness={body.surface === "gas" ? 0.5 : 0.72}
+          metalness={body.surface === "gas" ? 0.06 : 0.03}
           emissive={selected ? body.color : "#000000"}
-          emissiveIntensity={selected ? 0.12 : 0}
+          emissiveIntensity={selected ? 0.1 : 0}
         />
       </mesh>
+
+      {maps.clouds ? (
+        <mesh ref={clouds} scale={1.018}>
+          <sphereGeometry args={[body.radius, 64, 48]} />
+          <meshStandardMaterial
+            map={maps.clouds}
+            transparent
+            opacity={0.45}
+            depthWrite={false}
+            roughness={1}
+            metalness={0}
+          />
+        </mesh>
+      ) : null}
 
       <AtmosphereShell
         radius={body.radius}
         color={atmosphereColor}
-        scale={1.035}
+        scale={1.04}
         opacity={
-          body.surface === "earth" || body.name === "Neptune" ? 0.38 : 0.16
+          body.surface === "earth" || body.name === "Neptune" ? 0.4 : 0.16
         }
       />
       <AtmosphereShell
         radius={body.radius}
         color={atmosphereColor}
-        scale={1.09}
+        scale={1.1}
         opacity={0.07}
       />
 
       {body.rings && (
         <group rotation={[Math.PI * 0.38, 0, 0.1]}>
-          <mesh receiveShadow>
-            <ringGeometry args={[body.radius * 1.28, body.radius * 2.2, 128]} />
+          <mesh>
+            <ringGeometry args={[body.radius * 1.28, body.radius * 2.25, 128]} />
             <meshStandardMaterial
-              color="#c4b08a"
+              map={maps.rings ?? undefined}
+              color={maps.rings ? "#ffffff" : "#c4b08a"}
               side={DoubleSide}
               transparent
-              opacity={0.72}
+              opacity={0.85}
               roughness={0.85}
               metalness={0.05}
+              alphaMap={maps.rings ?? undefined}
             />
-          </mesh>
-          <mesh>
-            <ringGeometry args={[body.radius * 1.62, body.radius * 1.7, 128]} />
-            <meshBasicMaterial color="#0b1018" side={DoubleSide} />
           </mesh>
         </group>
       )}

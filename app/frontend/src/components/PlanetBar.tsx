@@ -9,6 +9,8 @@ type Props = {
   onSelectEarthMars: (target: PlanetTargetId) => void;
 };
 
+const EXTRA = [{ name: "Black Hole", color: "#1a0a08" }];
+
 export function PlanetBar({
   focusName,
   selectedId,
@@ -22,19 +24,14 @@ export function PlanetBar({
         const active =
           focusName === body.name ||
           (body.target != null && selectedId === body.target);
-        const routeEndpoint = body.target === "planet.399" || body.target === "planet.499";
+        const routeEndpoint =
+          body.target === "planet.399" || body.target === "planet.499";
         return (
           <button
             key={body.name}
             type="button"
             className={active ? "planet-chip active" : "planet-chip"}
-            title={
-              routeEndpoint
-                ? selectionEnabled
-                  ? `Fly to ${body.name} and select for info`
-                  : `Fly to ${body.name}`
-                : `Fly to ${body.name} (look only)`
-            }
+            title={`Fly to ${body.name}`}
             onClick={() => {
               onVisit(body.name);
               if (routeEndpoint && body.target && selectionEnabled) {
@@ -47,6 +44,20 @@ export function PlanetBar({
           </button>
         );
       })}
+      {EXTRA.map((item) => (
+        <button
+          key={item.name}
+          type="button"
+          className={
+            focusName === item.name ? "planet-chip active" : "planet-chip"
+          }
+          title="Fly to the black hole"
+          onClick={() => onVisit(item.name)}
+        >
+          <span className="chip-dot" style={{ background: item.color }} />
+          {item.name}
+        </button>
+      ))}
     </nav>
   );
 }

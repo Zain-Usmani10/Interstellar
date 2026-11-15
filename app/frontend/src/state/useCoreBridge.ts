@@ -589,6 +589,40 @@ export function useCoreBridge() {
     [controllerSource, linkMode],
   );
 
+  /** Clear controller mission so Prepare works again after abort/complete. */
+  const resetMission = useCallback(async () => {
+    const token = operatorTokenRef.current;
+    const missionId = missionIdRef.current;
+    setLastError(null);
+    let cleared = false;
+    if (token && missionId && linkMode === "live") {
+      setCommandBusy(true);
+      try {
+        const result = await postMissionCommand(token, missionId, "clear");
+        if (result.snapshot) {
+          applySnapshot(result.snapshot);
+          cleared =
+            result.snapshot.state === "IDLE" ||
+            result.snapshot.state === "UNKNOWN";
+        }
+        if (!result.applied && !cleared) {
+          setLastError(`clear: ${result.detail || "not_applied"}`);
+        }
+      } catch (err) {
+        setLastError(formatApiError(err, "clear_failed"));
+      } finally {
+        setCommandBusy(false);
+      }
+    }
+    if (!cleared) {
+      // Drop local mission without resetting seq — otherwise WS re-applies ABORTED.
+      missionIdRef.current = null;
+      snapshotRef.current = null;
+      setSnapshot(null);
+    }
+    void proposeTarget("navigation.back", "mouse");
+  }, [applySnapshot, linkMode, proposeTarget]);
+
   const gates = missionActionGates(snapshot);
   const simFaultsEnabled =
     linkMode === "live" && controllerSource === "simulator";
@@ -616,6 +650,7 @@ export function useCoreBridge() {
     selectPlanById,
     createMissionFromSelected,
     prepareMission,
+    resetMission,
     sendCommand,
     injectFault,
     selectPlanet,

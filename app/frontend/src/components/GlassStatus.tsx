@@ -8,6 +8,8 @@ type Props = {
   dataMode: string;
   snapshot: MissionSnapshot | null;
   lastError: string | null;
+  destinationName?: string | null;
+  scenicActive?: boolean;
 };
 
 export function GlassStatus({
@@ -16,6 +18,8 @@ export function GlassStatus({
   dataMode,
   snapshot,
   lastError,
+  destinationName,
+  scenicActive,
 }: Props) {
   const transport = snapshot?.link?.transport_state ?? "unknown";
   const stale =
@@ -26,12 +30,14 @@ export function GlassStatus({
 
   return (
     <div className="glass-status" role="status" aria-label="Mission status">
-      <p className="glass-mission">{friendlyMissionLabel(snapshot)}</p>
+      <p className="glass-mission">
+        {friendlyMissionLabel(snapshot, destinationName, scenicActive)}
+      </p>
       <div className="honesty-row">
         <span className="honesty">{controllerLabel}</span>
         <span className="honesty">NASA {dataMode}</span>
-        <span className={stale ? "honesty warn" : "honesty"}>
-          link {stale ? "stale" : "live"}
+        <span className={stale && !scenicActive ? "honesty warn" : "honesty"}>
+          link {scenicActive ? "illustrative" : stale ? "stale" : "live"}
         </span>
       </div>
       {lastError ? <p className="glass-error">{lastError}</p> : null}
