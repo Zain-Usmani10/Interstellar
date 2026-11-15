@@ -28,19 +28,22 @@ installed Python 3.12 executable. Tested here with Windows x64 Python **3.12.10*
 The lock records packages actually installed in this environment, including API
 test dependencies. It does not alter the core's dependency lock.
 
-The core integration tests require the leader's contracts/backend from PRs #9/#10.
-Until merged, `BRAIN_REFERENCE_ROOT` may point to a separate checkout containing
-those `app/contracts` and `app/backend` trees. Tests import the real core validators
-and API; this module does not provide a competing core implementation.
+The core integration tests use the leader's contracts/backend, now merged into
+`dev` through PRs #9/#10. `BRAIN_REFERENCE_ROOT` may optionally point to a separate
+checkout when testing a future core revision. Tests import the real core validators
+and API; this module does not provide a competing core implementation. All 28 brain
+tests pass against merged dev on Python 3.12.10.
 
 ## Run with the app
 
 1. Start the core backend in its own environment with `BRAIN_ENABLED=true`.
    Its default remains false. Use the backend runbook; default URL is
    `http://127.0.0.1:8000`.
-2. Cursor mounts `BrainWidget` from `app/frontend/src/bci/BrainWidget.tsx` in the
-   reserved `BciSlot`, passing `enabled={true}` only when explicitly enabled.
-   No new frontend package is needed. Ordinary controls work without this component.
+2. Cursor's frontend PR #12 mounts `BrainWidget` from
+   `app/frontend/src/bci/BrainWidget.tsx` in `BciSlot` when built with
+   `VITE_BRAIN_ENABLED=true`. Default is disabled. The combined TypeScript/Vite
+   build passes with that flag. No new frontend package is needed. Ordinary
+   controls work without this component.
 3. Start the separate process:
 
    ```powershell
@@ -112,8 +115,9 @@ The bridge test uses a real loopback WebSocket and the core API in-process.
 
 No headset, replay dataset, live calibration, physical FPGA, measured flashing
 monitor, browser-observed end-to-end demo or recording has been validated here.
-The frontend owner must mount the widget and confirm the shared planet-card flow
-before marking the full issue integrated. Live/replay adapters should replace only
+The frontend owner has supplied the mount; the shared browser planet-card flow
+still needs observed confirmation before marking the full issue integrated.
+Live/replay adapters should replace only
 acquisition after device metadata, timing, units and separately reported held-out
 evaluation pass; synthetic thresholds are not a live-device calibration.
 
