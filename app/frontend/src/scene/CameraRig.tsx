@@ -27,6 +27,7 @@ export function CameraRig({
     to = useRef(new Vector3());
   const fromTarget = useRef(new Vector3()),
     toTarget = useRef(new Vector3());
+  const previousFocus = useRef(new Vector3()), focusOffset = useRef(new Vector3());
   useFrame((_, delta) => {
     const orbit = controls.current;
     if (!orbit) return;
@@ -37,6 +38,7 @@ export function CameraRig({
       from.current.copy(camera.position);
       fromTarget.current.copy(orbit.target);
       if (focus) {
+        previousFocus.current.fromArray(focus);
         toTarget.current.fromArray(focus);
         // Aim above the centre so the surface occupies the lower half, leaving
         // room for the owning panel's launch controls.
@@ -50,6 +52,17 @@ export function CameraRig({
         const distance = extent * 2.1 * Math.max(1, size.height / size.width);
         to.current.set(distance * 0.32, distance * 0.6, distance * 0.85);
       }
+    } else if (focus) {
+      // A new backend date can move the focused planet after the fly-in.
+      // Translate the camera with that received position, not an orbital clock.
+      focusOffset.current.fromArray(focus).sub(previousFocus.current);
+      previousFocus.current.fromArray(focus);
+      from.current.add(focusOffset.current);
+      to.current.add(focusOffset.current);
+      fromTarget.current.add(focusOffset.current);
+      toTarget.current.add(focusOffset.current);
+      camera.position.add(focusOffset.current);
+      orbit.target.add(focusOffset.current);
     }
     if (progress.current < 1) {
       progress.current = Math.min(

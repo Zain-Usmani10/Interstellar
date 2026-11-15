@@ -17,7 +17,7 @@ export type ScenePlan = {
   data_mode: string;
   origin_body_id: SceneBodyId;
   destination_body_id: SceneBodyId;
-  departure: { jd_tdb: number };
+  departure: { jd_tdb: number; utc?: string };
   ticks?: { departure_tick: number; arrival_tick: number; end_tick: number };
   nominal_path: { jd_tdb: number; r_km: Vec3 }[];
   bodies: { body_id: SceneBodyId; states: { jd_tdb: number; r_km: Vec3 }[] }[];
@@ -39,6 +39,7 @@ export type SceneSnapshot = {
     | "COMPLETE"
     | "ABORTED";
   tick: number;
+  date_utc?: string | null;
   shuttle_id?: string | null;
   executed_mask: number;
   spacecraft: {
@@ -51,6 +52,7 @@ export type SceneSnapshot = {
   estimate?: {
     tick: number;
     epoch_jd_tdb: number;
+    date_utc?: string | null;
     spacecraft: { phase: string; r_km: Vec3 | null };
   } | null;
   outcome:

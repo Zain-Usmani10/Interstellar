@@ -78,3 +78,29 @@ this is not evidence of live fleet integration or hardware execution.
 `evidence/dock-capture.jpg` records a complete browser simulator run through
 prepare, arm, start and confirmed capture using the local backend. The parent
 owner still wires fleet/date API responses and the launch approval fast-forward.
+
+
+## Contracts 1.3 dated-position connection
+
+`dateUtc?: string | null` selects the parent's displayed date. With no explicit
+prop, the scene reads confirmed `snapshot.date_utc`, or blackout
+`estimate.date_utc`, or the selected plan's departure before a mission. There is
+no browser-generated orbit clock. `fetchPositions` defaults true; the offline
+fixture viewer sets it false. Supplying `planetPositions` (including an empty
+array) overrides fetching, so older parent-owned fetching does not duplicate
+requests. The recommended parent interface is `dateUtc` plus `fleet`, letting
+the scene validate the entire positions response.
+
+The scene calls the existing same-origin API helper and requires eight distinct
+finite vectors, NASA-cached mode, and the canonical Sun-centred ICRF/ecliptic
+KM-S/TDB frame. Requests abort on date changes/unmount and time out after eight
+seconds. Late successes/failures and responses for another requested date cannot
+replace the current result. During a request or error the last validated set
+stays visible with its actual date and an updating/unavailable label. If a
+route-less planet clears the parent date, the last scene date is held explicitly;
+no invented new date or illustrative motion is introduced. Before any validated
+set exists, the overview is explicitly labelled illustrative.
+
+Camera focus follows received position changes, including the first asynchronous
+load, while retaining user drag cancellation of cinematic transitions. A
+supplied all-planet set uses the same `kmToScene` axes as the mission route.
