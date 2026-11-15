@@ -1,0 +1,24 @@
+{
+ "cache_schema_version": 1,
+ "kind": "object_data",
+ "body_id": "799",
+ "body_name": "Uranus",
+ "source_name": "NASA/JPL Horizons API",
+ "source_url": "https://ssd.jpl.nasa.gov/api/horizons.api",
+ "request": {
+  "format": "json",
+  "COMMAND": "'799'",
+  "OBJ_DATA": "'YES'",
+  "MAKE_EPHEM": "'NO'"
+ },
+ "request_sha256": "085c6ca98b4f9708d159bf698057d99483306b38f6ff9a7ca6e242262589d6c8",
+ "retrieved_utc": "2026-11-15T05:35:26Z",
+ "api_signature": {
+  "source": "NASA/JPL Horizons API",
+  "version": "1.2"
+ },
+ "frame": null,
+ "raw_sha256": "5ae803f98c4b142d66bada0c0822eea79360b4fcc4befcee85811e49f24802f5",
+ "rows": [],
+ "raw_response": "{\"result\":\"*******************************************************************************\\n Revised: September 25, 2025           Uranus                               799\\n \\n PHYSICAL DATA:\\n  Mass x10^24 (kg)      = 86.813          Density (g/cm^3)       =  1.271\\n  Equat. radius (1 bar) = 25559+-4 km     Polar radius (km)      = 24973+-20\\n  Vol. Mean Radius (km) = 25362+-12       Flattening             =  0.02293\\n  Geometric Albedo      = 0.51\\n  Sid. rot. period (III)= 17.24+-0.01 h   Sid. rot. rate (rad/s) = -0.000101237\\n  Mean solar day, h     =~17.24           Rocky core mass (Mc/M) =  0.0012        \\n  GM (km^3/s^2)         = 5793950.6103    GM 1-sigma (km^3/s^2)  = +-4.3 \\n  Equ. grav, ge (m/s^2) =  8.87           Pol. grav, gp (m/s^2)  =   9.19+-0.02\\n  Visual magnitude V(1,0)= -7.11\\n  Vis. mag. (opposition)=  +5.52          Obliquity to orbit     = 97.77 deg\\n  Sidereal orbit period = 84.0120465 y    Sidereal orbit period  = 30685.4 d\\n  Mean daily motion     = 0.01176904 dg/d Mean orbit velocity    =  6.8 km/s\\n  Atmos. temp. (1 bar)  =  76+-2 K        Escape speed, km/s     =  21.3           \\n  Aroche(ice)/Rp        =  2.20           Hill's sphere rad., Rp = 2700\\n                                 Perihelion   Aphelion    Mean\\n  Solar Constant (W/m^2)         4.09         3.39        3.71\\n  Maximum Planetary IR (W/m^2)   0.72         0.55        0.63\\n  Minimum Planetary IR (W/m^2)   0.72         0.55        0.63\\n*******************************************************************************\\n\",\"signature\":{\"version\":\"1.2\",\"source\":\"NASA/JPL Horizons API\"}}\n"
+}

@@ -44,7 +44,7 @@ def test_request_uses_the_exact_horizons_contract():
 
 
 @pytest.mark.parametrize("body, epochs", [
-    ("299", [2461359.5]),                              # Venus is not supported
+    ("999", [2461359.5]),                              # Pluto is outside the eight-planet scope
     ("399", []),                                       # nothing asked
     ("399", [2461359.5 + i for i in range(33)]),       # more than 32 per request
     ("399", [2461360.5, 2461359.5]),                   # not increasing

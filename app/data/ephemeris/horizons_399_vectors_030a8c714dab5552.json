@@ -1,0 +1,172 @@
+{
+ "cache_schema_version": 1,
+ "kind": "vectors",
+ "body_id": "399",
+ "body_name": "Earth",
+ "source_name": "NASA/JPL Horizons API",
+ "source_url": "https://ssd.jpl.nasa.gov/api/horizons.api",
+ "request": {
+  "format": "json",
+  "COMMAND": "'399'",
+  "OBJ_DATA": "'YES'",
+  "MAKE_EPHEM": "'YES'",
+  "EPHEM_TYPE": "'VECTORS'",
+  "CENTER": "'500@10'",
+  "REF_SYSTEM": "'ICRF'",
+  "REF_PLANE": "'ECLIPTIC'",
+  "OUT_UNITS": "'KM-S'",
+  "TIME_TYPE": "'TDB'",
+  "VEC_CORR": "'NONE'",
+  "VEC_TABLE": "'2'",
+  "CSV_FORMAT": "'YES'",
+  "TLIST_TYPE": "'JD'",
+  "TLIST": "'2461379.000000000' '2461400.000000000' '2461420.000000000' '2461441.000000000' '2461461.000000000' '2461482.000000000' '2461523.000000000' '2461543.000000000' '2461564.000000000' '2461585.000000000'"
+ },
+ "request_sha256": "030a8c714dab55523ca637435976bd28db9bf3e454ddfd80fd78d2920ef19bfc",
+ "retrieved_utc": "2026-11-15T05:36:13Z",
+ "api_signature": {
+  "source": "NASA/JPL Horizons API",
+  "version": "1.2"
+ },
+ "frame": {
+  "center": "500@10",
+  "ref_system": "ICRF",
+  "ref_plane": "ECLIPTIC",
+  "units": "KM-S",
+  "time_scale": "TDB"
+ },
+ "raw_sha256": "892469fb894467eaffa37591133d769805c9284aad5caa6e78257bf1a30acbf5",
+ "rows": [
+  {
+   "jd_tdb": 2461379.0,
+   "r_km": [
+    45646361.82463127,
+    140209965.2560472,
+    -8658.159934692085
+   ],
+   "v_km_s": [
+    -28.81385684750187,
+    9.119648406653168,
+    0.0001862031705477385
+   ]
+  },
+  {
+   "jd_tdb": 2461400.0,
+   "r_km": [
+    -8528583.98808859,
+    146884942.1197698,
+    -9328.212273865938
+   ],
+   "v_km_s": [
+    -30.210767142094,
+    -1.834827108625031,
+    0.001321962246710107
+   ]
+  },
+  {
+   "jd_tdb": 2461420.0,
+   "r_km": [
+    -59158500.95530403,
+    134727677.0517974,
+    -8435.206933043897
+   ],
+   "v_km_s": [
+    -27.75779580896268,
+    -12.10043743804054,
+    0.0001953791197530919
+   ]
+  },
+  {
+   "jd_tdb": 2461441.0,
+   "r_km": [
+    -104379896.6038291,
+    104177971.2355405,
+    -5736.913825131953
+   ],
+   "v_km_s": [
+    -21.53880084568133,
+    -21.20163119183949,
+    0.0004902814506548836
+   ]
+  },
+  {
+   "jd_tdb": 2461461.0,
+   "r_km": [
+    -134455903.4105822,
+    61943682.71581516,
+    -2765.140555992723
+   ],
+   "v_km_s": [
+    -12.95262070954382,
+    -27.15659252311387,
+    0.002392916866918782
+   ]
+  },
+  {
+   "jd_tdb": 2461482.0,
+   "r_km": [
+    -148526341.300243,
+    9630656.920236912,
+    28.08572751563042
+   ],
+   "v_km_s": [
+    -2.401230984174391,
+    -29.83411771915054,
+    0.002921707211154256
+   ]
+  },
+  {
+   "jd_tdb": 2461523.0,
+   "r_km": [
+    -120823030.6349849,
+    -89838510.34148417,
+    6526.907644331455
+   ],
+   "v_km_s": [
+    17.2793587902569,
+    -24.02062874237239,
+    0.0004836935226677497
+   ]
+  },
+  {
+   "jd_tdb": 2461543.0,
+   "r_km": [
+    -84597877.6605185,
+    -125409306.835815,
+    8772.385778442025
+   ],
+   "v_km_s": [
+    24.20606081399531,
+    -16.75939408412647,
+    0.001411576499747547
+   ]
+  },
+  {
+   "jd_tdb": 2461564.0,
+   "r_km": [
+    -36324955.55204129,
+    -147412711.9385653,
+    9400.146011054516
+   ],
+   "v_km_s": [
+    28.45072160026329,
+    -7.234600127289609,
+    0.001405546279541703
+   ]
+  },
+  {
+   "jd_tdb": 2461585.0,
+   "r_km": [
+    16443643.86271049,
+    -151187961.922947,
+    9082.427440397441
+   ],
+   "v_km_s": [
+    29.13451769648414,
+    3.098924167644125,
+    -0.0006670931948031811
+   ]
+  }
+ ],
+ "raw_response": "{\"signature\":{\"source\":\"NASA/JPL Horizons API\",\"version\":\"1.2\"},\"result\":\"*******************************************************************************\\n Revised: April 12, 2021                 Earth                              399\\n \\n GEOPHYSICAL PROPERTIES (revised May 9, 2022):\\n  Vol. Mean Radius (km)    = 6371.01+-0.02   Mass x10^24 (kg)= 5.97219+-0.0006\\n  Equ. radius, km          = 6378.137        Mass layers:\\n  Polar axis, km           = 6356.752          Atmos         = 5.1   x 10^18 kg\\n  Flattening               = 1/298.257223563   oceans        = 1.4   x 10^21 kg\\n  Density, g/cm^3          = 5.51              crust         = 2.6   x 10^22 kg\\n  J2 (IERS 2010)           = 0.00108262545     mantle        = 4.043 x 10^24 kg\\n  g_p, m/s^2  (polar)      = 9.8321863685      outer core    = 1.835 x 10^24 kg\\n  g_e, m/s^2  (equatorial) = 9.7803267715      inner core    = 9.675 x 10^22 kg\\n  g_o, m/s^2               = 9.82022         Fluid core rad  = 3480 km\\n  GM, km^3/s^2             = 398600.435436   Inner core rad  = 1215 km\\n  GM 1-sigma, km^3/s^2     =      0.0014     Escape velocity = 11.186 km/s\\n  Rot. Rate (rad/s)        = 0.00007292115   Surface area:\\n  Mean sidereal day, hr    = 23.9344695944     land          = 1.48 x 10^8 km\\n  Mean solar day 2000.0, s = 86400.002         sea           = 3.62 x 10^8 km\\n  Mean solar day 1820.0, s = 86400.0         Love no., k2    = 0.299\\n  Moment of inertia        = 0.3308          Atm. pressure   = 1.0 bar\\n  Mean surface temp (Ts), K= 287.6           Volume, km^3    = 1.08321 x 10^12\\n  Mean effect. temp (Te), K= 255             Magnetic moment = 0.61 gauss Rp^3\\n  Geometric albedo         = 0.367           Vis. mag. V(1,0)= -3.86\\n  Solar Constant (W/m^2)   = 1367.6 (mean), 1414 (perihelion), 1322 (aphelion)\\n HELIOCENTRIC ORBIT CHARACTERISTICS:\\n  Obliquity to orbit, deg  = 23.4392911  Sidereal orb period  = 1.0000174 y\\n  Orbital speed, km/s      = 29.79       Sidereal orb period  = 365.25636 d\\n  Mean daily motion, deg/d = 0.9856474   Hill's sphere radius = 234.9       \\n*******************************************************************************\\n\\n\\n*******************************************************************************\\nEphemeris / API_USER Sat Nov 14 21:36:13 2026 Pasadena, USA      / Horizons\\n*******************************************************************************\\nTarget body name: Earth (399)                     {source: DE441}\\nCenter body name: Sun (10)                        {source: DE441}\\nCenter-site name: BODY CENTER\\n*******************************************************************************\\nStart time      : A.D. 2026-Dec-04 12:00:00.0000 TDB\\nStop  time      : A.D. 2027-Jun-28 12:00:00.0000 TDB\\nStep-size       : DISCRETE TIME-LIST\\n*******************************************************************************\\nCenter geodetic : 0.0, 0.0, 0.0                   {E-lon(deg),Lat(deg),Alt(km)}\\nCenter cylindric: 0.0, 0.0, 0.0                   {E-lon(deg),Dxy(km),Dz(km)}\\nCenter radii    : 695700.0, 695700.0, 695700.0 km {Equator_a, b, pole_c}\\nOutput units    : KM-S\\nCalendar mode   : Mixed Julian/Gregorian\\nOutput type     : GEOMETRIC cartesian states\\nOutput format   : 2 (position and velocity)\\nReference frame : Ecliptic of J2000.0\\n*******************************************************************************\\n            JDTDB,            Calendar Date (TDB),                      X,                      Y,                      Z,                     VX,                     VY,                     VZ,\\n**************************************************************************************************************************************************************************************************\\n$$SOE\\n2461379.000000000, A.D. 2026-Dec-04 12:00:00.0000,  4.564636182463127E+07,  1.402099652560472E+08, -8.658159934692085E+03, -2.881385684750187E+01,  9.119648406653168E+00,  1.862031705477385E-04,\\n2461400.000000000, A.D. 2026-Dec-25 12:00:00.0000, -8.528583988088589E+06,  1.468849421197698E+08, -9.328212273865938E+03, -3.021076714209400E+01, -1.834827108625031E+00,  1.321962246710107E-03,\\n2461420.000000000, A.D. 2027-Jan-14 12:00:00.0000, -5.915850095530403E+07,  1.347276770517974E+08, -8.435206933043897E+03, -2.775779580896268E+01, -1.210043743804054E+01,  1.953791197530919E-04,\\n2461441.000000000, A.D. 2027-Feb-04 12:00:00.0000, -1.043798966038291E+08,  1.041779712355405E+08, -5.736913825131953E+03, -2.153880084568133E+01, -2.120163119183949E+01,  4.902814506548836E-04,\\n2461461.000000000, A.D. 2027-Feb-24 12:00:00.0000, -1.344559034105822E+08,  6.194368271581516E+07, -2.765140555992723E+03, -1.295262070954382E+01, -2.715659252311387E+01,  2.392916866918782E-03,\\n2461482.000000000, A.D. 2027-Mar-17 12:00:00.0000, -1.485263413002430E+08,  9.630656920236912E+06,  2.808572751563042E+01, -2.401230984174391E+00, -2.983411771915054E+01,  2.921707211154256E-03,\\n2461523.000000000, A.D. 2027-Apr-27 12:00:00.0000, -1.208230306349849E+08, -8.983851034148417E+07,  6.526907644331455E+03,  1.727935879025690E+01, -2.402062874237239E+01,  4.836935226677497E-04,\\n2461543.000000000, A.D. 2027-May-17 12:00:00.0000, -8.459787766051850E+07, -1.254093068358150E+08,  8.772385778442025E+03,  2.420606081399531E+01, -1.675939408412647E+01,  1.411576499747547E-03,\\n2461564.000000000, A.D. 2027-Jun-07 12:00:00.0000, -3.632495555204129E+07, -1.474127119385653E+08,  9.400146011054516E+03,  2.845072160026329E+01, -7.234600127289609E+00,  1.405546279541703E-03,\\n2461585.000000000, A.D. 2027-Jun-28 12:00:00.0000,  1.644364386271049E+07, -1.511879619229470E+08,  9.082427440397441E+03,  2.913451769648414E+01,  3.098924167644125E+00, -6.670931948031811E-04,\\n$$EOE\\n**************************************************************************************************************************************************************************************************\\n \\nTIME\\n\\n  Barycentric Dynamical Time (\\\"TDB\\\" or T_eph) output was requested. This\\ncontinuous coordinate time is equivalent to the relativistic proper time\\nof a clock at rest in a reference frame co-moving with the solar system\\nbarycenter but outside the system's gravity well. It is the independent\\nvariable in the solar system relativistic equations of motion.\\n\\n  TDB runs at a uniform rate of one SI second per second and is independent\\nof irregularities in Earth's rotation.\\n \\nCALENDAR SYSTEM\\n\\n  Mixed calendar mode was active such that calendar dates after AD 1582-Oct-15\\n(if any) are in the modern Gregorian system. Dates prior to 1582-Oct-5 (if any)\\nare in the Julian calendar system, which is automatically extended for dates\\nprior to its adoption on 45-Jan-1 BC.  The Julian calendar is useful for\\nmatching historical dates. The Gregorian calendar more accurately corresponds\\nto the Earth's orbital motion and seasons. A \\\"Gregorian-only\\\" calendar mode is\\navailable if such physical events are the primary interest.\\n\\nREFERENCE FRAME AND COORDINATES\\n\\n  Ecliptic at the standard reference epoch\\n\\n    Reference epoch: J2000.0\\n    X-Y plane: adopted Earth orbital plane at the reference epoch\\n               Note: IAU76 obliquity of 84381.448 arcseconds wrt ICRF X-Y plane\\n    X-axis   : ICRF\\n    Z-axis   : perpendicular to the X-Y plane in the directional (+ or -) sense\\n               of Earth's north pole at the reference epoch.\\n\\n  Symbol meaning:\\n\\n    JDTDB    Julian Day Number, Barycentric Dynamical Time\\n      X      X-component of position vector (km)\\n      Y      Y-component of position vector (km)\\n      Z      Z-component of position vector (km)\\n      VX     X-component of velocity vector (km/sec)                           \\n      VY     Y-component of velocity vector (km/sec)                           \\n      VZ     Z-component of velocity vector (km/sec)                           \\n\\nABERRATIONS AND CORRECTIONS\\n\\n Geometric state vectors have NO corrections or aberrations applied.\\n\\nComputations by ...\\n\\n    Solar System Dynamics Group, Horizons On-Line Ephemeris System\\n    4800 Oak Grove Drive, Jet Propulsion Laboratory\\n    Pasadena, CA  91109   USA\\n\\n    General site: https://ssd.jpl.nasa.gov/\\n    Mailing list: https://ssd.jpl.nasa.gov/email_list.html\\n    System news : https://ssd.jpl.nasa.gov/horizons/news.html\\n    User Guide  : https://ssd.jpl.nasa.gov/horizons/manual.html\\n    Connect     : browser        https://ssd.jpl.nasa.gov/horizons/app.html#/x\\n                  API            https://ssd-api.jpl.nasa.gov/doc/horizons.html\\n                  command-line   telnet ssd.jpl.nasa.gov 6775\\n                  e-mail/batch   https://ssd.jpl.nasa.gov/ftp/ssd/horizons_batch.txt\\n                  scripts        https://ssd.jpl.nasa.gov/ftp/ssd/SCRIPTS\\n    Inquiries   : Jon.D.Giorgini@jpl.nasa.gov\\n*******************************************************************************\\n\"}\n"
+}

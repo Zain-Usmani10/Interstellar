@@ -1,6 +1,6 @@
 """Turn a winning grid cell into the immutable, validated MissionPlan (contracts schema v1).
 
-A plan is only produced if an independent numerical integration of the coast lands on Mars'
+A plan is only produced if an independent numerical integration of the coast lands on the destination's
 NASA position within 10 km and matches the Lambert arrival velocity within 1e-5 km/s.
 These are consistency checks of our simplified Sun-only model, not real-world accuracy claims.
 """
@@ -15,12 +15,12 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 from ..ephemeris.cache import EphemerisSource
-from ..ephemeris.horizons import FRAME, canonical_epoch
+from ..ephemeris.horizons import FRAME, BODY_NAMES, canonical_epoch
 from ..ephemeris.interp import hermite_state
 from ..ephemeris.timeconv import jd_tdb_to_utc
 from ..physics.burns import G0_M_S2, Vehicle, parking_radius_km
 from ..physics.twobody import propagate
-from .search import DESTINATION_ID, ORIGIN_ID, Cell, Constants, GridSpec
+from .search import DESTINATION_ID, ORIGIN_ID, Cell, Constants, GridSpec, validate_pair
 
 MODEL_VERSION = "two-body-lambert-v1"
 SCHEMA_VERSION = 1
@@ -95,8 +95,10 @@ def _body_track(source: EphemerisSource, body_id: str, start_jd: float, end_jd: 
 
 
 def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible: int, vehicle: Vehicle,
-               constants: Constants, source: EphemerisSource, ticks: TickMap = TickMap()) -> dict:
+               constants: Constants, source: EphemerisSource, ticks: TickMap = TickMap(),
+               origin_body_id=ORIGIN_ID, destination_body_id=DESTINATION_ID) -> dict:
     """Validate one candidate and assemble its MissionPlan. Raises PlanRejected if a gate fails."""
+    validate_pair(origin_body_id, destination_body_id)
     if not (cell.status == "ok" and cell.feasible):
         raise PlanRejected(f"PLAN_REJECTED: candidate is not a feasible solved cell ({cell.status})")
     v = cell.vectors
@@ -128,7 +130,8 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
 
     # 3. Both planets over the whole run (before departure .. after a missed capture), from NASA.
     bodies, interpolation = [], {"method": "cubic_hermite", "node_spacing_days": 1.0, "limit_km": INTERPOLATION_LIMIT_KM}
-    for body_id, name in ((ORIGIN_ID, "Earth"), (DESTINATION_ID, "Mars")):
+    for body_id in (origin_body_id, destination_body_id):
+        name = BODY_NAMES[body_id]
         states, check = _body_track(source, body_id, start_jd, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb])
         if check["max_error_km"] >= INTERPOLATION_LIMIT_KM:
             raise PlanRejected(f"PLAN_REJECTED: {name} interpolation error {check['max_error_km']:.3g} km")
@@ -140,8 +143,8 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
         "schema_version": SCHEMA_VERSION,
         "model_version": MODEL_VERSION,
         "data_mode": source.data_mode,
-        "origin_body_id": ORIGIN_ID,
-        "destination_body_id": DESTINATION_ID,
+        "origin_body_id": origin_body_id,
+        "destination_body_id": destination_body_id,
         "objectives_won": list(objectives_won),
         "departure": {"utc": jd_tdb_to_utc(cell.departure_jd_tdb), "jd_tdb": cell.departure_jd_tdb},
         "arrival": {"utc": jd_tdb_to_utc(cell.arrival_jd_tdb), "jd_tdb": cell.arrival_jd_tdb},
@@ -156,7 +159,7 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
             "radius_origin_km": constants.radius_origin_km,
             "radius_destination_km": constants.radius_destination_km,
             "source": "GM and volumetric mean radius as printed in the NASA/JPL Horizons object-data pages of "
-                      "bodies 10, 399 and 499 (body GM, not planet-system GM); see provenance.sources. "
+                      f"bodies 10, {origin_body_id} and {destination_body_id} (body GM, not planet-system GM); see provenance.sources. "
                       "g0 is the defined standard gravity.",
         },
         "boundary": {

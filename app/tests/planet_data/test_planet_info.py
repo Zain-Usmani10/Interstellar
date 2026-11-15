@@ -97,11 +97,13 @@ def test_orbital_state_outside_the_cache_is_unavailable_not_invented(epoch):
 
 
 def test_sparse_cached_rows_are_not_interpolated_across_large_gaps():
-    # Late arrival epochs are cached 2+ days apart (search grid only): no daily nodes there, so no interpolation.
-    late = max(c["arrival_jd_tdb"] for c in json.loads(
-        (info.PLANS_INDEX.parent / "grid_earth_mars.json").read_text(encoding="utf-8"))["cells"])
-    assert get_planet_info("499", late)["orbital_state"]["availability"] == "available"            # exact row
-    assert get_planet_info("499", late - 0.9)["orbital_state"]["availability"] == "unavailable"    # inside a gap
+    # The catalogue expands the cache; choose an actual remaining sparse gap
+    # instead of assuming the original Earth/Mars search's last date is sparse.
+    cache = info._cache()
+    epochs = sorted(row.jd_tdb for (body, _), (row, _) in cache._rows.items() if body == "499")
+    left, right = next((a, b) for a, b in zip(epochs, epochs[1:]) if b-a > 2)
+    assert get_planet_info("499", left)["orbital_state"]["availability"] == "available"
+    assert get_planet_info("499", (left+right)/2)["orbital_state"]["availability"] == "unavailable"
 
 
 def test_conditions_are_honest_per_planet(monkeypatch):

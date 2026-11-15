@@ -1,0 +1,24 @@
+{
+ "cache_schema_version": 1,
+ "kind": "object_data",
+ "body_id": "899",
+ "body_name": "Neptune",
+ "source_name": "NASA/JPL Horizons API",
+ "source_url": "https://ssd.jpl.nasa.gov/api/horizons.api",
+ "request": {
+  "format": "json",
+  "COMMAND": "'899'",
+  "OBJ_DATA": "'YES'",
+  "MAKE_EPHEM": "'NO'"
+ },
+ "request_sha256": "7f6ae20ecf62eef592ddc7b5c8358d9123998890e8acdddcef53d906fe73a740",
+ "retrieved_utc": "2026-11-15T05:35:27Z",
+ "api_signature": {
+  "source": "NASA/JPL Horizons API",
+  "version": "1.2"
+ },
+ "frame": null,
+ "raw_sha256": "1a64cd47592dfd3ac269f391d70e9f1576e0cfc7ce223d82075984ad68a66e3a",
+ "rows": [],
+ "raw_response": "{\"result\":\"*******************************************************************************\\n Revised: July 08, 2026               Neptune                               899\\n \\n PHYSICAL DATA:\\n  Mass x10^24 (kg)      = 102.409         Density (g/cm^3)       =  1.638\\n  Equat. radius (1 bar) = 24766+-15 km    Volume, 10^10 km^3     = 6254     \\n  Vol. mean radius (km) = 24624+-21       Polar radius (km)      = 24342+-30\\n  Geometric Albedo      = 0.41            Flattening             =  0.0171\\n  Sid. rot. period (III)= 16.11+-0.01 hr  Sid. rot. rate (rad/s) =  0.000108338 \\n  Mean solar day, h     =~16.11 h         \\n  GM (km^3/s^2)         = 6835099.97      GM 1-sigma (km^3/s^2)  = +-10 \\n  Equ. grav, ge (m/s^2) = 11.15           Pol. grav, gp (m/s^2)  = 11.41+-0.03\\n  Visual magnitude V(1,0)= -6.87\\n  Vis. mag. (opposition)=  +7.84          Obliquity to orbit     = 28.32 deg\\n  Sidereal orbit period = 164.788501027 y Sidereal orbit period  = 60189 d\\n  Mean daily motion     = 0.006020076dg/d Mean orbit velocity    =  5.43 km/s \\n  Atmos. temp. (1 bar)  =  72+-2 K        Escape speed (1 bar)  =  23.5 km/s     \\n  Aroche(ice)/Rp        =  2.98           Hill's sphere rad., Rp = 4700\\n                                 Perihelion  Aphelion    Mean\\n  Solar Constant (W/m^2)         1.54        1.49        1.51\\n  Maximum Planetary IR (W/m^2)   0.52        0.52        0.52\\n  Minimum Planetary IR (W/m^2)   0.52        0.52        0.52\\n*******************************************************************************\\n\",\"signature\":{\"version\":\"1.2\",\"source\":\"NASA/JPL Horizons API\"}}\n"
+}
