@@ -5,80 +5,96 @@ type Props = {
   earliestArrival: MissionPlan | null;
   selectedPlanId: string | null;
   disabled?: boolean;
+  /** When true, cards are display-only (To → From). */
+  readOnly?: boolean;
   onSelect: (planId: string) => void;
 };
 
-function daysFromTof(tofS: number | undefined): string {
-  if (tofS === undefined || !Number.isFinite(tofS)) return "—";
-  // Display only: plan stores seconds; show whole days from that field.
-  return `${Math.round(tofS / 86400)} days`;
-}
-
-function fuelFraction(plan: MissionPlan): number {
-  const need = plan.masses?.propellant_required_kg;
-  const cap = plan.vehicle?.propellant_capacity_kg;
-  if (
-    need === undefined ||
-    cap === undefined ||
-    !Number.isFinite(need) ||
-    !Number.isFinite(cap) ||
-    cap <= 0
-  ) {
-    return 0.35;
-  }
-  return Math.min(1, Math.max(0.08, need / cap));
+function tripDays(plan: MissionPlan): string {
+  if (plan.tof_s === undefined || !Number.isFinite(plan.tof_s)) return "—";
+  return `${Math.round(plan.tof_s / 86400)}`;
 }
 
 function dateLabel(utc: string | undefined): string {
   if (!utc) return "—";
-  return utc.slice(0, 10);
+  const d = new Date(utc);
+  if (Number.isNaN(d.getTime())) return utc.slice(0, 10);
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
+
+function fuelKg(plan: MissionPlan): string {
+  const need = plan.masses?.propellant_required_kg;
+  if (need === undefined || !Number.isFinite(need)) return "—";
+  return `${Math.round(need)} kg`;
+}
+
+const BLURB: Record<"least_fuel" | "earliest_arrival" | "same", string> = {
+  least_fuel: "Saves the most fuel: waits for the planets to line up",
+  earliest_arrival: "Gets there fastest: leaves sooner, burns more",
+  same: "Best fuel and earliest arrival are the same trip",
+};
 
 function Card({
   title,
+  blurb,
   plan,
   selected,
   disabled,
+  readOnly,
   onSelect,
 }: {
   title: string;
+  blurb: string;
   plan: MissionPlan;
   selected: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   onSelect: () => void;
 }) {
-  const frac = fuelFraction(plan);
   return (
     <button
       type="button"
       className={selected ? "route-glass selected" : "route-glass"}
-      disabled={disabled}
+      disabled={disabled || readOnly}
       aria-pressed={selected}
       onClick={onSelect}
     >
       <span className="route-title">{title}</span>
-      <span className="route-time">{daysFromTof(plan.tof_s)}</span>
-      <span className="route-dates">
-        {dateLabel(plan.departure?.utc)} → {dateLabel(plan.arrival?.utc)}
-      </span>
-      <span className="fuel-bar" aria-hidden="true">
-        <span className="fuel-fill" style={{ width: `${frac * 100}%` }} />
-      </span>
-      <span className="route-fuel-label">
-        Fuel needed (from plan)
-        {plan.masses?.propellant_required_kg !== undefined
-          ? ` · ${plan.masses.propellant_required_kg.toFixed(0)} kg`
-          : ""}
-      </span>
+      <span className="route-blurb">{blurb}</span>
+      <dl className="route-metrics">
+        <div>
+          <dt>Launch</dt>
+          <dd>{dateLabel(plan.departure?.utc)}</dd>
+        </div>
+        <div>
+          <dt>Arrival</dt>
+          <dd>{dateLabel(plan.arrival?.utc)}</dd>
+        </div>
+        <div>
+          <dt>Trip days</dt>
+          <dd>{tripDays(plan)}</dd>
+        </div>
+        <div>
+          <dt>Fuel</dt>
+          <dd>{fuelKg(plan)}</dd>
+        </div>
+      </dl>
     </button>
   );
 }
 
+/** Route options: launch / arrival / trip days / fuel for the chosen plan only. */
 export function RouteCards({
   leastFuel,
   earliestArrival,
   selectedPlanId,
   disabled,
+  readOnly,
   onSelect,
 }: Props) {
   if (!leastFuel && !earliestArrival) {
@@ -88,26 +104,50 @@ export function RouteCards({
       </div>
     );
   }
+
+  const sameTrip =
+    leastFuel &&
+    earliestArrival &&
+    leastFuel.plan_id === earliestArrival.plan_id;
+
   return (
     <div className="route-cards" aria-label="Choose a route">
-      {leastFuel ? (
+      {sameTrip && leastFuel ? (
         <Card
-          title="Saves the most fuel"
+          title="Best option"
+          blurb={BLURB.same}
           plan={leastFuel}
           selected={selectedPlanId === leastFuel.plan_id}
           disabled={disabled}
+          readOnly={readOnly}
           onSelect={() => onSelect(leastFuel.plan_id)}
         />
-      ) : null}
-      {earliestArrival ? (
-        <Card
-          title="Gets there fastest"
-          plan={earliestArrival}
-          selected={selectedPlanId === earliestArrival.plan_id}
-          disabled={disabled}
-          onSelect={() => onSelect(earliestArrival.plan_id)}
-        />
-      ) : null}
+      ) : (
+        <>
+          {leastFuel ? (
+            <Card
+              title="Saves the most fuel"
+              blurb={BLURB.least_fuel}
+              plan={leastFuel}
+              selected={selectedPlanId === leastFuel.plan_id}
+              disabled={disabled}
+              readOnly={readOnly}
+              onSelect={() => onSelect(leastFuel.plan_id)}
+            />
+          ) : null}
+          {earliestArrival ? (
+            <Card
+              title="Gets there fastest"
+              blurb={BLURB.earliest_arrival}
+              plan={earliestArrival}
+              selected={selectedPlanId === earliestArrival.plan_id}
+              disabled={disabled}
+              readOnly={readOnly}
+              onSelect={() => onSelect(earliestArrival.plan_id)}
+            />
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

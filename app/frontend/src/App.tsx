@@ -82,6 +82,7 @@ export default function App() {
     lastError,
     commandBusy,
     routePlans,
+    planSummaries,
     selectedPlan,
     originBodyId,
     destinationBodyId,
@@ -430,6 +431,7 @@ export default function App() {
           leastFuel={routePlans.least_fuel}
           earliestArrival={routePlans.earliest_arrival}
           selectedPlanId={selectedPlan?.plan_id ?? null}
+          planSummaries={planSummaries}
           unavailableMessage={routeMsg}
           tripLocked={tripLocked}
           onShuttle={pickShuttle}

@@ -1,4 +1,8 @@
-import type { MissionPlan, MissionSnapshot } from "../api/missionTypes";
+import type {
+  MissionPlan,
+  MissionSnapshot,
+  PlanSummary,
+} from "../api/missionTypes";
 import type { PlanetCardModel } from "../api/mapPlanetInfo";
 import {
   PLANET_BODIES,
@@ -10,6 +14,10 @@ import {
   type FleetShuttle,
   type ShuttleClass,
 } from "../state/fleetMock";
+import {
+  destinationsWithRoute,
+  originsWithRoute,
+} from "../state/routeDestinations";
 import { RouteCards } from "./RouteCards";
 import { GuidedLaunch } from "./GuidedLaunch";
 import { TripReadout } from "./TripReadout";
@@ -39,6 +47,7 @@ type Props = {
   leastFuel: MissionPlan | null;
   earliestArrival: MissionPlan | null;
   selectedPlanId: string | null;
+  planSummaries: PlanSummary[];
   unavailableMessage: string | null;
   tripLocked: boolean;
   onShuttle: (shuttle: FleetShuttle) => void;
@@ -82,6 +91,7 @@ export function PlanetFocusPanel({
   leastFuel,
   earliestArrival,
   selectedPlanId,
+  planSummaries,
   unavailableMessage,
   tripLocked,
   onShuttle,
@@ -151,6 +161,7 @@ export function PlanetFocusPanel({
             leastFuel={leastFuel}
             earliestArrival={earliestArrival}
             selectedPlanId={selectedPlanId}
+            planSummaries={planSummaries}
             unavailableMessage={unavailableMessage}
             tripLocked={tripLocked}
             onShuttle={onShuttle}
@@ -191,6 +202,7 @@ export function PlanetFocusPanel({
             leastFuel={leastFuel}
             earliestArrival={earliestArrival}
             selectedPlanId={selectedPlanId}
+            planSummaries={planSummaries}
             unavailableMessage={unavailableMessage}
             tripLocked={tripLocked}
             onShuttle={onShuttle}
@@ -289,6 +301,7 @@ function TripBody({
   leastFuel,
   earliestArrival,
   selectedPlanId,
+  planSummaries,
   unavailableMessage,
   tripLocked,
   onShuttle,
@@ -325,6 +338,7 @@ function TripBody({
   leastFuel: MissionPlan | null;
   earliestArrival: MissionPlan | null;
   selectedPlanId: string | null;
+  planSummaries: PlanSummary[];
   unavailableMessage: string | null;
   tripLocked: boolean;
   onShuttle: (shuttle: FleetShuttle) => void;
@@ -356,6 +370,17 @@ function TripBody({
   const otherLabel = planetName(otherBodyId);
   const others = PLANET_BODIES.filter((p) => p.bodyId !== focusBodyId);
   const outbound = mode === "outbound";
+  const routed = outbound
+    ? destinationsWithRoute(planSummaries, focusBodyId)
+    : originsWithRoute(planSummaries, focusBodyId);
+  const showFlightReadout = Boolean(
+    snapshot &&
+      (snapshot.state === "RUNNING" ||
+        snapshot.state === "ARMED" ||
+        snapshot.state === "LOADED" ||
+        snapshot.state === "SAFE" ||
+        blackout),
+  );
 
   return (
     <div className="focus-trip">
@@ -385,15 +410,17 @@ function TripBody({
                     disabled={tripLocked}
                     onClick={() => onShuttle(shuttle)}
                   >
-                    {SHUTTLE_LABEL[shuttle.class]}
+                    {shuttle.name}
+                    <span className="shuttle-chip-class">
+                      {SHUTTLE_LABEL[shuttle.class]}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
             <p className="muted launch-class-tag">
-              Class shown for routes from the origin dock ·{" "}
-              {SHUTTLE_LABEL[shuttleClass]}
+              Arrivals for shuttle class · {SHUTTLE_LABEL[shuttleClass]}
             </p>
           )}
 
@@ -406,11 +433,15 @@ function TripBody({
               disabled={tripLocked}
               onChange={(e) => onOther(e.target.value as PlanetBodyId)}
             >
-              {others.map((p) => (
-                <option key={p.bodyId} value={p.bodyId}>
-                  {p.name}
-                </option>
-              ))}
+              {others.map((p) => {
+                const hasRoute = routed.has(p.bodyId);
+                return (
+                  <option key={p.bodyId} value={p.bodyId}>
+                    {p.name}
+                    {hasRoute ? " · route available" : " · no route"}
+                  </option>
+                );
+              })}
             </select>
           </label>
 
@@ -428,16 +459,19 @@ function TripBody({
               earliestArrival={earliestArrival}
               selectedPlanId={selectedPlanId}
               disabled={tripLocked || !outbound}
+              readOnly={!outbound}
               onSelect={onSelectPlan}
             />
           )}
 
-          <TripReadout
-            daysToArrival={daysToArrival}
-            tripDays={tripDays}
-            tMinusLabel={tMinusLabel}
-            estimated={blackout}
-          />
+          {showFlightReadout ? (
+            <TripReadout
+              daysToArrival={daysToArrival}
+              tripDays={tripDays}
+              tMinusLabel={tMinusLabel}
+              estimated={blackout}
+            />
+          ) : null}
 
           {outbound ? (
             <GuidedLaunch
