@@ -163,6 +163,26 @@ def test_nominal_mission_end_to_end(ctx):
     assert snap["fuel_remaining_g"] == 0 and VALIDATORS["mission_snapshot"].is_valid(snap)
 
 
+def test_nominal_mission_through_the_delay_layer(tmp_path):
+    """Same nominal run with the transport wrapped in DelayTransport: slower, but nothing is lost."""
+    from app.backend.transport import DelayTransport
+    clock = FakeClock()
+    settings = Settings(db_path=str(tmp_path / "test.sqlite3"), plans_dir=str(tmp_path / "plans"))
+    app = create_app(settings, DelayTransport(SimulatorTransport(SimulatedController(clock=clock))))
+    with TestClient(app) as client:
+        mission_id = new_mission(client, app)
+        for name in ("upload", "arm", "start"):
+            assert command(client, app, mission_id, name)["applied"], name
+        clock.now += 60
+        snap = wait_for(client, mission_id, lambda s: s["executed_mask"] == 1, timeout=10)
+        assert snap["state"] == "RUNNING" and 0.1 <= snap["link"]["delay_demo_s"] <= 3.0
+        client.post("/api/v1/sim/faults", json={"kind": "single"}, headers=operator(app))
+        clock.now += 70
+        snap = wait_for(client, mission_id, lambda s: s["state"] == "COMPLETE", timeout=15)
+        assert snap["outcome"] == "captured" and VALIDATORS["mission_snapshot"].is_valid(snap)
+        assert snap["faults"]["masked_fault_count"] >= 1
+
+
 def test_start_is_refused_until_armed(ctx):
     client, app, _ = ctx
     mission_id = new_mission(client, app)

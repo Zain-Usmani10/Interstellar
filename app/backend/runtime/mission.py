@@ -43,6 +43,10 @@ class MissionRuntime:
         self.hub = hub
         self.db = db
         self.on_state_change = on_state_change or (lambda: None)
+        self._delay_physical_s: float | None = None   # last geometric Earth-spacecraft light time
+        self._delayed = hasattr(transport, "max_delay_s")   # True when wrapped in a DelayTransport
+        if self._delayed:
+            transport.delay_s = self._demo_delay        # read each time a frame enters the delay queue
         self.link = Link(transport, self._on_status)
         self._jobs: queue.Queue = queue.Queue(maxsize=16)
         self._lock = threading.Lock()              # protects the fields below
@@ -56,6 +60,10 @@ class MissionRuntime:
         self._was_stale = False
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="transport-worker", daemon=True)
+
+    def _demo_delay(self) -> float:
+        """One-way demo delay: physical light time compressed 300x, clamped to 0.1..3.0 s."""
+        return min(3.0, max(0.1, (self._delay_physical_s or 0.0) / 300.0))
 
     # ------------------------------------------------------------ lifecycle
 
@@ -175,8 +183,8 @@ class MissionRuntime:
             "fuel_remaining_g": 0, "safe_reason": "NONE",
             "faults": {"masked_fault_count": 0, "no_majority_count": 0, "rx_error_count": 0},
             "link": {"transport_state": transport_state, "observed_age_ms": age, "view": "ground_delayed",
-                     # No DelayTransport is in the chain yet, so no demo delay is applied.
-                     "delay_demo_s": getattr(self.transport, "current_delay_s", None),
+                     # Applied only when the transport is wrapped in a DelayTransport (LINK_DELAY_DEMO).
+                     "delay_demo_s": self._demo_delay() if self._delayed else None,
                      "delay_physical_s": None},
             "epoch_jd_tdb": None,
             "spacecraft": {"phase": "unknown", "r_km": None, "v_km_s": None},
@@ -207,7 +215,9 @@ class MissionRuntime:
             fuel_remaining_g=status.fuel_remaining_g,
             safe_reason=p.SafeReason(status.safe_reason).name)
         view = reconstruct(plan, status)
-        snapshot["link"]["delay_physical_s"] = view.pop("delay_physical_s")
+        self._delay_physical_s = snapshot["link"]["delay_physical_s"] = view.pop("delay_physical_s")
+        if self._delayed:
+            snapshot["link"]["delay_demo_s"] = self._demo_delay()
         failure = view.pop("failure")
         snapshot.update(view)
         snapshot["failure"] = snapshot["failure"] or failure
@@ -318,7 +328,8 @@ class MissionRuntime:
 
     def inject_fault(self, kind: str) -> None:
         """Simulator only. The real board is faulted with its physical switches."""
-        controller = getattr(self.transport, "controller", None)
+        inner = getattr(self.transport, "inner", self.transport)   # look through a DelayTransport
+        controller = getattr(inner, "controller", None)
         if self.transport.controller_source != "simulator" or controller is None:
             raise PermissionError("fault injection over the API exists only for the simulated controller")
         controller.inject_single() if kind == "single" else controller.inject_divergence()
