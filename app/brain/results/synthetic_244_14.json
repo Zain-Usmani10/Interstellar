@@ -1,0 +1,51 @@
+{
+  "label": "SYNTHETIC EEG \u2014 NO LIVE BRAIN INPUT",
+  "source": "synthetic",
+  "seed": 19,
+  "device": {
+    "name": "synthetic-ssvep",
+    "version": "1",
+    "device": "deterministic two-channel generator",
+    "source": "synthetic",
+    "nominal_rate_hz": 250.0,
+    "effective_rate_hz": 244.14,
+    "channels": [
+      "synthetic-O1",
+      "synthetic-O2"
+    ],
+    "units": "uV",
+    "clock": "sample counter"
+  },
+  "decoder": {
+    "sample_rate_hz": 244.14,
+    "window_s": 2.0,
+    "update_s": 0.25,
+    "warmup_s": 0.5,
+    "minimum_score": 0.8,
+    "minimum_margin": 0.2,
+    "stable_updates": 3,
+    "maximum_uv": 200.0,
+    "minimum_std_uv": 0.1
+  },
+  "trials": 10,
+  "correct": 10,
+  "wrong": 0,
+  "no_decision": 0,
+  "window_sample_counts": [
+    488,
+    488,
+    488,
+    488,
+    488,
+    488,
+    488,
+    488,
+    488,
+    488
+  ],
+  "median_selection_source_s": 3.7355615630376002,
+  "p90_selection_source_s": 3.7355615630376002,
+  "idle_duration_source_s": 120,
+  "idle_selections": 0,
+  "limits": "Generated microvolt signals and simulated clock/frame reports; no live/replay EEG, monitor calibration, or human accuracy evidence. Operator rearm between trials."
+}

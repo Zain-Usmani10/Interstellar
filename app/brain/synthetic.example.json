@@ -1,0 +1,7 @@
+{
+  "sample_rate_hz": 250,
+  "frequency_hz": 10,
+  "noise_uv": 3,
+  "seed": 7,
+  "fault": null
+}
