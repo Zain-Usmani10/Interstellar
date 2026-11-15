@@ -90,7 +90,7 @@ All project code lives under **`app/`**. Never edit files you don't own; ask the
 | `@AffanSyed07/codex` (route maths) | `app/backend/ephemeris/`, `app/backend/planner/`, `app/backend/physics/`, `app/data/`, `app/tests/ephemeris/`, `app/tests/planner/`, `app/tests/physics/` |
 | `@AffanSyed07/codex` | `app/backend/planet_data/`, `app/tests/planet_data/` |
 | `@sadattanzim01/cursor` | `app/frontend/` (except `app/frontend/src/bci/`): the whole GUI including the 3D scene `src/scene/` and `public/` |
-| `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/`, `app/hardware/uno/` (Uno fallback bridge) |
+| `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/`, `app/hardware/uno/` (Uno fallback bridge), `app/frontend/src/scene/surface/` (planet surface close-up) |
 | `@Zain-Usmani10` (human or his Claude) | `app/hardware/fpga/`, `app/tests/fpga/` |
 
 - Shared schemas and protocol fixtures live in `app/contracts/` (leader only). Changing them = version bump + board post `@all`.
