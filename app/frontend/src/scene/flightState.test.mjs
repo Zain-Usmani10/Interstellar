@@ -2,7 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { kmToScene, AU_KM } from "./axes.ts";
-import { flightView, routePoints, betweenReceived } from "./flightState.ts";
+import {
+  flightView,
+  routePoints,
+  betweenReceived,
+  splitRouteAtCraft,
+} from "./flightState.ts";
 
 const fixture = (name) =>
   JSON.parse(
@@ -77,4 +82,41 @@ test("easing cannot overshoot either received point", () => {
     b = [4, 5, 6];
   assert.deepEqual(betweenReceived(a, b, -1), a);
   assert.deepEqual(betweenReceived(a, b, 2), b);
+});
+
+test("splitRouteAtCraft: no craft → all remaining, empty flown", () => {
+  const pts = [
+    [0, 0, 0],
+    [10, 0, 0],
+    [20, 0, 0],
+  ];
+  const { flown, remaining } = splitRouteAtCraft(pts, null);
+  assert.deepEqual(flown, []);
+  assert.deepEqual(remaining, pts);
+});
+
+test("splitRouteAtCraft: craft on a sample → solid up to it, dotted after", () => {
+  const pts = [
+    [0, 0, 0],
+    [10, 0, 0],
+    [20, 0, 0],
+  ];
+  const { flown, remaining } = splitRouteAtCraft(pts, [10, 0, 0]);
+  assert.ok(flown.length >= 2);
+  assert.deepEqual(flown[flown.length - 1], [10, 0, 0]);
+  assert.deepEqual(remaining[0], [10, 0, 0]);
+  assert.deepEqual(remaining[remaining.length - 1], [20, 0, 0]);
+});
+
+test("splitRouteAtCraft: craft mid-segment inserts the split point", () => {
+  const pts = [
+    [0, 0, 0],
+    [10, 0, 0],
+  ];
+  const { flown, remaining } = splitRouteAtCraft(pts, [4, 0, 0]);
+  assert.equal(flown.length, 2);
+  assert.ok(Math.abs(flown[1][0] - 4) < 1e-9);
+  assert.equal(remaining.length, 2);
+  assert.ok(Math.abs(remaining[0][0] - 4) < 1e-9);
+  assert.deepEqual(remaining[1], [10, 0, 0]);
 });

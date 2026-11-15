@@ -12,7 +12,7 @@ import { Spacecraft } from "./Spacecraft";
 import { DockStation } from "./DockStation";
 import { countdownProgress, dockedShuttles, estimatePosition, MOCK_FLEET } from "./dockState";
 import { VISUAL_PLANETS, planetPosition } from "./planets";
-import { flightView, routePoints } from "./flightState";
+import { flightView, routePoints, splitRouteAtCraft } from "./flightState";
 import { Starfield } from "./Starfield";
 import { sunGlow } from "./surfaces";
 import { loadTexture } from "./textureMaps";
@@ -153,6 +153,19 @@ export function OrbitScene({
   const launchProgress = countdownProgress(snapshot, plan);
   const ships = mockFleet ? MOCK_FLEET : fleet;
   const points = useMemo(() => routePoints(plan), [plan]);
+  const craftKey =
+    view.departed && view.position ? view.position.join(",") : "";
+  const { flown, remaining } = useMemo(
+    () =>
+      splitRouteAtCraft(
+        points,
+        view.departed && view.position ? view.position : null,
+      ),
+    // craftKey tracks confirmed r_km without new-array identity churn
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [points, craftKey, view.departed],
+  );
+  const blackout = Boolean(snapshot?.link?.blackout);
   const planets = VISUAL_PLANETS.map((body) => ({
     body,
     position: positions?.find(p => p.body_id === body.bodyId && finiteVector(p.r_km))
@@ -271,13 +284,26 @@ export function OrbitScene({
             onSelect={() => onFocusName?.("Black Hole")}
             showLabel={!compact}
           />
-          {points.length > 1 && (
+          {/* Part B: solid = flown (confirmed), dotted = still expected. */}
+          {flown.length > 1 && (
             <Line
-              points={points}
+              points={flown}
               color="#8cdece"
-              lineWidth={1.6}
+              lineWidth={2}
               transparent
-              opacity={0.8}
+              opacity={0.92}
+            />
+          )}
+          {remaining.length > 1 && !blackout && (
+            <Line
+              points={remaining}
+              color="#8cdece"
+              lineWidth={1.5}
+              transparent
+              opacity={0.55}
+              dashed
+              dashSize={0.28}
+              gapSize={0.18}
             />
           )}
           {snapshot && <Spacecraft
@@ -289,8 +315,27 @@ export function OrbitScene({
             destinationRadius={destination?.body.radius}
             launchProgress={launchProgress}
           />}
+          {/* Blackout ghost: own gold dashed remaining (18.7), not the cyan dots. */}
           {ghost && <>
-            {points.length > 1 && <Line points={points} color="#e8b875" dashed dashSize={0.22} gapSize={0.15} lineWidth={2} />}
+            {remaining.length > 1 ? (
+              <Line
+                points={remaining}
+                color="#e8b875"
+                dashed
+                dashSize={0.22}
+                gapSize={0.15}
+                lineWidth={2}
+              />
+            ) : points.length > 1 ? (
+              <Line
+                points={points}
+                color="#e8b875"
+                dashed
+                dashSize={0.22}
+                gapSize={0.15}
+                lineWidth={2}
+              />
+            ) : null}
             <group position={ghost}>
               <mesh><octahedronGeometry args={[0.24]} /><meshBasicMaterial color="#e8b875" transparent opacity={0.45} wireframe /></mesh>
             </group>
