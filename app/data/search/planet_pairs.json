@@ -1,7 +1,7 @@
 {
  "version": 1,
  "expected_pairs": 56,
- "complete": false,
+ "complete": true,
  "pairs": [
   {
    "origin_body_id": "199",
@@ -249,8 +249,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "f6f3fa0a-3153-57de-a023-facac5321d8b",
-    "earliest_arrival": "9624dc34-67c2-50b9-91a6-37df099e7fdc"
+    "least_fuel": "8a1c67c1-d29a-5453-8bf8-3978da7de9c4",
+    "earliest_arrival": "ec173777-f3c2-5538-bf98-fc89a2e47dad"
    }
   },
   {
@@ -275,8 +275,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "41ef0a90-aecd-5897-a526-c2b1050361f1",
-    "earliest_arrival": "41ef0a90-aecd-5897-a526-c2b1050361f1"
+    "least_fuel": "c81717cb-624f-5e3c-8c5c-fef7bf276149",
+    "earliest_arrival": "c81717cb-624f-5e3c-8c5c-fef7bf276149"
    }
   },
   {
@@ -440,8 +440,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "76a3a164-2497-562c-9623-a96fc14e63d5",
-    "earliest_arrival": "034eb91f-b3b1-5a0c-99f3-faecd8f5d97d"
+    "least_fuel": "3cc5e7a5-ae73-5d4f-a0ce-bb060e9d4fd9",
+    "earliest_arrival": "66fd851d-68dc-5796-bbfd-0ee5d66a63b2"
    }
   },
   {
@@ -470,8 +470,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "a3d74b41-a59e-587b-9454-4d1c8695b100",
-    "earliest_arrival": "f4f9cac8-e8be-5e07-9a0c-0987815d937b"
+    "least_fuel": "4459f41a-e1ca-55a3-ab93-6cfd7d9de777",
+    "earliest_arrival": "c3c24c82-d7dd-5449-92bd-f63032b7b843"
    }
   },
   {
@@ -663,8 +663,8 @@
    "scope": "bounded grid only; not a global feasibility conclusion",
    "status": "validated",
    "objectives": {
-    "least_fuel": "861d0244-64f3-5961-98e1-a02ebee223e6",
-    "earliest_arrival": "c83dd27d-4894-51c3-abca-6667bb68d031"
+    "least_fuel": "ad8459f6-43a6-561c-8009-870215588131",
+    "earliest_arrival": "6eb3a90a-fb18-530d-8ba9-d79d27210af6"
    }
   },
   {
@@ -1337,6 +1337,1623 @@
     "exceeds_propellant_capacity": 46,
     "solar_intersection": 2
    }
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 36331 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461330.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 46, 'solar_intersection': 2}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 46,
+    "solar_intersection": 2
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 44, 'solar_intersection': 4}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 44,
+    "solar_intersection": 4
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 48}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 48
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 48}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 48
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical chemical vehicle (not a NASA spacecraft)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 450.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 42036 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461325.500000000) and offline mode cannot fetch them"
+  }
+ ],
+ "presentation_max_seconds": 63.05,
+ "demo_complete": true,
+ "demo_pairs": [
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 47, 'solar_intersection': 1}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 47,
+    "solar_intersection": 1
+   }
+  },
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "59b2d577-81c3-58ed-a6a2-b941f48f7668",
+    "earliest_arrival": "59b2d577-81c3-58ed-a6a2-b941f48f7668"
+   }
+  },
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 216 epoch(s) for body 199 are not in the NASA cache (first missing JD TDB 2461551.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 44, 'solar_intersection': 4}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 44,
+    "solar_intersection": 4
+   }
+  },
+  {
+   "origin_body_id": "199",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 11 epoch(s) for body 299 are not in the NASA cache (first missing JD TDB 2461369.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 11 epoch(s) for body 299 are not in the NASA cache (first missing JD TDB 2461374.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 48}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 48
+   }
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 2625 epoch(s) for body 299 are not in the NASA cache (first missing JD TDB 2461951.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 15089 epoch(s) for body 299 are not in the NASA cache (first missing JD TDB 2461640.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "299",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "PLAN_REJECTED",
+   "reason": "PLAN_REJECTED: residuals 39.2 km / 4.69e-08 km/s, convergence 38.6 km, min radius 1.08e+08 km"
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 106 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461725.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 5 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461369.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 7 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461389.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "validated",
+   "objectives": {
+    "least_fuel": "1ce46147-9fab-5460-b541-77519ad8b021",
+    "earliest_arrival": "a3ad201a-9b61-51c6-a22a-c4fc9a052b6b"
+   }
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 429 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2462891.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 13931 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2461346.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "399",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 29362 epoch(s) for body 399 are not in the NASA cache (first missing JD TDB 2462891.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 11 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461530.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 60,
+    "tof_step_days": 51.42857142857143,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 10 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461369.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 1878 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461357.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 2752 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461824.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 4252 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461824.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "499",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 13329 epoch(s) for body 499 are not in the NASA cache (first missing JD TDB 2461824.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 45, 'solar_intersection': 3}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 45,
+    "solar_intersection": 3
+   }
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 46, 'solar_intersection': 2}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 46,
+    "solar_intersection": 2
+   }
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 697 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2462891.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 300,
+    "tof_step_days": 385.7142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 12 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461359.000000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 6875 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461352.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 19485 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2461342.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "599",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 12335 epoch(s) for body 599 are not in the NASA cache (first missing JD TDB 2462891.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'solar_intersection': 2, 'exceeds_propellant_capacity': 46}",
+   "rejection_counts": {
+    "solar_intersection": 2,
+    "exceeds_propellant_capacity": 46
+   }
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 1744 epoch(s) for body 699 are not in the NASA cache (first missing JD TDB 2461576.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 2855 epoch(s) for body 699 are not in the NASA cache (first missing JD TDB 2461356.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 2855 epoch(s) for body 699 are not in the NASA cache (first missing JD TDB 2461575.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 600,
+    "tof_step_days": 1057.142857142857,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 6187 epoch(s) for body 699 are not in the NASA cache (first missing JD TDB 2461354.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 12688 epoch(s) for body 699 are not in the NASA cache (first missing JD TDB 2461348.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "699",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 42036 epoch(s) for body 699 are not in the NASA cache (first missing JD TDB 2461398.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 46, 'solar_intersection': 2}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 46,
+    "solar_intersection": 2
+   }
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 7133 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461426.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 7133 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461718.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 7133 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461718.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 9910 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461716.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 1500,
+    "tof_step_days": 2642.8571428571427,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 21019 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461342.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "799",
+   "destination_body_id": "899",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 36331 epoch(s) for body 799 are not in the NASA cache (first missing JD TDB 2461330.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "199",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "no_feasible_route",
+   "reason_code": "NO_FEASIBLE_ROUTE",
+   "reason": "NO_FEASIBLE_ROUTE: no feasible solved cell in this grid; {'exceeds_propellant_capacity': 46, 'solar_intersection': 2}",
+   "rejection_counts": {
+    "exceeds_propellant_capacity": 46,
+    "solar_intersection": 2
+   }
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "299",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 19218 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461343.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "399",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 13513 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461421.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "499",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 13513 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461713.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "599",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 19218 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461343.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "699",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 19218 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461343.500000000) and offline mode cannot fetch them"
+  },
+  {
+   "origin_body_id": "899",
+   "destination_body_id": "799",
+   "grid": {
+    "departure_start_utc": "2026-11-15T00:00:00Z",
+    "departure_step_days": 73,
+    "n_departures": 6,
+    "tof_min_days": 2000,
+    "tof_step_days": 5428.571428571428,
+    "n_durations": 8
+   },
+   "vehicle": {
+    "label": "Hypothetical demo vehicle (Isp 900 s)",
+    "dry_mass_kg": 1000.0,
+    "payload_mass_kg": 100.0,
+    "isp_s": 900.0,
+    "propellant_capacity_kg": 10000.0
+   },
+   "position_reference": "NASA planet centres, not system barycentres",
+   "scope": "bounded grid only; not a global feasibility conclusion",
+   "status": "unavailable",
+   "reason_code": "EPHEMERIS_UNAVAILABLE",
+   "reason": "EPHEMERIS_UNAVAILABLE: 42036 epoch(s) for body 899 are not in the NASA cache (first missing JD TDB 2461325.500000000) and offline mode cannot fetch them"
   }
  ]
 }

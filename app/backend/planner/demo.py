@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ..ephemeris.cache import DEFAULT_CACHE_DIR, EphemerisCache, EphemerisSource
 from ..ephemeris.horizons import HorizonsClient
-from ..physics.burns import Vehicle
+from ..physics.burns import Vehicle, DEMO_VEHICLE_LABEL
 from .plan import TickMap, build_plan, verify_plan
 from .search import Constants, GridSpec, SearchCancelled, grid_summary, run_grid, select_winners, validate_pair
 
@@ -84,7 +84,10 @@ def run_search(params: dict, progress=lambda fraction: None, cancelled=lambda: F
         n_durations=n_dur if tof_span > 0 else 1,
     )
     fields = ("dry_mass_kg", "payload_mass_kg", "isp_s", "propellant_capacity_kg")
-    vehicle = Vehicle(**{k: float(v) for k, v in (params.get("vehicle") or {}).items() if k in fields})
+    vehicle_values = {k: float(v) for k, v in (params.get("vehicle") or {}).items() if k in fields}
+    if vehicle_values.get("isp_s") == 900.0:
+        vehicle_values["label"] = DEMO_VEHICLE_LABEL
+    vehicle = Vehicle(**vehicle_values)
     if cancelled():
         return []
     origin = params.get("origin_body_id", "399")

@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import uuid
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 
 import numpy as np
@@ -78,17 +79,17 @@ def _sample(coast, t0_jd: float, n: int) -> list[dict]:
     return out
 
 
-def _body_track(source: EphemerisSource, body_id: str, start_jd: float, end_jd: float, exact: list[float]) -> tuple[list[dict], dict]:
-    """Daily NASA nodes covering [start, end] plus the exact departure/arrival epochs, and a held-out accuracy check."""
+def _body_track(source: EphemerisSource, body_id: str, start_jd: float, end_jd: float, exact: list[float], spacing=1.0) -> tuple[list[dict], dict]:
+    """NASA nodes covering the run and a held-out midpoint accuracy check."""
     first = math.floor(start_jd - 0.5) + 0.5            # TDB midnight at or before the start
     last = math.ceil(end_jd - 0.5) + 0.5
-    nodes = [first + d for d in range(int(round(last - first)) + 1)]
+    nodes = [first + d * spacing for d in range(int(round((last - first) / spacing)) + 1)]
     epochs = sorted({canonical_epoch(e) for e in nodes + exact})
     states = [{"jd_tdb": s.jd_tdb, "r_km": list(s.r_km), "v_km_s": list(s.v_km_s)} for s in source.states(body_id, epochs)]
 
     # Held-out check: ask NASA for noon states we did NOT use as nodes and compare with our interpolation.
     picks = sorted({int(i) for i in np.linspace(0, len(nodes) - 2, 12)})
-    held_out = source.states(body_id, [nodes[i] + 0.5 for i in picks])
+    held_out = source.states(body_id, [nodes[i] + spacing / 2 for i in picks])
     errors = [float(np.linalg.norm(hermite_state(states, h.jd_tdb)[0] - np.array(h.r_km))) for h in held_out]
     check = {"n_held_out": len(errors), "max_error_km": max(errors)}
     return states, check
@@ -129,10 +130,13 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
                            f"convergence {convergence_km:.3g} km, min radius {min_radius:.3g} km")
 
     # 3. Both planets over the whole run (before departure .. after a missed capture), from NASA.
-    bodies, interpolation = [], {"method": "cubic_hermite", "node_spacing_days": 1.0, "limit_km": INTERPOLATION_LIMIT_KM}
+    # Mercury's rapid motion fails the daily-node gate; sample more densely,
+    # retaining the same independent midpoint error limit.
+    spacing = 0.5 if "199" in (origin_body_id, destination_body_id) else 1.0
+    bodies, interpolation = [], {"method": "cubic_hermite", "node_spacing_days": spacing, "limit_km": INTERPOLATION_LIMIT_KM}
     for body_id in (origin_body_id, destination_body_id):
         name = BODY_NAMES[body_id]
-        states, check = _body_track(source, body_id, start_jd, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb])
+        states, check = _body_track(source, body_id, start_jd, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb], spacing)
         if check["max_error_km"] >= INTERPOLATION_LIMIT_KM:
             raise PlanRejected(f"PLAN_REJECTED: {name} interpolation error {check['max_error_km']:.3g} km")
         bodies.append({"body_id": body_id, "name": name, "states": states})
@@ -220,6 +224,28 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
     plan["plan_id"] = str(uuid.uuid5(_PLAN_NAMESPACE, plan_digest(plan)))
     plan["plan_sha256"] = plan_digest(plan)
     return plan
+
+
+def presentation_plan(plan: dict) -> dict:
+    """Halve board duration without changing physical epochs, paths or fuel.
+
+    Return a new immutable identity; never mutate the legacy source plan.
+    """
+    errors = verify_plan(plan)
+    if errors:
+        raise PlanRejected("; ".join(errors))
+    result = deepcopy(plan)
+    for key in ("departure_tick", "arrival_tick", "end_tick"):
+        if result["ticks"][key] % 2:
+            raise PlanRejected("presentation conversion requires even source ticks")
+        result["ticks"][key] //= 2
+    result["ticks"]["seconds_per_tick"] *= 2
+    result["run_interval"]["real_demo_seconds"] /= 2
+    result.pop("plan_id")
+    result.pop("plan_sha256")
+    result["plan_id"] = str(uuid.uuid5(_PLAN_NAMESPACE, plan_digest(result)))
+    result["plan_sha256"] = plan_digest(result)
+    return result
 
 
 def verify_plan(plan: dict) -> list[str]:

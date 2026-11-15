@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 G0_M_S2 = 9.80665                 # standard gravity, converts Isp (seconds) to exhaust speed
 PARKING_PERIOD_S = 43200.0        # 12 hours
+DEMO_VEHICLE_LABEL = "Hypothetical demo vehicle (Isp 900 s)"
 
 
 class BurnModelError(ValueError):

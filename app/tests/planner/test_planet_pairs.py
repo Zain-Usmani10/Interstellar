@@ -37,15 +37,21 @@ def test_original_earth_mars_identities_unchanged():
         assert (plan["plan_id"], plan["plan_sha256"]) == identity
 
 
-def test_catalog_all_56_pairs_and_valid_plans():
+@pytest.mark.parametrize("records_key,complete_key", [("pairs", "complete"), ("demo_pairs", "demo_complete")])
+def test_catalog_all_56_pairs_and_valid_plans(records_key, complete_key):
     catalog = json.loads((SEARCH_DIR / "planet_pairs.json").read_text())
-    assert catalog["complete"]
-    pairs = {(r["origin_body_id"], r["destination_body_id"]): r for r in catalog["pairs"]}
-    assert len(catalog["pairs"]) == len(pairs) == 56
+    assert catalog.get(complete_key)
+    pairs = {(r["origin_body_id"], r["destination_body_id"]): r for r in catalog[records_key]}
+    assert len(catalog[records_key]) == len(pairs) == 56
     assert set(pairs) == {(a, b) for a in PLANET_IDS for b in PLANET_IDS if a != b}
     plans = {p["plan_id"]: p for path in PLANS_DIR.glob("*.json") for p in [json.loads(path.read_text())]}
     validator = load_validators()["mission_plan"]
     for pair, row in pairs.items():
+        if records_key == "demo_pairs":
+            assert row["vehicle"]["isp_s"] == 900
+            assert row["vehicle"]["label"] == "Hypothetical demo vehicle (Isp 900 s)"
+        else:
+            assert row["vehicle"]["isp_s"] == 450
         if row["status"] != "validated":
             assert row["status"] in ("no_feasible_route", "unavailable")
             assert row["reason"] and row["reason_code"]
@@ -56,6 +62,9 @@ def test_catalog_all_56_pairs_and_valid_plans():
         modes = set()
         for objective, plan_id in row["objectives"].items():
             plan = plans[plan_id]
+            assert plan["vehicle"]["isp_s"] == row["vehicle"]["isp_s"]
+            assert plan["ticks"]["arrival_tick"] / plan["ticks"]["tick_hz"] == 60.05
+            assert plan["run_interval"]["real_demo_seconds"] == 63.05
             validator.validate(plan)
             assert not verify_plan(plan)
             assert (plan["origin_body_id"], plan["destination_body_id"]) == pair

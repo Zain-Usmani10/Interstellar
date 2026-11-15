@@ -1,4 +1,12 @@
-# All-planet bounded route catalogue (#38)
+# Validated route choices and presentation timing (#38)
+
+Human scope update: a good variety for a two-minute presentation, not every
+possible route. The catalogue records all pair outcomes, but only seven pairs
+are qualified for presentation: Venus->Earth, Venus->Mars, Earth->Venus,
+Earth->Mars, Mars->Earth (450 s vehicle), plus Mercury->Earth and Earth->Jupiter
+(the explicitly hypothetical 900 s vehicle). Other pairs remain unavailable
+or infeasible on their recorded grids. Unused century-long track downloads
+were removed; no fabricated routes fill the gaps.
 
 `plan_pair`, `run_grid`, `Constants.from_source` and `build_plan` accept
 `origin_body_id` and `destination_body_id`. `run_search` accepts those keys in its
@@ -12,10 +20,14 @@ consistent. Constants come from each target's cached NASA Horizons object-data
 page. All parking radii use the existing hypothetical circular 12-hour period
 and must clear the sourced mean radius; no surface-launch claims are made.
 
-Run `python -m app.backend.planner.catalog --live` once to fetch missing states
-serially. Run without `--live` to repeat using the cache alone. The source uses
+Run `python -m app.backend.planner.catalog --presentation` and then the same
+command with `--demo` to reproduce both catalogues offline. For a deliberate
+extension, add `--live --fetch-pair 399:599` (repeat the pair option as needed)
+to fetch only selected routes serially. The source uses
 the same validated raw-response/request hashes, units, frame and exact epoch
-checks as the Earth/Mars implementation. No old repository mathematics is used.
+checks as the Earth/Mars implementation. Mercury uses half-day rather than
+daily nodes because daily interpolation failed the unchanged 10 km gate.
+No old repository mathematics is used.
 
 `app/data/search/planet_pairs.json` lists every ordered pair. `complete` only
 means all 56 records were evaluated, not that all pairs are feasible. Each
@@ -35,9 +47,23 @@ Earth/Mars plans retain their original finer grid and exact IDs/digests.
 The catalogue uses the original hypothetical 450-second-Isp chemical vehicle.
 An infeasible pair is not made available by disabling propellant, solar
 intersection, independent DOP853 arrival, convergence or interpolation gates.
-A separate 900-second-Isp demo vehicle has been proposed to the leader; it is
-not silently substituted. Board timing remains 100 Hz, departure tick 10,
-arrival tick 12010 and end tick 12610, regardless of simulated flight duration.
+A separate leader-approved opt-in vehicle is labelled exactly
+`Hypothetical demo vehicle (Isp 900 s)`, with the same masses and tank capacity.
+Generate it with `python -m app.backend.planner.catalog --demo --presentation` after the
+default run finishes. It writes `demo_pairs` and `demo_complete` in the same
+manifest; `pairs` and `complete` always describe the original default vehicle.
+Do not run catalogue writers concurrently. Without `--live`, missing track data
+is explicitly unavailable. Demo plans have `_demo_` in their filenames and
+their own vehicle block; they never replace the original plans or failures.
+Presentation plans retain the 100 Hz wire clock, with departure tick 5,
+arrival tick 6005 (60.05 seconds) and end tick 6305 (63.05 seconds for a missed
+capture). `presentation_plan` doubles simulated seconds per tick while halving
+all three tick values: physical epochs, paths and fuel remain identical. New
+IDs/digests identify these variants; original Earth/Mars files remain unchanged.
+The API/frontend should select the IDs in the catalogue, not legacy plans
+whose board duration is over two minutes. Live hardware timing is not yet
+qualified here; a software protocol-controller run at speed=1 completed in
+60.11 seconds with both burns and the correct fuel ledger.
 Far-future UTC strings depend on the time library's leap-second assumptions;
 planning and interpolation use TDB epochs, not guessed future UTC offsets.
 
