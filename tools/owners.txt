@@ -11,14 +11,14 @@ app/tests/timescale/ ANaceri26/codex
 app/backend/fleet/ ANaceri26/codex
 app/tests/fleet/ ANaceri26/codex
 
-app/backend/ephemeris/ ANaceri26/codex
-app/backend/planner/ ANaceri26/codex
-app/backend/physics/ ANaceri26/codex
+app/backend/ephemeris/ AffanSyed07/codex
+app/backend/planner/ AffanSyed07/codex
+app/backend/physics/ AffanSyed07/codex
 app/backend/planet_data/ AffanSyed07/codex
-app/data/ ANaceri26/codex
-app/tests/ephemeris/ ANaceri26/codex
-app/tests/planner/ ANaceri26/codex
-app/tests/physics/ ANaceri26/codex
+app/data/ AffanSyed07/codex
+app/tests/ephemeris/ AffanSyed07/codex
+app/tests/planner/ AffanSyed07/codex
+app/tests/physics/ AffanSyed07/codex
 app/tests/planet_data/ AffanSyed07/codex
 
 app/frontend/ sadattanzim01/cursor
