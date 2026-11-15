@@ -1,7 +1,7 @@
 import { Component, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Html, Line, Stars } from "@react-three/drei";
+import { Html, Line } from "@react-three/drei";
 import { AdditiveBlending } from "three";
 import type { PlanetTargetId } from "../api/types";
 import { BlackHole } from "./BlackHole";
@@ -13,6 +13,7 @@ import { DockStation } from "./DockStation";
 import { countdownProgress, dockedShuttles, estimatePosition, MOCK_FLEET } from "./dockState";
 import { VISUAL_PLANETS, planetPosition } from "./planets";
 import { flightView, routePoints } from "./flightState";
+import { Starfield } from "./Starfield";
 import { sunGlow } from "./surfaces";
 import { loadTexture } from "./textureMaps";
 import type { ScenePlan, SceneSnapshot, SceneShuttle, ScenePlanetPosition, Vec3 } from "./types";
@@ -195,7 +196,6 @@ export function OrbitScene({
         ? view.position
         : ((visitTarget?.position as Vec3 | null) ?? null);
   const transitionKey = `${overview ? "overview" : focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${followCraft ? "follow" : "visit"}:${positions ? "dated" : "fallback"}`;
-  const starCount = compact ? 900 : 6200;
 
   return (
     <div
@@ -227,8 +227,8 @@ export function OrbitScene({
           frameloop={visible ? "always" : "never"}
           gl={{ antialias: !compact, powerPreference: "high-performance" }}
         >
-          <color attach="background" args={["#02040f"]} />
-          <fog attach="fog" args={["#02040f", 280, 1900]} />
+          <color attach="background" args={["#01030c"]} />
+          <fog attach="fog" args={["#03061a", 420, 2100]} />
           <ambientLight intensity={0.22} color="#8aa0c0" />
           <hemisphereLight args={["#b8d4ff", "#1a1010", 0.45]} />
           <directionalLight
@@ -241,54 +241,43 @@ export function OrbitScene({
             color="#4060a0"
             intensity={0.55}
           />
-          <Stars
-            radius={1600}
-            depth={900}
-            count={starCount}
-            factor={compact ? 3.2 : 5.5}
-            saturation={0}
-            fade={false}
-            speed={0}
-          />
-          {!compact ? (
-            <Stars
-              radius={1100}
-              depth={500}
-              count={2400}
-              factor={2.8}
-              saturation={0.35}
-              fade={false}
-              speed={0}
-            />
-          ) : null}
+          <Starfield compact={compact} />
           <Sun />
           {performanceEnabled && !compact ? (
             <ScenePerformance onSample={setPerformanceReport} />
           ) : null}
-          {planets.map(({ body, position }) => (
+          {planets.map(({ body, position }) => {
+            const focused =
+              !overview &&
+              (selectedId === body.target || focusName === body.name);
+            return (
             <group key={body.name}>
               <OrbitGuide radius={body.displayOrbitAU * 10} />
               <PlanetMesh
                 body={body}
                 position={position}
-                selected={
-                  !overview &&
-                  (selectedId === body.target || focusName === body.name)
-                }
+                selected={focused}
                 interactive={selectionEnabled && !compact}
                 onSelect={onSelect}
                 onFocus={() => onFocusName?.(body.name)}
+                showLabel={!overview && !compact && focused}
               />
               <group position={position}>
-                <DockStation radius={body.radius} shuttles={dockedShuttles(ships, body.bodyId ?? "", sceneSnapshot)
-                  .filter(ship => ship.id !== sceneSnapshot?.shuttle_id)} />
+                <DockStation
+                  radius={body.radius}
+                  showLabels={!overview && !compact && focused}
+                  shuttles={dockedShuttles(ships, body.bodyId ?? "", sceneSnapshot)
+                  .filter(ship => ship.id !== sceneSnapshot?.shuttle_id)}
+                />
               </group>
             </group>
-          ))}
+            );
+          })}
           <BlackHole
             position={BLACK_HOLE_POS}
             selected={!overview && focusName === "Black Hole"}
             onSelect={() => onFocusName?.("Black Hole")}
+            showLabel={!overview && !compact && focusName === "Black Hole"}
           />
           {points.length > 1 && (
             <Line

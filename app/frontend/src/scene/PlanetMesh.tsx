@@ -21,6 +21,7 @@ type Props = {
   interactive: boolean;
   onSelect: (target: PlanetTargetId) => void;
   onFocus?: () => void;
+  showLabel?: boolean;
 };
 
 function AtmosphereShell({
@@ -56,6 +57,7 @@ export function PlanetMesh({
   interactive,
   onSelect,
   onFocus,
+  showLabel = true,
 }: Props) {
   const sphere = useRef<Mesh>(null);
   const clouds = useRef<Mesh>(null);
@@ -184,28 +186,30 @@ export function PlanetMesh({
         </mesh>
       )}
 
-      <Html
-        position={[0, body.radius * 1.85, 0]}
-        center
-        zIndexRange={[8, 0]}
-        style={{ pointerEvents: "none" }}
-      >
-        <span
-          style={{
-            display: "block",
-            color: selected ? "#e8fffb" : "#a8b8cc",
-            font: "600 11px/1 Avenir Next, Segoe UI, sans-serif",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-            textShadow: "0 2px 12px rgba(0,0,0,0.85)",
-            borderBottom: selected ? "1px solid #7de8da" : "none",
-            paddingBottom: 3,
-          }}
+      {showLabel ? (
+        <Html
+          position={[0, body.radius * 1.85, 0]}
+          center
+          zIndexRange={[8, 0]}
+          style={{ pointerEvents: "none" }}
         >
-          {body.name}
-        </span>
-      </Html>
+          <span
+            style={{
+              display: "block",
+              color: selected ? "#e8fffb" : "#a8b8cc",
+              font: "600 11px/1 Avenir Next, Segoe UI, sans-serif",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              textShadow: "0 2px 12px rgba(0,0,0,0.85)",
+              borderBottom: selected ? "1px solid #7de8da" : "none",
+              paddingBottom: 3,
+            }}
+          >
+            {body.name}
+          </span>
+        </Html>
+      ) : null}
     </group>
   );
 }

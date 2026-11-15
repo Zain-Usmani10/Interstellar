@@ -372,9 +372,21 @@ export default function App() {
             const bodyId = bodyIdFromName(focusName);
             if (!bodyId) return;
             if (tab === "from-to") {
-              setTrip({ origin: bodyId });
+              const dest =
+                destinationBodyId !== bodyId
+                  ? destinationBodyId
+                  : originBodyId !== bodyId
+                    ? originBodyId
+                    : ((bodyId === "399" ? "499" : "399") as typeof bodyId);
+              setTrip({ origin: bodyId, destination: dest });
             } else if (tab === "to-from") {
-              setTrip({ destination: bodyId });
+              const from =
+                originBodyId !== bodyId
+                  ? originBodyId
+                  : destinationBodyId !== bodyId
+                    ? destinationBodyId
+                    : ((bodyId === "399" ? "499" : "399") as typeof bodyId);
+              setTrip({ origin: from, destination: bodyId });
             }
           }}
           card={card}
@@ -484,6 +496,15 @@ export default function App() {
         plan={selectedPlan}
         faultHistory={faultHistory}
         dataMode={dataMode}
+        live={live}
+        busy={commandBusy}
+        blackout={blackout}
+        simFaultsEnabled={simFaultsEnabled}
+        onBlackoutStart={() => void sendCommand("blackout_start")}
+        onBlackoutEnd={() => void sendCommand("blackout_end")}
+        onResetFleet={() => void resetFleet()}
+        onFaultSingle={() => void injectFault("single")}
+        onFaultDivergence={() => void injectFault("divergence")}
       />
 
       <div className="bci-float" aria-label="Optional brain widget">

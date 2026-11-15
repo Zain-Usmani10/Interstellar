@@ -409,8 +409,8 @@ button {
   left: auto;
   z-index: 8;
   transform: none;
-  min-width: 10.5rem;
-  padding: 0.55rem 0.9rem;
+  min-width: 11.5rem;
+  padding: 0.55rem 0.95rem;
   border-radius: 0.75rem;
   border: 1px solid var(--glass-border);
   background: rgba(6, 12, 22, 0.72);
@@ -575,6 +575,22 @@ button {
   margin-bottom: 0.75rem;
   padding-bottom: 0.65rem;
   border-bottom: 1px solid var(--line);
+}
+
+.details-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.details-ops button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .overview-dot {

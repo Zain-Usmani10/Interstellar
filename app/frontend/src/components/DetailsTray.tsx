@@ -18,6 +18,15 @@ type Props = {
   plan: MissionPlan | null;
   faultHistory: FaultHistoryEntry[];
   dataMode: string;
+  live: boolean;
+  busy: boolean;
+  blackout: boolean;
+  simFaultsEnabled: boolean;
+  onBlackoutStart: () => void;
+  onBlackoutEnd: () => void;
+  onResetFleet: () => void;
+  onFaultSingle: () => void;
+  onFaultDivergence: () => void;
 };
 
 export function DetailsTray({
@@ -31,7 +40,20 @@ export function DetailsTray({
   plan,
   faultHistory,
   dataMode,
+  live,
+  busy,
+  blackout,
+  simFaultsEnabled,
+  onBlackoutStart,
+  onBlackoutEnd,
+  onResetFleet,
+  onFaultSingle,
+  onFaultDivergence,
 }: Props) {
+  const canStartBlackout =
+    live && !blackout && snapshot?.state === "RUNNING";
+  const canEndBlackout = live && blackout;
+
   return (
     <div className="details-tray">
       <button
@@ -43,7 +65,11 @@ export function DetailsTray({
         Details
       </button>
       {open ? (
-        <div className="glass details-panel" role="region" aria-label="Engineer details">
+        <div
+          className="glass details-panel"
+          role="region"
+          aria-label="Engineer details"
+        >
           <GlassStatus
             linkMode={linkMode}
             controllerSource={controllerSource}
@@ -51,6 +77,53 @@ export function DetailsTray({
             lastError={lastError}
             destinationName={destinationName}
           />
+          <div className="details-ops" aria-label="Operator controls">
+            {blackout ? (
+              <button
+                type="button"
+                className="blackout-btn end"
+                disabled={busy || !canEndBlackout}
+                onClick={onBlackoutEnd}
+              >
+                End blackout
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="blackout-btn"
+                disabled={busy || !canStartBlackout}
+                title="RUNNING only"
+                onClick={onBlackoutStart}
+              >
+                Start blackout
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={busy || !live || blackout}
+              onClick={onResetFleet}
+            >
+              Reset fleet
+            </button>
+            {simFaultsEnabled ? (
+              <>
+                <button
+                  type="button"
+                  disabled={busy || blackout || !live}
+                  onClick={onFaultSingle}
+                >
+                  Sim fault
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || blackout || !live}
+                  onClick={onFaultDivergence}
+                >
+                  Divergence
+                </button>
+              </>
+            ) : null}
+          </div>
           <EngineerDrawer
             plan={plan}
             snapshot={snapshot}

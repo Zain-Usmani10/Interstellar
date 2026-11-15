@@ -449,6 +449,7 @@ function TripBody({
               simFaultsEnabled={simFaultsEnabled}
               routeLabel={routeLabel}
               blackoutActive={blackout}
+              compact
               onPrepare={onPrepare}
               onArm={onArm}
               onLaunch={onLaunch}
