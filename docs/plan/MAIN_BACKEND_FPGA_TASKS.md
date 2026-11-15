@@ -725,7 +725,7 @@ Built only from the snapshot fields above; the browser computes no mission value
 | VGA cockpit | Not built |
 | Contracts 1.2.0 (golden frames 31 to 33, snapshot fields, commands) | Merged |
 | Backend keep-alive, blackout, estimate, sync; simulator support for `0x16` | Merged; tested on the simulated controller only |
-| Fleet endpoints (section 20) | Not built |
+| Fleet endpoints (section 20) and all-planet positions endpoint (contracts 1.3.0) | Merged; tested on the simulated controller only |
 | GUI elements of 18.7 | Not built |
 | Real board round trip | Not done |
 

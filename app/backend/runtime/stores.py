@@ -15,7 +15,7 @@ from referencing import Registry, Resource
 APP_DIR = Path(__file__).resolve().parents[2]
 REPO_DIR = APP_DIR.parent
 CONTRACTS = APP_DIR / "contracts"
-CONTRACTS_VERSION = "1.0.0"
+CONTRACTS_VERSION = "1.3.0"
 PLANET_IDS = ("399", "499")
 
 
@@ -43,6 +43,7 @@ class Settings:
     link_delay_demo: bool = False                # wrap the transport in DelayTransport (plan section 10)
     db_path: str = str(APP_DIR / "artifacts" / "runtime" / "interstellar.sqlite3")
     plans_dir: str = str(APP_DIR / "data" / "plans")
+    fleet_path: str = ""                         # empty = fleet.json next to the mission database
     extra_origins: list[str] = field(default_factory=list)
 
     @classmethod

@@ -89,3 +89,14 @@ MissionSnapshot fields added (see `schemas/mission_snapshot.schema.json`):
 | `reconciliation` | "While out of contact" summary after contact returns; `differences` lists where the estimate was wrong. |
 
 `upload` now also sends `SET_TRIP_DAYS` to the controller (wire type `0x16`).
+
+## Added in contracts 1.3.0 (fleet and planet positions, plan sections 19 and 20)
+
+| Route | Body / query | Returns |
+|---|---|---|
+| `GET /api/v1/fleet` | none | `{schema_version, active_mission_id, shuttles: [{id, name, class, label, location}]}`. `location` is `{kind: "docked", body_id}` or `{kind: "in_flight" \| "lost", mission_id}`. |
+| `POST /api/v1/fleet/reset` | operator token | The starting fleet. 409 while the controller holds a mission. |
+| `POST /api/v1/missions` | `{plan_id, shuttle_id?}` | As before, plus 409 `NO_SHUTTLE_DOCKED` when no shuttle of the plan's class is docked at the plan's origin. |
+| `GET /api/v1/planets/positions` | `?jd_tdb=<number>` or `?date_utc=<...Z>` | `{epoch_jd_tdb, date_utc, frame, data_mode, start_jd_tdb, end_jd_tdb, planets: [{body_id, r_km}]}` for all eight planets. 404 `DATE_OUTSIDE_TRACK`. |
+
+A plan's shuttle class: `vehicle.isp_s >= 900` is `long_range` ("Long-range shuttle"), otherwise `standard` ("Standard shuttle"). The WebSocket sends a `fleet` event whenever the fleet changes. Use `snapshot.date_utc` (or the selected plan's departure date before launch) as the date for the positions call so every planet moves by the same clock.
