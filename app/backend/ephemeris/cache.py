@@ -121,6 +121,16 @@ class EphemerisCache:
     def provenance(self, file_name: str) -> dict:
         return self._entries[file_name]
 
+    def neighbours(self, body_id: str, jd_tdb: float) -> tuple[tuple[StateRow, str], tuple[StateRow, str]] | None:
+        """The cached rows just before and just after jd_tdb (for interpolation), or None if not bracketed."""
+        import bisect
+        rows = sorted((v for (body, _), v in self._rows.items() if body == body_id), key=lambda v: v[0].jd_tdb)
+        times = [row.jd_tdb for row, _ in rows]
+        i = bisect.bisect_right(times, jd_tdb)
+        if i == 0 or i == len(times):
+            return None
+        return rows[i - 1], rows[i]
+
     def epoch_bounds(self, body_id: str) -> tuple[float, float] | None:
         """Earliest and latest cached epoch for a body (the date bounds an offline demo is locked to)."""
         epochs = [float(key) for (body, key) in self._rows if body == body_id]
