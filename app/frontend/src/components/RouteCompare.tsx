@@ -76,7 +76,8 @@ export function RouteCompare({
       <h3>Route comparison</h3>
       <p className="muted">
         Numbers are taken from the plan — nothing is computed in the browser.
-        Selected plan is passed to the 3D scene.
+        Both cards share one data_mode when a matching pair exists. Selected
+        plan is passed to the 3D scene.
       </p>
       <div className="route-grid">
         {leastFuel ? (
