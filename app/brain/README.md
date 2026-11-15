@@ -6,8 +6,9 @@ canonical input validation. An accepted intent opens the same planet information
 state as ordinary input. No brain module imports serial, calls mission routes,
 fetches NASA data or changes a mission destination.
 
-This first milestone has no live or recorded adapter and deliberately has **no
-flashing UI**. The widget's frequency selector configures the signal generator,
+The demonstration bridge is synthetic-only and deliberately has **no flashing
+UI**. A separate Octopus 16 acquisition adapter is available for qualification;
+it is not enabled in the widget. The widget's frequency selector configures the signal generator,
 not a predicted command; the decoder only sees samples. Operator rearm is required
 for every new context. Nothing here demonstrates human classification accuracy.
 
@@ -34,7 +35,36 @@ checkout when testing a future core revision. Tests import the real core validat
 and API; this module does not provide a competing core implementation. All 28 brain
 tests pass against merged dev on Python 3.12.10.
 
-## Run with the app
+## Quick controller simulator (no headset)
+
+Start the app's backend with `BRAIN_ENABLED=true` and open its normal frontend.
+From the repository root, run:
+
+```powershell
+.venv-brain/Scripts/python.exe -m app.brain.controller
+```
+
+Press **E** for Earth, **M** for Mars, **B** for Back, or **Q** to quit in the
+terminal (on non-Windows, press Enter too). A selection takes about four seconds;
+switching from an open card takes about eight seconds because Back is decoded
+first. These controls generate signals that pass through CCA and the real core
+input API. They do not directly set a frontend selection or issue mission commands.
+The app receives the normal selection events, so keep its browser open. No widget
+token or flashing is needed for this terminal simulator.
+
+For an automatic, finite demo or a single selection:
+
+```powershell
+.venv-brain/Scripts/python.exe -m app.brain.controller --demo
+.venv-brain/Scripts/python.exe -m app.brain.controller --planet mars
+```
+
+`--demo` selects Earth -> Mars -> Earth and exits. All inputs remain labeled
+**synthetic**. The terminal tool intentionally has no live-mode switch: bringing
+a headset online is the separate qualification step below, not proof that the
+synthetic classifier works on a person.
+
+## Run with the app's optional widget
 
 1. Start the core backend in its own environment with `BRAIN_ENABLED=true`.
    Its default remains false. Use the backend runbook; default URL is
@@ -124,6 +154,60 @@ monitor or video recording has been validated here. Live/replay adapters should 
 acquisition after device metadata, timing, units and separately reported held-out
 evaluation pass; synthetic thresholds are not a live-device calibration.
 
+## Octopus 16 acquisition qualification
+
+No device is connected for this implementation. The tests use fabricated packets
+and a mocked BLE client, not a headset or a participant. This adapter targets
+**Octopus 16 BLE**, not arbitrary PiEEG boards.
+
+Install the optional driver in the separate brain environment, then run only
+after verifying the device identifier and following the manufacturer's
+[wearing and power instructions](https://docs.pieeg.com/hardware/devices/Octopus_16/safety/):
+
+```powershell
+.venv-brain/Scripts/python.exe -m pip install -r app/brain/requirements-octopus.txt
+.venv-brain/Scripts/python.exe -m app.brain.octopus --scan
+.venv-brain/Scripts/python.exe -m app.brain.octopus --address VERIFIED_DEVICE_ID --seconds 30 --rate 250
+```
+
+This command uses the same `OctopusAdapter.start/read_batch/stop` implementation
+as library callers. It prints aggregate delivery timing only, never raw EEG,
+and makes no core calls. The rate argument is a configured sample-clock rate;
+BLE delivery timing is not a measurement of the ADC clock. Confirm the effective
+rate separately before setting decoder frequencies or reporting performance.
+
+The event's Mind and Machine guide (pages 4–6) identifies Octopus 16 as the
+PiEEG BLE board. While worn, power it **only from its power bank**, never a laptop
+or wall charger. Follow the vendor setup for firmware and fitting; do not flash
+it while worn. Close any PiEEG Cloud connection before the Python test so the
+board is available. `--scan` lists candidate names/identifiers without connecting;
+verify yours and pass its identifier to `--address`. The g.tec Unicorn mentioned
+elsewhere in that guide uses a different interface and is not supported by this
+Octopus adapter.
+
+The adapter returns channel-major float64 microvolts, unwrapped sample indices,
+monotonic receive timestamps and `source=live_eeg`. `channels` selects zero-based
+hardware channels (default 0 and 1); these are **not an assumed O1/O2 montage**.
+Use the participant's verified electrode placement when configuring channels.
+It assembles roughly 100 ms batches because the decoder needs multiple samples
+for quality checks. `read_batch` blocks for at most 500 ms: call it off the
+heartbeat/UI event loop. Start/stop must be serialized by the caller.
+
+Malformed packets, ADC rails, skipped/repeated counters, queue overflow, stale
+data and disconnects invalidate the run. No automatic reconnect, resampling,
+recording or synthetic fallback occurs. Stop and start explicitly after fixing
+the source, with a fresh context and calibration. An 8-bit counter cannot prove
+that exactly 256 packets were not lost; receive-stall checks reduce that blind
+spot but do not certify transport continuity under arbitrary buffering.
+
+Fabricated 10/15 Hz packets exercise the existing `SelectionGate` and produce
+the same Earth/Mars `SelectionIntent` shape. This proves software compatibility,
+not live classification. The service and widget remain synthetic-only because
+their frame reports do not measure actual SSVEP stimuli. Enabling live selection
+still requires measured visual stimuli with explicit opt-in, device/rate/montage
+and person-specific calibration, then the plan's held-out trial and idle tests.
+Route choice and mission commands are outside this extension.
+
 ## Sources and rights
 
 Implementation follows the project plans and canonical contracts v1. No sponsor
@@ -131,3 +215,12 @@ starter code or dataset was copied/downloaded. Synthetic signals are generated
 locally. NumPy/SciPy provide numerical operations/filtering; jsonschema validates
 contracts; HTTPX/websockets provide local transports. Retain their distributed
 licenses. No raw EEG, participant identifiers or restricted datasets are committed.
+
+Octopus packet constants (51-byte framing, signed 24-bit channels, 250 Hz nominal
+rate and ADC conversion) were checked against the vendor's
+[Python quickstart](https://github.com/pieeg-club/hello_world_octopus_16/blob/main/python_quickstart.py).
+The parser and lifecycle code here are independently implemented; no vendor
+source or EEG recordings are bundled. BLE lifecycle uses the documented
+[Bleak client API](https://bleak.readthedocs.io/en/latest/api/client.html).
+Bleak 3.1.0 installs in the isolated Windows Python 3.12 environment; real BLE
+operation remains untested.
