@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from ..ephemeris.cache import EphemerisSource
+from ..ephemeris.cache import EphemerisSource, DEFAULT_CACHE_DIR
 from ..ephemeris.horizons import FRAME, BODY_NAMES, canonical_epoch
 from ..ephemeris.interp import hermite_state
 from ..ephemeris.timeconv import jd_tdb_to_utc
@@ -90,7 +90,8 @@ def _body_track(source: EphemerisSource, body_id: str, start_jd: float, end_jd: 
 
     # Held-out check: ask NASA for noon states we did NOT use as nodes and compare with our interpolation.
     picks = sorted({int(i) for i in np.linspace(0, len(nodes) - 2, 12)})
-    held_out = source.states(body_id, [nodes[i] + spacing / 2 for i in picks])
+    validation_states = getattr(source, "validation_states", source.states)
+    held_out = validation_states(body_id, [nodes[i] + spacing / 2 for i in picks])
     errors = [float(np.linalg.norm(hermite_state(states, h.jd_tdb)[0] - np.array(h.r_km))) for h in held_out]
     check = {"n_held_out": len(errors), "max_error_km": max(errors)}
     return states, check
@@ -131,6 +132,11 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
                            f"convergence {convergence_km:.3g} km, min radius {min_radius:.3g} km")
 
     # 3. Both planets over the whole run (before departure .. after a missed capture), from NASA.
+    # A shorter presentation flight has a longer physical 3-second missed-capture
+    # tail. Reuse the checked-in raw validation cache for this enrichment only;
+    # this does not broaden the online search's requested boundary-state cache.
+    if source.client is None and source.cache.directory == DEFAULT_CACHE_DIR:
+        source.cache.include_directory(DEFAULT_CACHE_DIR.parent / 'planet_track_cache')
     # Mercury's rapid motion fails the daily-node gate; sample more densely,
     # retaining the same independent midpoint error limit.
     spacing = 0.5 if "199" in (origin_body_id, destination_body_id) else 1.0
@@ -140,7 +146,9 @@ def build_plan(cell: Cell, objectives_won: list[str], grid: GridSpec, n_feasible
         # Retain the original cache's leading coverage and held-out epochs.
         # This padding is data coverage only, not the countdown's time scale.
         cache_start = min(start_jd, cell.departure_jd_tdb - tof_s / 1200 / 86400)
-        states, check = _body_track(source, body_id, cache_start, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb], spacing)
+        body_spacing = source.bodies[body_id]['node_spacing_days'] if hasattr(source, 'bodies') else spacing
+        states, check = _body_track(source, body_id, cache_start, end_jd, [cell.departure_jd_tdb, cell.arrival_jd_tdb], body_spacing)
+        check['node_spacing_days'] = body_spacing
         if check["max_error_km"] >= INTERPOLATION_LIMIT_KM:
             raise PlanRejected(f"PLAN_REJECTED: {name} interpolation error {check['max_error_km']:.3g} km")
         bodies.append({"body_id": body_id, "name": name, "states": states})

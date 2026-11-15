@@ -16,14 +16,14 @@ def test_presentation_preserves_epochs_physics_and_original_identity():
     assert not verify_plan(fast)
     assert (original["plan_id"], original["plan_sha256"]) == identity
     assert fast["plan_id"] == original["plan_id"]  # retiming is idempotent
-    assert fast["run_interval"]["real_demo_seconds"] == 68.0
+    assert fast["run_interval"]["real_demo_seconds"] == 38.0
     for key in ("nominal_path", "uncaptured_coast_path", "bodies", "wire", "residuals", "masses"):
         assert fast[key] == original[key]
     ticks = TickMap()
     departure = original["departure"]["jd_tdb"]
     assert (departure - ticks.epoch_jd_tdb(0, departure, original["tof_s"])) * 86400 == pytest.approx(5, abs=0.0001)
     assert ticks.epoch_jd_tdb(500, departure, original["tof_s"]) == departure
-    assert ticks.epoch_jd_tdb(6500, departure, original["tof_s"]) == pytest.approx(original["arrival"]["jd_tdb"])
+    assert ticks.epoch_jd_tdb(3500, departure, original["tof_s"]) == pytest.approx(original["arrival"]["jd_tdb"])
 
 
 
@@ -45,8 +45,8 @@ def test_protocol_controller_finishes_within_presentation(miss_capture):
     now[0] = 6.0
     if miss_capture:
         sim.inject_divergence()
-    now[0] = 68.01
+    now[0] = 38.01
     status = p.Status.unpack(p.decode_frame(sim.status_frame()).payload)
-    assert status.tick == (6800 if miss_capture else 6500)
+    assert status.tick == (3800 if miss_capture else 3500)
     assert status.executed_mask == (1 if miss_capture else 3)
     assert status.state == (p.State.SAFE if miss_capture else p.State.COMPLETE)

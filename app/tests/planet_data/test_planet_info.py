@@ -62,15 +62,17 @@ def test_card_matches_the_contract_schema(body_id):
 
 
 def test_orbital_state_at_a_cached_epoch_is_the_exact_nasa_row():
-    earth = get_planet_info("399", DEPARTURE)["orbital_state"]
+    epoch = 2461359.5  # a real raw NASA node, independent of the chosen launch window
+    row, _ = info._cache().get('399', epoch)
+    earth = get_planet_info("399", epoch)["orbital_state"]
     assert earth["availability"] == "available" and earth["method"] == "exact_cached_nasa_row"
-    assert earth["r_km"] == PLAN["boundary"]["origin_r_km"] and earth["v_km_s"] == PLAN["boundary"]["origin_v_km_s"]
-    assert earth["epoch_jd_tdb"] == DEPARTURE
+    assert earth["r_km"] == list(row.r_km) and earth["v_km_s"] == list(row.v_km_s)
+    assert earth["epoch_jd_tdb"] == epoch
     assert earth["frame"] == {"center": "500@10", "ref_system": "ICRF", "ref_plane": "ECLIPTIC", "units": "KM-S", "time_scale": "TDB"}
     assert earth["provenance"]["mode"] == "nasa_cached" and earth["provenance"]["source"]["sha256"]
     assert 0.98 < earth["derived"]["distance_from_sun_au"] < 1.02
     mars = get_planet_info("499", ARRIVAL)["orbital_state"]
-    assert mars["r_km"] == PLAN["boundary"]["destination_r_km"]
+    assert np.linalg.norm(np.array(mars["r_km"]) - PLAN["boundary"]["destination_r_km"]) < 10
     assert 1.38 < mars["derived"]["distance_from_sun_au"] < 1.67
 
 

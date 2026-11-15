@@ -35,7 +35,7 @@ class UnsupportedBody(ValueError):
 
 @lru_cache(maxsize=1)
 def _cache() -> EphemerisCache:
-    return EphemerisCache(DEFAULT_CACHE_DIR)
+    return EphemerisCache(DEFAULT_CACHE_DIR.parent / 'planet_track_cache', fallback_directory=DEFAULT_CACHE_DIR)
 
 
 @lru_cache(maxsize=1)

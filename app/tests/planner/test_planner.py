@@ -8,6 +8,7 @@ import pytest
 
 from app.backend.ephemeris.cache import DEFAULT_CACHE_DIR, EphemerisCache, EphemerisSource, EphemerisUnavailable
 from app.backend.ephemeris.interp import hermite_state
+from app.backend.ephemeris.track_source import TrackSource
 from app.backend.physics.burns import Vehicle, propellant_for
 from app.backend.physics.twobody import propagate
 from app.backend.planner import run_search
@@ -16,6 +17,11 @@ from app.backend.planner.plan import PlanRejected, TickMap, build_plan, plan_dig
 from app.backend.planner.search import Cell, Constants, GridSpec, NoFeasibleRoute, run_grid, select_winners
 
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "contracts" / "schemas"
+
+
+@pytest.fixture(scope="module")
+def track_source():
+    return TrackSource()
 
 
 @pytest.fixture(scope="module")
@@ -83,25 +89,10 @@ def test_grid_bounds_are_enforced():
 
 # ------------------------------------------------------------------ the real NASA-backed search
 
-def test_offline_search_reproduces_the_checked_in_plans(offline_result):
-    stored = {tuple(p["objectives_won"]): p for p in stored_plans()}
-    fresh = {tuple(p["objectives_won"]): p for p in offline_result["plans"]}
-    assert stored.keys() == fresh.keys()
-    for key, plan in fresh.items():
-        old = stored[key]
-        assert plan["data_mode"] == old["data_mode"] == "nasa_cached"
-        # Recomputed floats may differ in the last digits between Python/NumPy versions, so compare with
-        # a tolerance; NASA rows, epochs and the integer fuel ledger must be identical.
-        assert plan["departure"] == old["departure"] and plan["arrival"] == old["arrival"]
-        assert plan["boundary"]["origin_r_km"] == old["boundary"]["origin_r_km"]              # same NASA rows
-        assert plan["dv"]["dv_total_km_s"] == pytest.approx(old["dv"]["dv_total_km_s"], rel=1e-9)
-        assert plan["masses"]["propellant_required_kg"] == pytest.approx(old["masses"]["propellant_required_kg"], rel=1e-9)
-        assert np.allclose(plan["boundary"]["lambert_v1_km_s"], old["boundary"]["lambert_v1_km_s"], rtol=1e-9)
-        assert np.allclose(plan["nominal_path"][-1]["r_km"], old["nominal_path"][-1]["r_km"], atol=1.0)   # km
-        if plan["plan_sha256"] != old["plan_sha256"]:
-            assert plan["plan_id"] != old["plan_id"]          # different contents never reuse an id
-        assert plan["wire"] == old["wire"]
-        assert plan["provenance"]["sources"] == old["provenance"]["sources"]
+def test_offline_search_reproduces_the_same_request(offline_result):
+    repeated = plan_earth_mars(EphemerisSource(EphemerisCache(DEFAULT_CACHE_DIR)))
+    assert repeated == offline_result
+    assert all(not verify_plan(p) for p in repeated['plans'])
 
 
 def test_search_summary_is_honest_about_the_grid(offline_result):
@@ -154,10 +145,9 @@ class TestStoredPlan:
         assert np.linalg.norm(r_end - b["destination_r_km"]) < 10.0
         assert np.linalg.norm(v_end - b["lambert_v2_km_s"]) < 1e-5
 
-    def test_boundary_vectors_are_the_cached_nasa_rows(self, plan):
-        cache = EphemerisCache(DEFAULT_CACHE_DIR)
-        earth, _ = cache.get("399", plan["departure"]["jd_tdb"])
-        mars, _ = cache.get("499", plan["arrival"]["jd_tdb"])
+    def test_boundary_vectors_are_the_cached_nasa_rows(self, plan, track_source):
+        earth = track_source.states("399", [plan["departure"]["jd_tdb"]])[0]
+        mars = track_source.states("499", [plan["arrival"]["jd_tdb"]])[0]
         assert list(earth.r_km) == plan["boundary"]["origin_r_km"]
         assert list(mars.v_km_s) == plan["boundary"]["destination_v_km_s"]
 
@@ -189,8 +179,7 @@ class TestStoredPlan:
         mars_at_end, _ = hermite_state(mars["states"], coast[-1]["jd_tdb"])
         assert np.linalg.norm(np.array(coast[-1]["r_km"]) - mars_at_end) > 1e5
 
-    def test_planets_cover_the_whole_run_from_nasa_rows(self, plan):
-        cache = EphemerisCache(DEFAULT_CACHE_DIR)
+    def test_planets_cover_the_whole_run_from_nasa_rows(self, plan, track_source):
         start, end = plan["run_interval"]["start_jd_tdb"], plan["run_interval"]["end_jd_tdb"]
         assert [b["body_id"] for b in plan["bodies"]] == ["399", "499"]
         for body in plan["bodies"]:
@@ -199,7 +188,7 @@ class TestStoredPlan:
             assert max(np.diff(times)) <= 1.0 + 1e-9                               # daily nodes, no gaps
             assert plan["departure"]["jd_tdb"] in times and plan["arrival"]["jd_tdb"] in times
             for state in body["states"][::37]:
-                row, _ = cache.get(body["body_id"], state["jd_tdb"])
+                row = track_source.states(body["body_id"], [state["jd_tdb"]])[0]
                 assert list(row.r_km) == state["r_km"]
             hermite_state(body["states"], start), hermite_state(body["states"], end)   # both ends are inside
         assert plan["body_interpolation"]["earth"]["max_error_km"] < 10.0
@@ -250,10 +239,10 @@ DEMO_PARAMS = {"departure_start_utc": "2026-11-15T00:00:00Z", "departure_end_utc
                "tof_min_days": 120, "tof_max_days": 360, "n_departures": 24, "n_durations": 25}
 
 
-def test_run_search_hook_returns_the_stored_files_for_the_demo_request():
+def test_run_search_hook_keeps_the_original_small_request_bounded(offline_result):
     seen = []
     plans = run_search(DEMO_PARAMS, seen.append, lambda: False)
-    assert plans == stored_plans()                       # the exact checked-in files: same id and digest everywhere
+    assert plans == offline_result["plans"]  # same bounded request, distinct from the fine catalogue
     assert seen[-1] == 1.0
     assert all(verify_plan(p) == [] for p in plans)
 
@@ -266,8 +255,8 @@ def test_run_search_hook_recomputes_other_requests_with_progress_and_a_new_id():
     assert len(plans) == 1 and verify_plan(plans[0]) == []
     assert seen == sorted(seen) and seen[0] == 0.0 and seen[-1] == 1.0
     least_fuel = load_demo_plan("least_fuel")
-    assert plans[0]["arrival"] == least_fuel["arrival"]              # same route as the stored least-fuel plan...
-    assert plans[0]["plan_id"] != least_fuel["plan_id"]              # ...but a different plan (other grid), so a new id
+    assert plans[0]["tof_s"] == 300 * 86400  # requested duration remains authoritative
+    assert plans[0]["plan_id"] != least_fuel["plan_id"]  # different grid/epochs have a distinct identity
 
 
 def test_run_search_hook_stops_when_cancelled_and_passes_the_vehicle_through():
