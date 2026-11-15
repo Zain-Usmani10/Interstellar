@@ -115,4 +115,23 @@ COM number, stop and rerun using that port; the script never guesses another dev
 
 After production TransportError, runtime must reopen and reconcile STATUS with its
 persisted session/mission/sequence before new mutations. Transport never replays
-traffic or reconnects itself; this keeps a queued START from being silently sent.
+traffic. By default it does not reconnect itself.
+
+## Optional automatic serial reconnect (issue #65)
+
+Set `SERIAL_AUTO_RECONNECT=true` in the backend process environment before starting
+to enable recovery after an opened port fails; absent/false keeps the original
+`SerialTransport` unchanged. Initial startup errors still fail visibly and explicit
+shutdown stops recovery. Later send/receive calls try the configured port at most
+once per second; no port scanning or frame replay occurs. While disconnected,
+receive returns no frame and send raises a readable `TransportError`. Health
+transport stats expose `reconnects` (successful recoveries) and `last_error` (most
+recent failure, retained after recovery). Telemetry can resume when the same COM
+port returns; a different COM number requires correcting configuration and restarting.
+Reopening USB does not prove a command succeeded: runtime still owns STATUS/session
+reconciliation and retries. Keep `LINK_DELAY_DEMO` off as required for the current
+demo; its outer delay wrapper closes on failure and is not an automatic-recovery path.
+
+Validation: **fakes only, not tested on hardware**. The leader decides whether to
+enable this for the demo. Real recovery validation must preserve power to both
+boards; see the wiring and disconnect constraints above.
