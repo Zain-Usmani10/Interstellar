@@ -34,7 +34,7 @@ export function Preview() {
       <button onClick={() => setSelected("planet.499")}>Mars</button>
       <button onClick={() => setSelected(null)}>Overview</button>
     </div>
-    <div style={{ position: "relative", height: "calc(100vh - 70px)" }}><OrbitScene selectedId={selected} onSelect={setSelected} plan={plan} snapshot={cases[name]} mockFleet focusName={focus} onFocusName={setFocus} /></div>
+    <div style={{ position: "relative", height: "calc(100vh - 70px)" }}><OrbitScene selectedId={selected} onSelect={setSelected} plan={plan} snapshot={cases[name]} fetchPositions={false} mockFleet focusName={focus} onFocusName={setFocus} /></div>
   </>;
 }
 createRoot(document.getElementById("root")!).render(<Preview />);

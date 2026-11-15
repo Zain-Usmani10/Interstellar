@@ -18,6 +18,8 @@ import { loadTexture } from "./textureMaps";
 import type { ScenePlan, SceneSnapshot, SceneShuttle, ScenePlanetPosition, Vec3 } from "./types";
 import { kmToScene } from "./axes";
 import { finiteVector } from "./flightState";
+import { positionQuery } from "./planetPositions";
+import { usePlanetPositions } from "./usePlanetPositions";
 import "./scene.css";
 
 export type { ScenePlan, SceneSnapshot } from "./types";
@@ -33,6 +35,8 @@ export type OrbitSceneProps = {
   fleet?: SceneShuttle[];
   mockFleet?: boolean;
   planetPositions?: ScenePlanetPosition[];
+  dateUtc?: string | null;
+  fetchPositions?: boolean;
 };
 
 const BLACK_HOLE_POS: Vec3 = [Math.cos(5.1) * 92, 0, -Math.sin(5.1) * 92];
@@ -121,6 +125,8 @@ export function OrbitScene({
   fleet = [],
   mockFleet = false,
   planetPositions,
+  dateUtc,
+  fetchPositions = true,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
   const [performanceReport, setPerformanceReport] = useState(
@@ -136,14 +142,17 @@ export function OrbitScene({
   }, []);
 
   const view = flightView(snapshot, plan);
+  const query = fetchPositions && !planetPositions ? positionQuery(dateUtc, plan, snapshot) : null;
+  const datedPositions = usePlanetPositions(query);
+  const positions = planetPositions ?? datedPositions?.data?.planets;
   const ghost = estimatePosition(snapshot, plan);
   const launchProgress = countdownProgress(snapshot, plan);
   const ships = mockFleet ? MOCK_FLEET : fleet;
   const points = useMemo(() => routePoints(plan), [plan]);
   const planets = VISUAL_PLANETS.map((body) => ({
     body,
-    position: planetPositions?.find(p => p.body_id === body.bodyId && finiteVector(p.r_km))
-      ? kmToScene(planetPositions.find(p => p.body_id === body.bodyId)!.r_km)
+    position: positions?.find(p => p.body_id === body.bodyId && finiteVector(p.r_km))
+      ? kmToScene(positions.find(p => p.body_id === body.bodyId)!.r_km)
       : planetPosition(
       body,
       plan,
@@ -172,7 +181,7 @@ export function OrbitScene({
     : !view.departed
       ? ((visitTarget?.position as Vec3 | null) ?? null)
       : null;
-  const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}`;
+  const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${positions ? "dated" : "fallback"}`;
 
   return (
     <div className="orbital-scene" aria-label="Three-dimensional solar system">
@@ -293,6 +302,12 @@ export function OrbitScene({
         </Canvas>
       </SceneBoundary>
       <div className="scene-vignette" aria-hidden="true" />
+      {fetchPositions && !planetPositions && <div className="scene-position-status" role="status">
+        {datedPositions?.data ? `NASA/JPL cached · ${datedPositions.data.date_utc}${snapshot?.link.blackout ? " · estimate" : ""}${datedPositions.error ? " · update unavailable" : datedPositions.pending ? " · updating" : datedPositions.held ? " · date held" : ""}`
+          : datedPositions?.error ? "Planet positions unavailable · illustrative overview"
+          : query ? "Loading dated planet positions · illustrative overview"
+          : "Scene date unavailable · illustrative overview"}
+      </div>}
       {mockFleet && <div style={{ position: "absolute", bottom: 12, left: 12, color: "#efce8e", font: "11px monospace" }}>MOCK FLEET · PREVIEW</div>}
     </div>
   );
