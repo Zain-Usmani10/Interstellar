@@ -2,6 +2,10 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.4.1 (2026-11-15): relaxed limit, nothing breaks
+
+- MissionPlan `grid.n_departures` and `grid.n_durations` may be up to 1000 (was 25), so stored catalogue plans can come from a fine launch-date search. The online planning request (`POST /planning/jobs`) keeps its limit of 25.
+
 ## 1.4.0 (2026-11-15): additive
 
 - `GET /api/v1/planets/track?start_jd_tdb=&end_jd_tdb=&step_days=`: all eight planets over a date range in one call (`epochs_jd_tdb` plus, per planet, one `r_km` per epoch; at most 2000 samples). For the free-running calendar of plan section 19.3.
