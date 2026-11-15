@@ -217,3 +217,49 @@ def test_link_round_trip_and_timeout(sim):
     sim.handle = lambda data: None                                         # board stops answering
     with pytest.raises(LinkError):
         link.mutate(T.START, p.pack_u32(7))
+
+
+class ForgingTransport(SimulatorTransport):
+    """Puts a wrong ACK in front of every real reply, like stale traffic from another session/mission."""
+
+    def __init__(self, sim, forge):
+        super().__init__(sim)
+        self.forge = forge
+
+    def send(self, frame: bytes) -> None:
+        fake = self.forge(p.decode_frame(frame))
+        if fake:
+            self._rx.append(fake)
+        super().send(frame)
+
+
+def test_link_ignores_ack_for_another_session_or_mission(sim):
+    def forge(request):
+        if request.msg_type not in p.MUTATION_TYPES:
+            return None
+        wrong_mission = p.Ack(request.msg_type, p.Result.REJECTED, D.BAD_STATE, 999, 0, 0)
+        return p.encode_frame(T.ACK, request.sequence, request.session_id, wrong_mission.pack())
+
+    transport = ForgingTransport(sim, forge)
+    transport.open()
+    link = Link(transport, lambda session, st: None, retry_timeout_s=0.05)
+    link.open_session()
+    plan = p.Plan(7, 10, 20, 30, 300, 200, 100)
+    assert link.mutate(T.LOAD_PLAN, plan.pack()).result == p.Result.APPLIED      # forged NACK skipped
+
+    transport.forge = lambda request: (p.encode_frame(T.ACK, request.sequence, 0x0BADBEEF, p.Ack(
+        request.msg_type, p.Result.REJECTED, D.BAD_STATE, 7, 0, 0).pack())
+        if request.msg_type in p.MUTATION_TYPES else None)
+    assert link.mutate(T.COMMIT_PLAN, p.pack_commit(7, plan.crc16())).result == p.Result.APPLIED
+
+
+def test_link_reports_bad_session_and_uses_transport_timeout(sim):
+    transport = SimulatorTransport(sim)
+    transport.open()
+    link = Link(transport, lambda session, st: None, retry_timeout_s=0.05)
+    link.open_session()
+    sim.reset()                                                # board forgets our session
+    ack = link.mutate(T.ARM, p.pack_u32(7))
+    assert ack.detail == D.BAD_SESSION and link.next_seq == 1  # answered, sequence not consumed
+    transport.retry_timeout_s = 6.5                            # what a DelayTransport would publish
+    assert link.retry_timeout_s == 6.5
