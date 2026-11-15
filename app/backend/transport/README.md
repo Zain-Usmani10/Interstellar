@@ -57,5 +57,5 @@ The final run used the merged contracts and backend on dev. The additional
 runtime boundary tests exercise a delayed simulated upload/commit/arm/start and
 a lost START ACK with an identical retry. No shared contract files were changed.
 
-Serial I/O is fake in these tests. Python 3.12, Arduino compilation, USB loopback,
+Serial I/O is fake in these unit tests. A separate real COM10 XIAO loopback passed 600/600 golden-frame echoes after successful compilation and flashing; see app/hardware/xiao/README.md. Python 3.12,
 FPGA exchange and runtime reconciliation after real link loss remain unverified.

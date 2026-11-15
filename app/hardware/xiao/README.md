@@ -14,8 +14,7 @@ Use the Espressif Arduino ESP32 board package with board **XIAO_ESP32S3**,
 native USB CDC enabled on boot, and hardware CDC/JTAG USB mode. Open
 `bridge/bridge.ino` in Arduino IDE, select the XIAO's actual port, compile, then
 upload. Record the installed IDE/CLI version, ESP32 core version, board options,
-port before/after upload and compiler output in the test record below. No tool
-or core version has been claimed tested yet.
+port before/after upload and compiler output in the test record below. The tested versions are recorded below.
 
 Power off before wiring. Verify physical pin 1/orientation on the actual boards.
 Use 3.3 V signals, crossed TX/RX and common ground:
@@ -29,19 +28,24 @@ Use 3.3 V signals, crossed TX/RX and common ground:
 Power each board using its own USB connection. Do not connect their power rails.
 Do not remove one board's power while the other drives its UART pins.
 
-## Physical acceptance record — pending
+## Physical acceptance record
 
-As of 2026-11-14 the user confirmed the XIAO is **not connected or wired**.
-Arduino tooling is not on this shell's PATH. Firmware has not been compiled,
-uploaded or tested on hardware. These are the remaining checks:
+On 2026-11-14 (America/Toronto), compiled and flashed the actual XIAO ESP32S3 on
+COM10. Arduino CLI 1.5.1, Espressif core 3.3.12, esptool 5.3.1.
+FQBN: `esp32:esp32:XIAO_ESP32S3:USBMode=hwcdc,CDCOnBoot=default`.
+Compiler: 281477 bytes flash, 22360 bytes RAM. Upload hashes verified; COM10 remained COM10.
 
-1. Record tool/core versions and successful compiler output.
-2. With FPGA disconnected, power off, connect XIAO TX to RX for loopback, then
-   power on and verify exact binary bytes (including 00/A5/5A/FF) both ways.
-3. Power off, remove loopback, wire the FPGA as above, power both boards and
-   exchange DISCOVER/STATUS and golden command/ACK frames with Zain.
-4. Verify LOAD/COMMIT retries do not double-apply; verify malformed CRC recovery.
-5. Close/reopen only the host serial port while both boards remain powered.
-   Check retained tick/events/session and that no queued START is replayed.
+User confirmed D6/TX jumpered to D7/RX with no FPGA attached. Actual test:
 
-A software fake-serial test is not evidence of any of these physical checks.
+```text
+python -m app.hardware.xiao.loopback --port COM10 --confirm-loopback-only
+```
+
+PASS: 30 valid golden frames, 10 repetitions per open cycle, 2 open cycles:
+**600/600 exact echoes**, 115200 8N1, 6.016 seconds. Uses production SerialTransport,
+Python 3.10.11 and pyserial 3.5. Both open cycles used the powered XIAO; no power removal.
+Never run this script with the FPGA attached: it sends both command and reply fixtures.
+
+Still pending: physical FPGA wiring, DISCOVER/STATUS and command/ACK exchanges,
+FPGA idempotency and retained execution/reconciliation during serial reconnect.
+Loopback proves the USB/UART bridge path, not FPGA execution.
