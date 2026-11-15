@@ -6,6 +6,7 @@ import { AdditiveBlending } from "three";
 import type { PlanetTargetId } from "../api/types";
 import { PlanetMesh } from "./PlanetMesh";
 import { CameraRig } from "./CameraRig";
+import { ScenePerformance } from "./ScenePerformance";
 import { Spacecraft, Station } from "./Spacecraft";
 import { VISUAL_PLANETS, planetPosition } from "./planets";
 import { flightView, routePoints } from "./flightState";
@@ -93,6 +94,8 @@ export function OrbitScene({
   snapshot,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
+  const [performanceReport, setPerformanceReport] = useState("Development frame probe: 5s warmup + 15s sample.");
+  const performanceEnabled = import.meta.env.DEV && new URLSearchParams(location.search).has("scenePerf");
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
     document.addEventListener("visibilitychange", update);
@@ -109,6 +112,12 @@ export function OrbitScene({
     (p) => p.body.bodyId === (plan?.origin_body_id ?? "399"),
   )!;
   const captured = view.mode === "captured";
+  const destination = planets.find((p) => p.body.bodyId === (plan?.destination_body_id ?? "499"))!;
+  const heading = captured
+    ? destination.body.name
+    : view.departed
+      ? `${origin.body.name} → ${destination.body.name}`
+      : selected?.body.name ?? "SOLAR SYSTEM";
   const cameraFocus = captured
     ? view.position
     : !view.departed
@@ -118,9 +127,10 @@ export function OrbitScene({
   const isReported = !!snapshot;
   return (
     <div className="orbital-scene" aria-label="Three-dimensional solar system">
+      {performanceEnabled && <pre aria-label="Scene frame measurement" style={{ position: "absolute", zIndex: 20, right: 12, top: 12, padding: 12, pointerEvents: "none", background: "#07121cee", color: "#bce8dc", font: "11px monospace" }}>{performanceReport}</pre>}
       <div className="scene-heading" aria-hidden="true">
         <span>INTERSTELLAR / ORBITAL VIEW</span>
-        <strong>{selected?.body.name ?? "SOLAR SYSTEM"}</strong>
+        <strong>{heading}</strong>
       </div>
       <div
         className={`scene-telemetry ${view.stale || view.mode === "uncaptured" ? "scene-warning" : ""}`}
@@ -159,6 +169,7 @@ export function OrbitScene({
             speed={0}
           />
           <Sun />
+          {performanceEnabled && <ScenePerformance onSample={setPerformanceReport} />}
           {planets.map(({ body, position }) => (
             <group key={body.name}>
               <OrbitGuide radius={body.displayOrbitAU * 10} />

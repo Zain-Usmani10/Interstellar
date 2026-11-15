@@ -25,6 +25,7 @@ import type {
 } from "../api/missionTypes";
 import type { BodyId, PlanetTargetId, TargetId } from "../api/types";
 import { missionActionGates } from "./missionGates";
+import { pickRoutePair } from "./pickRoutePair";
 
 export type LinkMode = "connecting" | "live" | "offline_mock";
 
@@ -162,14 +163,13 @@ export function useCoreBridge() {
   const loadPlans = useCallback(async () => {
     const { plans } = await listPlans();
     setPlanSummaries(plans);
-    const leastSummary =
-      plans.find((p) => p.objectives_won?.includes("least_fuel")) ?? null;
-    const fastSummary =
-      plans.find((p) => p.objectives_won?.includes("earliest_arrival")) ?? null;
+    const pair = pickRoutePair(plans);
 
     const [least, fast] = await Promise.all([
-      leastSummary ? getPlan(leastSummary.plan_id) : Promise.resolve(null),
-      fastSummary ? getPlan(fastSummary.plan_id) : Promise.resolve(null),
+      pair.least_fuel ? getPlan(pair.least_fuel.plan_id) : Promise.resolve(null),
+      pair.earliest_arrival
+        ? getPlan(pair.earliest_arrival.plan_id)
+        : Promise.resolve(null),
     ]);
     setRoutePlans({ least_fuel: least, earliest_arrival: fast });
     setSelectedPlan((current) => {
