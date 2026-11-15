@@ -26,6 +26,8 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 
 All I/O is 3.3 V. Unused pins are high-impedance inputs.
 
+Finding JP1 pins 1 and 2 on the board: they are the pair at the end of the 40-pin header next to the `R2`/`R3` labels, not the end next to the `JP1` label (found by the loopback test on Zain's board).
+
 ## Simulate (Git Bash)
 ```
 app/tests/fpga/run_sim.sh
@@ -48,6 +50,7 @@ Or use **Tools > Programmer** in Quartus. A `.sof` is volatile: reprogram after 
 ## What to expect on the board (bring-up stage)
 - LEDR0 blinks once per second (0.5 s on, 0.5 s off).
 - Holding KEY0 turns LEDR9 on and LEDR0 off; releasing it restarts the blink.
+- UART loopback check (temporary, milestone A): with one jumper from JP1 pin 2 (TX) to JP1 pin 1 (RX), LEDR1 is on. Remove the jumper and LEDR1 goes off. LEDR2 must stay off; it latches on if a wrong byte or bad stop bit is seen (KEY0 clears it).
 - All other red LEDs are off.
 
 ## Board test log
@@ -56,3 +59,4 @@ Record real-board results here, separately from simulation.
 | Date | Build | Test | Result | Tested by |
 |---|---|---|---|---|
 | 2026-11-14 | heartbeat (uncommitted, branch `8-fpga-heartbeat-uart`) | Heartbeat on LEDR0, KEY0 reset, programmed by `.sof` from Quartus Programmer | Reported working on the DE10-Lite | Zain |
+| 2026-11-14 | UART loopback (milestone A) | Jumper JP1 pin 1 to pin 2: LEDR1 on with jumper, off without, LEDR2 stays off, KEY0 clears both | Reported working on the DE10-Lite | Zain |
