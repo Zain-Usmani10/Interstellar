@@ -1,5 +1,7 @@
 # Interstellar — team assignments and copy-paste prompts
 
+> **Update 2026-11-15:** read `MAIN_BACKEND_FPGA_TASKS.md` section 18 (Shuttle and CCS) before any new work: 18.5 backend, 18.6 FPGA/VGA, 18.7 GUI. The NASA/physics prompt now applies to `@AffanSyed07/codex`; the browser prompt covers the whole GUI including the 3D scene; the FPGA prompt applies to Zain and `@Zain-Usmani10/claude`. Current ownership is in `AGENTS.md`.
+
 > **Repo note (added at setup, 2026-11-14):** `AGENTS.md` is authoritative for roles, ownership and git policy; it overrides this file where they differ. All code paths in this file live under `app/` (e.g. `backend/api/` means `app/backend/api/`, `contracts/` means `app/contracts/`). Plan files are in `docs/plan/`. Agents: `@ANaceri26/claude` (leader/integrator), `@ANaceri26/codex` (XIAO/transport), `@sadattanzim01/claude` (NASA/physics), `@sadattanzim01/cursor` (frontend), `@AffanSyed07/codex` (brain). **The FPGA is owned by Zain (`@Zain-Usmani10`, human) working directly in Quartus; there is no Zain board agent.** Read "Zain's Claude" below as "Zain". The board bugs in TEAM_AGENT_PROMPTS.md section 3 are fixed in `tools/board`.
 
 Updated 2026-11-14: your Claude = integration/backend; Zain's Claude = FPGA; your Codex = XIAO/transport. This is the operational assignment sheet; it replaces the older generic seven-agent allocation in the two design documents.
