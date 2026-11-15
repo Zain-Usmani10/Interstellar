@@ -2,6 +2,10 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.4.2 (2026-11-15): additive
+
+- Link light: `link.indicator` in MissionSnapshot and `transport.link_indicator` in `GET /api/v1/health`, one of `active`, `inactive`, `reconnecting`. `active` only while CRC-valid STATUS frames arrive; `inactive` during a blackout or when the port is down; `reconnecting` while the backend probes with GET_STATUS (after a blackout ends, after telemetry went stale, before the first frame). It returns to `active` only on a valid STATUS, never on a timer.
+
 ## 1.4.1 (2026-11-15): relaxed limit, nothing breaks
 
 - MissionPlan `grid.n_departures` and `grid.n_durations` may be up to 1000 (was 25), so stored catalogue plans can come from a fine launch-date search. The online planning request (`POST /planning/jobs`) keeps its limit of 25.
