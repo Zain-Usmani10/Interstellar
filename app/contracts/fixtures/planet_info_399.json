@@ -1,0 +1,189 @@
+{
+ "schema_version": 1,
+ "body_id": "399",
+ "name": "Earth",
+ "scene_epoch_jd_tdb": 2461359.5,
+ "facts": [
+  {
+   "key": "diameter",
+   "label": "Diameter",
+   "value": 12756,
+   "unit": "km",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "mass",
+   "label": "Mass",
+   "value": 5.97e+24,
+   "unit": "kg",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "surface_gravity",
+   "label": "Surface gravity",
+   "value": 9.8,
+   "unit": "m/s^2",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "length_of_day",
+   "label": "Length of day",
+   "value": 24.0,
+   "unit": "h",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "orbital_period",
+   "label": "Orbital period",
+   "value": 365.2,
+   "unit": "days",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "distance_from_sun",
+   "label": "Mean distance from Sun",
+   "value": 149600000.0,
+   "unit": "km",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "mean_temperature",
+   "label": "Mean temperature",
+   "value": 15,
+   "unit": "degC",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   },
+   "note": "Long-term mean, not a current weather reading"
+  },
+  {
+   "key": "moons",
+   "label": "Moons",
+   "value": 1,
+   "unit": null,
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  }
+ ],
+ "orbital_state": {
+  "availability": "available",
+  "epoch_jd_tdb": 2461359.5,
+  "r_km": [
+   92991527.659,
+   117184037.742,
+   0.0
+  ],
+  "v_km_s": [
+   -23.331150609,
+   18.514461346,
+   0.0
+  ],
+  "frame": {
+   "center": "500@10",
+   "ref_system": "ICRF",
+   "ref_plane": "ECLIPTIC",
+   "units": "KM-S",
+   "time_scale": "TDB"
+  },
+  "provenance": {
+   "mode": "synthetic",
+   "source": {
+    "name": "Interstellar contract fixture generator (synthetic, not NASA data)",
+    "url": "app/contracts/tools/generate.py",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  }
+ },
+ "conditions": {
+  "scope": "earth",
+  "kind": "natural_hazard_events",
+  "label": "Earth natural hazard events",
+  "availability": "available",
+  "delivery": "cached",
+  "observed_from_utc": "2026-10-15T00:00:00Z",
+  "observed_to_utc": "2026-11-14T00:00:00Z",
+  "retrieved_utc": "2026-11-14T00:00:00Z",
+  "items": [
+   {
+    "id": "MOCK_EONET_0001",
+    "title": "MOCK wildfire event (fixture, not a real event)",
+    "category": "wildfires",
+    "date_utc": "2026-11-10T00:00:00Z",
+    "coordinates": [
+     -120.5,
+     38.2
+    ],
+    "source_url": "https://eonet.gsfc.nasa.gov/docs/v3"
+   },
+   {
+    "id": "MOCK_EONET_0002",
+    "title": "MOCK severe storm event (fixture, not a real event)",
+    "category": "severeStorms",
+    "date_utc": "2026-11-12T06:00:00Z",
+    "coordinates": [
+     135.0,
+     18.5
+    ],
+    "source_url": "https://eonet.gsfc.nasa.gov/docs/v3"
+   }
+  ],
+  "note": "SYNTHETIC FIXTURE items. Real data: NASA EONET v3 dated events. An empty list is not an all-clear; these observations do not describe the simulated mission epoch.",
+  "provenance": {
+   "mode": "synthetic",
+   "source": {
+    "name": "Interstellar contract fixture generator (synthetic, not NASA data)",
+    "url": "app/contracts/tools/generate.py",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  }
+ }
+}

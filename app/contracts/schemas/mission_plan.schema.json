@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interstellar.local/contracts/v1/mission_plan.schema.json",
+  "title": "MissionPlan",
+  "description": "Immutable validated transfer plan. Produced by the planner, consumed by runtime and frontend. Extra fields are allowed; listed fields may not change meaning without a version bump.",
+  "type": "object",
+  "required": ["schema_version", "plan_id", "plan_sha256", "model_version", "data_mode", "origin_body_id", "destination_body_id",
+               "objectives_won", "departure", "arrival", "tof_s", "frame", "constants", "boundary", "dv", "vehicle", "masses",
+               "wire", "ticks", "residuals", "grid", "nominal_path", "uncaptured_coast_path", "bodies", "provenance"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "plan_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "plan_sha256": { "$ref": "common.schema.json#/$defs/sha256",
+      "description": "SHA-256 of the plan serialized as JSON with this field removed, keys sorted, separators ',' and ':', UTF-8 (Python: json.dumps(obj, sort_keys=True, separators=(',',':'), ensure_ascii=False))." },
+    "model_version": { "type": "string" },
+    "data_mode": { "$ref": "common.schema.json#/$defs/data_mode" },
+    "origin_body_id": { "$ref": "common.schema.json#/$defs/body_id" },
+    "destination_body_id": { "$ref": "common.schema.json#/$defs/body_id" },
+    "objectives_won": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["least_fuel", "earliest_arrival"] },
+      "description": "Which objective(s) this candidate won within the searched grid. One candidate may win both." },
+    "departure": { "$ref": "#/$defs/epoch" },
+    "arrival": { "$ref": "#/$defs/epoch" },
+    "tof_s": { "type": "number", "exclusiveMinimum": 0 },
+    "frame": { "$ref": "common.schema.json#/$defs/frame" },
+    "constants": {
+      "type": "object",
+      "required": ["mu_sun_km3_s2", "mu_origin_km3_s2", "mu_destination_km3_s2", "g0_m_s2", "source"],
+      "properties": {
+        "mu_sun_km3_s2": { "type": "number", "exclusiveMinimum": 0 },
+        "mu_origin_km3_s2": { "type": "number", "exclusiveMinimum": 0 },
+        "mu_destination_km3_s2": { "type": "number", "exclusiveMinimum": 0 },
+        "g0_m_s2": { "const": 9.80665 },
+        "source": { "type": "string" }
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "description": "Planet states at the exact departure/arrival epochs and the Lambert velocities. The coast starts with lambert_v1_km_s.",
+      "required": ["origin_r_km", "origin_v_km_s", "destination_r_km", "destination_v_km_s", "lambert_v1_km_s", "lambert_v2_km_s"],
+      "properties": {
+        "origin_r_km": { "$ref": "common.schema.json#/$defs/vec3" },
+        "origin_v_km_s": { "$ref": "common.schema.json#/$defs/vec3" },
+        "destination_r_km": { "$ref": "common.schema.json#/$defs/vec3" },
+        "destination_v_km_s": { "$ref": "common.schema.json#/$defs/vec3" },
+        "lambert_v1_km_s": { "$ref": "common.schema.json#/$defs/vec3" },
+        "lambert_v2_km_s": { "$ref": "common.schema.json#/$defs/vec3" }
+      }
+    },
+    "dv": {
+      "type": "object",
+      "required": ["v_inf_depart_km_s", "v_inf_arrive_km_s", "r_park_origin_km", "r_park_destination_km", "dv_depart_km_s", "dv_capture_km_s", "dv_total_km_s"],
+      "properties": {
+        "v_inf_depart_km_s": { "type": "number", "minimum": 0 },
+        "v_inf_arrive_km_s": { "type": "number", "minimum": 0 },
+        "r_park_origin_km": { "type": "number", "exclusiveMinimum": 0 },
+        "r_park_destination_km": { "type": "number", "exclusiveMinimum": 0 },
+        "dv_depart_km_s": { "type": "number", "exclusiveMinimum": 0 },
+        "dv_capture_km_s": { "type": "number", "exclusiveMinimum": 0 },
+        "dv_total_km_s": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "vehicle": {
+      "type": "object",
+      "required": ["label", "dry_mass_kg", "payload_mass_kg", "isp_s", "propellant_capacity_kg"],
+      "properties": {
+        "label": { "type": "string", "description": "Must say this is a hypothetical vehicle, not a NASA spacecraft." },
+        "dry_mass_kg": { "type": "number", "exclusiveMinimum": 0 },
+        "payload_mass_kg": { "type": "number", "minimum": 0 },
+        "isp_s": { "type": "number", "exclusiveMinimum": 0 },
+        "propellant_capacity_kg": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "masses": {
+      "type": "object",
+      "description": "High-precision values (kg). The integer gram ledger sent to the FPGA is in 'wire'.",
+      "required": ["m_final_kg", "propellant_required_kg", "departure_propellant_kg", "capture_propellant_kg"],
+      "properties": {
+        "m_final_kg": { "type": "number", "exclusiveMinimum": 0 },
+        "propellant_required_kg": { "type": "number", "exclusiveMinimum": 0 },
+        "departure_propellant_kg": { "type": "number", "exclusiveMinimum": 0 },
+        "capture_propellant_kg": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "wire": {
+      "type": "object",
+      "description": "Integer grams for LOAD_PLAN. Costs are rounded up; initial = departure + capture. The wire mission_id is assigned by the runtime, not stored here.",
+      "required": ["initial_fuel_g", "departure_fuel_g", "capture_fuel_g"],
+      "additionalProperties": false,
+      "properties": {
+        "initial_fuel_g": { "$ref": "common.schema.json#/$defs/u32" },
+        "departure_fuel_g": { "allOf": [{ "$ref": "common.schema.json#/$defs/u32" }, { "minimum": 1 }] },
+        "capture_fuel_g": { "allOf": [{ "$ref": "common.schema.json#/$defs/u32" }, { "minimum": 1 }] }
+      }
+    },
+    "ticks": {
+      "type": "object",
+      "description": "epoch_jd_tdb(tick) = departure.jd_tdb + (tick - departure_tick) * seconds_per_tick / 86400. Board tick rate is always 100 Hz.",
+      "required": ["tick_hz", "departure_tick", "arrival_tick", "end_tick", "seconds_per_tick"],
+      "additionalProperties": false,
+      "properties": {
+        "tick_hz": { "const": 100 },
+        "departure_tick": { "type": "integer", "minimum": 1 },
+        "arrival_tick": { "type": "integer", "minimum": 2 },
+        "end_tick": { "type": "integer", "minimum": 3, "maximum": 360000 },
+        "seconds_per_tick": { "type": "number", "exclusiveMinimum": 0, "description": "Simulated mission seconds per board tick = tof_s / (arrival_tick - departure_tick)" }
+      }
+    },
+    "residuals": {
+      "type": "object",
+      "description": "Independent propagation check against the Lambert target. Mission-ready needs position < 10 km and velocity < 1e-5 km/s.",
+      "required": ["position_km", "velocity_km_s", "min_heliocentric_radius_km", "passed"],
+      "properties": {
+        "position_km": { "type": "number", "minimum": 0 },
+        "velocity_km_s": { "type": "number", "minimum": 0 },
+        "min_heliocentric_radius_km": { "type": "number", "exclusiveMinimum": 0 },
+        "passed": { "type": "boolean" }
+      }
+    },
+    "grid": {
+      "type": "object",
+      "description": "Search bounds. Recommendations are 'best within this grid', nothing more.",
+      "required": ["departure_start_utc", "departure_end_utc", "tof_min_days", "tof_max_days", "n_departures", "n_durations", "n_feasible"],
+      "properties": {
+        "departure_start_utc": { "$ref": "common.schema.json#/$defs/utc" },
+        "departure_end_utc": { "$ref": "common.schema.json#/$defs/utc" },
+        "tof_min_days": { "type": "number", "exclusiveMinimum": 0 },
+        "tof_max_days": { "type": "number", "exclusiveMinimum": 0 },
+        "n_departures": { "type": "integer", "minimum": 1, "maximum": 25 },
+        "n_durations": { "type": "integer", "minimum": 1, "maximum": 25 },
+        "n_feasible": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "nominal_path": { "type": "array", "minItems": 2, "items": { "$ref": "common.schema.json#/$defs/state_vector" },
+      "description": "Heliocentric coast from departure epoch to arrival epoch, time-ordered (512 samples in a real plan)." },
+    "uncaptured_coast_path": { "type": "array", "minItems": 2, "items": { "$ref": "common.schema.json#/$defs/state_vector" },
+      "description": "The same coast continued without a capture burn, from arrival epoch to epoch(end_tick). Used for SAFE/ABORTED." },
+    "bodies": {
+      "type": "array", "minItems": 2,
+      "description": "Planet states covering epoch(0) through epoch(end_tick) for interpolation (cubic Hermite). Never extrapolate.",
+      "items": {
+        "type": "object",
+        "required": ["body_id", "name", "states"],
+        "properties": {
+          "body_id": { "$ref": "common.schema.json#/$defs/body_id" },
+          "name": { "type": "string" },
+          "states": { "type": "array", "minItems": 2, "items": { "$ref": "common.schema.json#/$defs/state_vector" } }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["sources", "notes"],
+      "properties": {
+        "sources": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/source" } },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "epoch": {
+      "type": "object",
+      "required": ["utc", "jd_tdb"],
+      "additionalProperties": false,
+      "properties": {
+        "utc": { "$ref": "common.schema.json#/$defs/utc", "description": "Display label only" },
+        "jd_tdb": { "type": "number", "description": "Authoritative numerical time: Julian date, TDB" }
+      }
+    }
+  }
+}

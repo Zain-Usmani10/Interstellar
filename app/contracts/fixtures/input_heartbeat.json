@@ -1,0 +1,7 @@
+{
+ "context_id": "9a1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d",
+ "context_revision": 7,
+ "source_state": "ready",
+ "acquisition_age_ms": 40,
+ "stimulus_ready": true
+}

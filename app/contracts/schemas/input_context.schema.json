@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interstellar.local/contracts/v1/input_context.schema.json",
+  "title": "InputContext",
+  "description": "What a registered input source may select right now. Authoritative copy lives in the backend. revision increases on every accepted selection, screen change, reconnect or disable; a heartbeat renews expiry without changing revision.",
+  "type": "object",
+  "required": ["schema_version", "context_id", "revision", "input_session_id", "capability", "screen", "selected_body_id", "allowed_targets", "enabled", "expires_in_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "context_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "revision": { "type": "integer", "minimum": 0 },
+    "input_session_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "capability": { "const": "planet_explore", "description": "The only capability in this round. No mission upload/arm/start through this interface." },
+    "screen": { "enum": ["planet_choice", "planet_info", "disabled"] },
+    "selected_body_id": { "anyOf": [{ "$ref": "common.schema.json#/$defs/body_id" }, { "type": "null" }] },
+    "allowed_targets": { "type": "array", "uniqueItems": true, "items": { "$ref": "common.schema.json#/$defs/target_id" },
+      "description": "planet_choice: planet.399, planet.499. planet_info: planet.more_details, navigation.back. disabled: empty." },
+    "enabled": { "type": "boolean" },
+    "expires_in_ms": { "type": "integer", "minimum": 0, "maximum": 10000 }
+  }
+}

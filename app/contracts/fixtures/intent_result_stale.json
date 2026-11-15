@@ -1,0 +1,6 @@
+{
+ "event_id": "11111111-2222-4333-8444-555555555555",
+ "accepted": false,
+ "reason": "stale_context",
+ "new_context_revision": 8
+}
