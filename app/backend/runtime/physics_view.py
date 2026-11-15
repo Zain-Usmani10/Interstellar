@@ -14,7 +14,13 @@ C_KM_S = 299792.458
 
 
 def epoch_jd_tdb(plan: dict, tick: int) -> float:
+    """Mission date for a board tick. The countdown before departure runs in real time
+    (plan section 19.1), so those ticks sit within seconds of the launch date; after departure
+    the plan's compressed mapping applies."""
     ticks = plan["ticks"]
+    if tick < ticks["departure_tick"]:
+        real_seconds_to_go = (ticks["departure_tick"] - tick) / ticks["tick_hz"]
+        return plan["departure"]["jd_tdb"] - real_seconds_to_go / 86400.0
     return plan["departure"]["jd_tdb"] + (tick - ticks["departure_tick"]) * ticks["seconds_per_tick"] / 86400.0
 
 
