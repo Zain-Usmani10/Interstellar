@@ -2,7 +2,7 @@
 
 > **Repo note (added at setup, 2026-11-14):** `AGENTS.md` is authoritative for roles, ownership and git policy; it overrides this file where they differ. All code paths in this file live under `app/` (e.g. `backend/api/` means `app/backend/api/`, `contracts/` means `app/contracts/`). Plan files are in `docs/plan/`. Agents: `@ANaceri26/claude` (leader/integrator), `@ANaceri26/codex` (XIAO/transport), `@sadattanzim01/claude` (NASA/physics), `@sadattanzim01/cursor` (frontend), `@AffanSyed07/codex` (brain). **The FPGA is owned by Zain (`@Zain-Usmani10`) and his agent `@Zain-Usmani10/claude`.** The board bugs in TEAM_AGENT_PROMPTS.md section 3 are fixed in `tools/board`.
 
-Version: 1.3, 2026-11-15 (adds section 18, Shuttle and CCS; routes between a validated set of planet pairs; VGA cockpit allowed). Wire protocol remains v1 with one additive message (`0x16`, section 18.3).
+Version: 1.4, 2026-11-15 (adds section 18, Shuttle and CCS; section 19, time scaling; section 20, fleet; routes between a validated set of planet pairs; VGA cockpit allowed). Wire protocol remains v1 with one additive message (`0x16`, section 18.3).
 
 > **Changes since 1.2 (2026-11-15):** Zain has a Claude agent (`@Zain-Usmani10/claude`) for the FPGA. The NASA/physics folders moved from Sadat's Claude to `@AffanSyed07/codex`. `@sadattanzim01/cursor` owns the whole GUI including the 3D scene. Where a section below still says "Sadat's Claude" for NASA/physics, read "Affan's Codex". `AGENTS.md` remains authoritative for ownership. Owner: core integration lead.
 
@@ -242,7 +242,7 @@ The core uploads exactly two events: departure and capture. Use integer 100 Hz b
 
 ```text
 departure_tick = 10
-arrival_tick   = 12010                  # approximately two minutes; presentation plans use 5 / 6005 / 6305 (section 18.2)
+arrival_tick   = 12010                  # approximately two minutes; catalogue plans use 500 / 6500 / 6800 (section 19.1)
 end_tick       = 12610                  # six extra real seconds for a missed-capture coast
 seconds_per_tick = tof_s / (arrival_tick - departure_tick)
 epoch_jd_tdb(tick) = departure_jd_tdb
@@ -637,8 +637,8 @@ Adopted by the humans from Zain's proposal, with the changes listed in 18.9. Thi
 
 ### 18.2 Timing
 
-- The board tick is always 100 Hz. `departure_tick`, `arrival_tick` and `end_tick` come from the uploaded plan (section 7 bounds unchanged). Presentation plans currently use 5 / 6005 / 6305 (63.05 s); older plans use 10 / 12010 / 12610.
-- Ticks before `departure_tick` are a real-time T-minus countdown. Its length is the plan's `departure_tick`; nothing else sets it.
+- The board tick is always 100 Hz. `departure_tick`, `arrival_tick` and `end_tick` come from the uploaded plan (section 7 bounds unchanged). The required values for every catalogue plan are 500 / 6500 / 6800 (section 19.1). Plans generated before that rule use 5 / 6005 / 6305 or 10 / 12010 / 12610 and are to be regenerated.
+- Ticks before `departure_tick` are a real-time T-minus countdown: 5 s (section 19.1).
 - `trip_days = max(1, min(9999, floor(tof_s / 86400 + 0.5)))`, computed by the backend from the plan.
 
 ### 18.3 Protocol addition: `SET_TRIP_DAYS` (type `0x16`), contracts 1.2.0
@@ -733,6 +733,50 @@ Built only from the snapshot fields above; the browser computes no mission value
 - Blackout by button only; no cable pulling.
 - `SET_TRIP_DAYS` is sent inside `upload` (state LOADED), not as a separate operator step.
 - Keep-alive every 0.5 s rather than 1 s.
-- The launch countdown length is the plan's `departure_tick`; no fixed 10 s.
+- The launch countdown is 5 s (section 19.1), not 10 s.
 - Fuel is not estimated continuously (18.5 item 3).
 - Boot from flash stays out of scope.
+
+## 19. Time scaling: one rule for every trip (adopted 2026-11-15)
+
+Whatever the route maths produces, it ends in one number: the trip length in days. Everything below follows from it. Status: specified; presentation plans today still use a 5-tick countdown and must be regenerated to this rule.
+
+### 19.1 The rule
+
+| Phase | Board ticks (100 Hz) | Real time | Simulated time |
+|---|---|---|---|
+| Launch countdown | `departure_tick = 500` | 5 s | 1 : 1 with real time (5 simulated seconds) |
+| Flight | `arrival_tick = departure_tick + 6000` | 60 s | the whole trip: `sim_days_per_second = trip_days / 60` |
+| After planned arrival | `end_tick = arrival_tick + 300` | 3 s | room to show a missed capture |
+
+- Every catalogue plan uses exactly these three tick values, whatever its trip length. A 3-year trip and a 4-month trip both fly in 60 s; only `sim_days_per_second` differs.
+- `trip_days` is the value of section 18.2. Sim days per tick = `trip_days / 6000`. The shuttle never receives this fraction: it receives `trip_days` (`SET_TRIP_DAYS`) and already knows its ticks, and counts days with the integer formula of 18.4.
+- The numbers 500 / 6000 / 300 live in **one place** (`backend/timescale/`); planner, backend and tests import them. Changing the demo length is a one-line change followed by regenerating the plans.
+
+### 19.2 What each clock shows
+
+- **CCS (laptop):** an absolute calendar date (day, month, year). It is the real date of the plan's NASA data (`epoch_jd_tdb` of the confirmed tick; of `estimate.tick` in a blackout). Plans currently depart in 2026 to 2027; moving the story to another year means refetching and revalidating the NASA data, so it is not done by relabelling.
+- **Shuttle (FPGA):** relative time only: days to arrival, starting at `trip_days` and counting down uniformly to 0 (18.4). No calendar.
+
+### 19.3 When time moves (GUI behaviour)
+
+1. **Browsing and planet close-up:** time stands still. The date is the fixed scene date; planets do not run ahead and no counter spins.
+2. **Launch approved:** the calendar and the planets fast-forward to the departure date (a short GUI animation, about 3 s, while the backend uploads and arms). This is presentation only; nothing is sent to the board about it.
+3. **START:** a 5 s real-time countdown (the 500 predeparture ticks), with the launch animation. Sim time equals real time.
+4. **After the departure burn is confirmed:** sim time takes over at `sim_days_per_second`. The date, the days-to-arrival readout, the planets and the shuttle all advance together from the confirmed tick; none of them has its own clock.
+5. **Arrival or end:** time stops at the confirmed final tick.
+
+All eight planets move by the same date (real angles from NASA positions; display distances may stay compressed and are labelled).
+
+## 20. Fleet: shuttles are tracked, not assumed (adopted 2026-11-15)
+
+Status: specified, not built. Laptop-side bookkeeping only; the board and the wire protocol are unaffected.
+
+- The world starts with a fixed fleet from `data/fleet.json`. Default: Earth 1 Standard + 1 Long-range; Venus 1 Standard; Mars 1 Standard; Mercury 1 Long-range; Jupiter 1 Long-range. Each shuttle has an id, a name, a class (`standard` = the 450 s model, `long_range` = the 900 s model) and a location.
+- Location is exactly one of: `docked` at a body, `in_flight` on a mission, `lost` (left on an uncaptured coast).
+- **Launch rule:** a mission can be created only if a shuttle of the plan's vehicle class is docked at the plan's origin. That shuttle is bound to the mission.
+- **Moves happen only on board evidence:** departure burn confirmed → `in_flight`; COMPLETE with capture confirmed → `docked` at the destination; SAFE or ABORTED after departure → `lost`; abort or clear before departure → still `docked` at the origin.
+- One flight at a time (one FPGA).
+- The fleet persists across backend restarts and has an explicit operator reset to the starting fleet.
+- UI names: **Standard shuttle** and **Long-range shuttle**, same styling. Model numbers stay in the details drawer. Routes with no plan are shown as **Out of range for this shuttle** (fuel) or **Route not computed**; no other explanation on screen.
+- API (contracts 1.2.0): `GET /api/v1/fleet`; `POST /api/v1/fleet/reset` (operator); `POST /api/v1/missions` gains `shuttle_id` and refuses with `NO_SHUTTLE_DOCKED` when the rule fails; MissionSnapshot gains `shuttle_id`.

@@ -6,6 +6,8 @@ DEFAULT ANaceri26/claude
 app/hardware/xiao/ ANaceri26/codex
 app/backend/transport/ ANaceri26/codex
 app/tests/transport/ ANaceri26/codex
+app/backend/timescale/ ANaceri26/codex
+app/tests/timescale/ ANaceri26/codex
 
 app/backend/ephemeris/ AffanSyed07/codex
 app/backend/planner/ AffanSyed07/codex
@@ -23,6 +25,8 @@ app/frontend/src/bci/ AffanSyed07/codex
 
 # Arduino Uno fallback bridge feasibility (2026-11-14, by request of Abderrahmene)
 app/hardware/uno/ AffanSyed07/codex
+app/backend/fleet/ AffanSyed07/codex
+app/tests/fleet/ AffanSyed07/codex
 
 app/brain/ AffanSyed07/codex
 app/tests/brain/ AffanSyed07/codex
