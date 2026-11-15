@@ -1,8 +1,10 @@
 # INTERSTELLAR — core implementation contract and task plan
 
-> **Repo note (added at setup, 2026-11-14):** `AGENTS.md` is authoritative for roles, ownership and git policy; it overrides this file where they differ. All code paths in this file live under `app/` (e.g. `backend/api/` means `app/backend/api/`, `contracts/` means `app/contracts/`). Plan files are in `docs/plan/`. Agents: `@ANaceri26/claude` (leader/integrator), `@ANaceri26/codex` (XIAO/transport), `@sadattanzim01/claude` (NASA/physics), `@sadattanzim01/cursor` (frontend), `@AffanSyed07/codex` (brain). **The FPGA is owned by Zain (`@Zain-Usmani10`, human) working directly in Quartus; there is no Zain board agent.** Read "Zain's Claude" below as "Zain". The board bugs in TEAM_AGENT_PROMPTS.md section 3 are fixed in `tools/board`.
+> **Repo note (added at setup, 2026-11-14):** `AGENTS.md` is authoritative for roles, ownership and git policy; it overrides this file where they differ. All code paths in this file live under `app/` (e.g. `backend/api/` means `app/backend/api/`, `contracts/` means `app/contracts/`). Plan files are in `docs/plan/`. Agents: `@ANaceri26/claude` (leader/integrator), `@ANaceri26/codex` (XIAO/transport), `@sadattanzim01/claude` (NASA/physics), `@sadattanzim01/cursor` (frontend), `@AffanSyed07/codex` (brain). **The FPGA is owned by Zain (`@Zain-Usmani10`) and his agent `@Zain-Usmani10/claude`.** The board bugs in TEAM_AGENT_PROMPTS.md section 3 are fixed in `tools/board`.
 
-Version: 1.2 reviewed implementation plan, 2026-11-14. Wire protocol remains v1. Owner: core integration lead.
+Version: 1.3, 2026-11-15 (adds section 18, Shuttle and CCS; routes between a validated set of planet pairs; VGA cockpit allowed). Wire protocol remains v1 with one additive message (`0x16`, section 18.3).
+
+> **Changes since 1.2 (2026-11-15):** Zain has a Claude agent (`@Zain-Usmani10/claude`) for the FPGA. The NASA/physics folders moved from Sadat's Claude to `@AffanSyed07/codex`. `@sadattanzim01/cursor` owns the whole GUI including the 3D scene. Where a section below still says "Sadat's Claude" for NASA/physics, read "Affan's Codex". `AGENTS.md` remains authoritative for ownership. Owner: core integration lead.
 
 Final role assignment: your Claude owns integration/backend, Zain's Claude owns FPGA, your Codex owns XIAO/transport. Preserve existing branches/work during handoff.
 
@@ -20,17 +22,18 @@ The supplied `CONTEXT.md` is a vision draft. This document deliberately reduces 
 
 ### What ships
 
-1. Earth → Mars route search using NASA/JPL Horizons planetary state vectors.
+1. Route search between planets using NASA/JPL Horizons planetary state vectors. Earth → Mars is the reference route; other pairs ship only when they have stored, validated plans in the route catalogue (`data/search/planet_pairs.json`). Pairs without one are shown as not available, never animated.
 2. Two clearly defined recommendations: least required propellant and earliest feasible arrival **within the searched grid**.
 3. Browser orbit/transfer view, route comparison, plan upload, start, status, faults, and source/model details.
 4. Actual FPGA execution of a small uploaded schedule, with USB/UART communication through XIAO.
 5. One-register-lane fault masking, a specifically defined unrecoverable divergence demonstration, and autonomous execution during loss of ground communication.
 6. Cached NASA-backed offline demo, labelled simulated-controller fallback, reproducible startup, meaningful test results, and a recorded hardware demo.
 7. Ordinary-input Earth/Mars information panels with a stable optional EEG selection interface; dated Earth hazard information is an independent enrichment, not a prerequisite for orbital execution.
+8. The Shuttle and CCS storyline of section 18: blackout after launch, labelled estimate on the CCS, days-to-arrival countdown on both sides, sync at arrival.
 
 ### Explicit exclusions
 
-No quantum, Gemini, ElevenLabs, MongoDB, authentication service, MQTT, Raspberry Pi deployment, FPGA VGA, accelerometer control, joystick, SDRAM controller, soft CPU, asteroid routing, refueling, gravity assists, continuous thrust, automatic recovery replanning, or arbitrary planets in the required build. Add none until the core acceptance gates pass. Earth → Venus is the first optional destination, only after its own numerical validation.
+No quantum, Gemini, ElevenLabs, MongoDB, authentication service, MQTT, Raspberry Pi deployment, accelerometer control, joystick, SDRAM controller, soft CPU, asteroid routing, refueling, gravity assists, continuous thrust, automatic recovery replanning, or routes that are not in the validated catalogue. Add none until the core acceptance gates pass. An FPGA VGA cockpit is allowed as a display-only addition (section 18.6).
 
 NASA data is essential; optional sponsor integrations are not. Main track target: Beyond the Horizon. Mind and Machine is conditional on the extension and confirmed event rules. [S1]
 
@@ -112,7 +115,7 @@ XIAO firmware explicitly initializes `Serial1.begin(115200, SERIAL_8N1, 44, 43)`
 - UART: 115200, 8 data bits, no parity, one stop bit. Integer divisor 434 gives approximately 115207 baud. Synchronize RX, sample near bit centers, reject invalid stop bits.
 - Two-flop synchronize switches/buttons; debounce and edge-detect. Verify asynchronous reset assertion and synchronous release.
 - Explicit pin locations/directions. Unused pins input/high impedance. UART must idle high.
-- Use onboard LEDs for READY/RUNNING/SAFE and a latched fault indicator. Seven-segment progress is optional if time remains.
+- Use onboard LEDs for READY/RUNNING/SAFE and a latched fault indicator. Seven-segment cockpit and link-lost indication as in section 18.6.
 - `.sof` programming is volatile. Reprogram/re-upload after power loss. Persistent flash configuration is not a core requirement.
 
 ## 5. NASA data contract
@@ -239,7 +242,7 @@ The core uploads exactly two events: departure and capture. Use integer 100 Hz b
 
 ```text
 departure_tick = 10
-arrival_tick   = 12010                  # approximately two minutes of real demo time
+arrival_tick   = 12010                  # approximately two minutes; presentation plans use 5 / 6005 / 6305 (section 18.2)
 end_tick       = 12610                  # six extra real seconds for a missed-capture coast
 seconds_per_tick = tof_s / (arrival_tick - departure_tick)
 epoch_jd_tdb(tick) = departure_jd_tdb
@@ -275,7 +278,7 @@ Use `tick >= scheduled_tick` plus executed flags, not an equality-only event che
 3. Evaluate gravity-driven coast at the latest board epoch. Browser interpolation may interpolate between received snapshots; it must not invent a future authoritative tick.
 4. Capture succeeds only when the FPGA reports the capture event at its planned epoch **and** the backend validates the matching mission/trajectory endpoint. If runtime event timing does not match the validated plan, label the plan invalid; do not substitute a successful endpoint.
 5. SAFE/ABORTED after departure inhibits future burns but leaves the spacecraft coasting. A missed capture remains an uncaptured heliocentric pass; it must not become an automatic arrival. This simplified model omits Mars flyby gravity, so call it an “uncaptured coast,” not a precise flyby simulation.
-6. No telemetry means “last received state; stale.” Holding that last image is a communications display behavior, not a claim that the spacecraft physically stopped.
+6. No telemetry means “last received state; stale.” Holding that last image is a communications display behavior, not a claim that the spacecraft physically stopped. During an operator-started blackout the CCS may additionally show a labelled estimate beside the last received state, exactly as defined in section 18.5; the estimate never replaces confirmed values.
 7. After reconnect, reconcile mission ID, tick, executed mask and actual event ticks before rendering the recovered state. Two retained event records are enough to reconstruct this fixed mission; an unbounded event log is unnecessary.
 
 ## 8. Canonical wire protocol v1
@@ -315,6 +318,7 @@ UART parser must handle fragmented/multiple frames, false magic inside corrupt f
 | `0x13` | START | `mission_id:u32` |
 | `0x14` | ABORT | `mission_id:u32` |
 | `0x15` | CLEAR | `mission_id:u32` |
+| `0x16` | SET_TRIP_DAYS | `mission_id:u32, trip_days:u32`; LOADED or ARMED; display only (section 18.3) |
 | `0x80` | ACK/NACK | Fixed 16-byte reply below |
 | `0x81` | STATUS | Fixed 40-byte telemetry below |
 
@@ -620,3 +624,115 @@ Reviewed 2026-11-14. Exact hardware operation, package installation and compilat
 - **S17 — Local BCI guide:** `C:/Users/Naceri/Downloads/Hack_The_Nest_2026_Mind_and_Machine_Guide.pdf`, especially pages 1–6. Explicitly allows no-headset dataset/simulation participation; source mode must still be described honestly.
 - **S18 — Earth event API:** https://eonet.gsfc.nasa.gov/docs/v3 (event metadata and bounded category/date queries; not arbitrary planetary weather).
 - **S19 — Planet facts/Mars data limits:** https://science.nasa.gov/mars/facts/ ; https://science.nasa.gov/mission/insight/ (mission ended in 2022).
+
+## 18. Shuttle and Central Control Station (CCS): adopted 2026-11-15
+
+Adopted by the humans from Zain's proposal, with the changes listed in 18.9. This section is the single reference for the backend, the GUI, the FPGA and the VGA display. Where an older sentence in this file disagrees, this section wins. Status: **specified, not yet implemented or tested** except where 18.8 says otherwise.
+
+### 18.1 Roles and story
+
+- **CCS** = the laptop (backend + browser GUI). **Shuttle** = the DE10-Lite. **Radio link** = the XIAO bridge (unchanged, transparent).
+- The CCS plans the route, uploads it, arms and launches. After launch the operator starts a **blackout**. The shuttle flies and burns alone from its stored plan and counts down the days to arrival on its own displays. The CCS has no telemetry and shows only a labelled **estimate**. Contact returns **at the planned arrival** and the CCS replaces the estimate with what the shuttle really did.
+- Target presentation split: about 1 minute planning on the CCS, about 1 minute of flight on the shuttle. Run length is only a plan value (18.2); no code depends on a particular length.
+
+### 18.2 Timing
+
+- The board tick is always 100 Hz. `departure_tick`, `arrival_tick` and `end_tick` come from the uploaded plan (section 7 bounds unchanged). Presentation plans currently use 5 / 6005 / 6305 (63.05 s); older plans use 10 / 12010 / 12610.
+- Ticks before `departure_tick` are a real-time T-minus countdown. Its length is the plan's `departure_tick`; nothing else sets it.
+- `trip_days = max(1, min(9999, floor(tof_s / 86400 + 0.5)))`, computed by the backend from the plan.
+
+### 18.3 Protocol addition: `SET_TRIP_DAYS` (type `0x16`), contracts 1.2.0
+
+Additive. Every existing frame, ACK and STATUS stays byte for byte the same.
+
+| Field | Value |
+|---|---|
+| Direction, kind | Host to board; mutation: active session, next sequence, one 16-byte ACK (`original_type = 0x16`) |
+| Payload | 8 bytes, little-endian: `mission_id:u32`, `trip_days:u32` |
+| Allowed when | Active plan with the same `mission_id`, state `LOADED` or `ARMED` |
+| ACK detail | `OK`; `BAD_STATE` (no active plan or wrong state); `BAD_MISSION`; `BAD_PLAN` (`trip_days` 0 or above 9999); session/sequence errors as for any mutation |
+| Lifetime | Forgotten on CLEAR, on a new COMMIT_PLAN and on reset. Not reported in STATUS |
+| Retry | An identical retry (same sequence) returns the cached ACK and is not applied twice, like every mutation |
+
+When the backend sends it: as the **third step of `upload`**, directly after the COMMIT_PLAN ACK, while the board is `LOADED`. `upload` succeeds only if LOAD_PLAN, COMMIT_PLAN and SET_TRIP_DAYS are all applied. ARM and START are unchanged.
+
+Golden frame (session `0x1A2B3C4D`, sequence 3, mission `0x00C0FFEE`, 300 days), to be added to `contracts/fixtures/frames/` with its ACK:
+
+```text
+A5 5A 01 16 03 00 4D 3C 2B 1A 08 00 EE FF C0 00 2C 01 00 00 58 85
+```
+
+### 18.4 Days to arrival: one formula on both sides (integers only)
+
+```text
+trip_ticks = arrival_tick - departure_tick
+if tick <= departure_tick:   elapsed_days = 0
+elif tick >= arrival_tick:   elapsed_days = trip_days
+else:                        elapsed_days = floor((tick - departure_tick) * trip_days / trip_ticks)
+days_to_arrival = trip_days - elapsed_days
+```
+
+Display value only: it never gates a burn. It keeps counting in SAFE and ABORTED until the planned arrival, then shows 0.
+
+### 18.5 Keep-alive, blackout, estimate, sync (backend, `@ANaceri26/claude`)
+
+1. **Keep-alive.** While the link is open and no blackout is active, send `GET_STATUS` every 0.5 s. The shuttle declares the link lost after 2 s without a valid frame.
+2. **Blackout is a button, never a pulled cable** (unplugging the XIAO removes its power while the FPGA still drives its pins). New mission commands `blackout_start` and `blackout_end` on `POST /api/v1/missions/{id}/commands`. `blackout_start` is accepted only in `RUNNING`. During a blackout the backend sends **nothing** to the board (no keep-alive, no commands; other commands are refused with a clear "no contact" error) and **discards** every frame it receives. The serial port stays open.
+3. **Estimate.** `tick_est = min(end_tick, last_tick + floor((now - last_status_time) * 100))`. From it the backend derives estimated epoch, estimated position on the plan's `nominal_path`, `days_to_arrival` (18.4) and expected events. Fuel changes only at the two burns, so the fuel estimate is the last confirmed value plus "capture burn expected" at `arrival_tick`; it is not a continuous gauge.
+4. **Sync at arrival.** The backend ends the blackout by itself when `tick_est >= arrival_tick` (the operator may end it earlier). It resumes the keep-alive; the first valid STATUS replaces the estimate completely. It then reports what happened out of contact: events whose executed tick lies inside the blackout, and every difference between the estimate and the truth (for example: estimate "arrived", truth SAFE with no capture).
+5. **Never** turn an estimate into a result. Until a STATUS confirms it, capture is "expected", not "done". `outcome` stays `pending` during a blackout.
+6. `LINK_DELAY_DEMO` stays **off** for this storyline (an added delay of seconds would trip the 2 s watchdog).
+
+Snapshot additions (MissionSnapshot, contracts 1.2.0; names are fixed here so the GUI can be built against them):
+
+| Field | Meaning |
+|---|---|
+| `link.blackout` | `true` while a blackout is active |
+| `trip` | `{ "trip_days": int or null, "days_to_arrival": int or null }` from confirmed telemetry |
+| `estimate` | `null`, or during a blackout `{ "tick", "epoch_jd_tdb", "days_to_arrival", "spacecraft": { "phase", "r_km" }, "fuel_remaining_g", "expected_events": ["departure" / "capture"] }` |
+| `reconciliation` | `null`, or after a sync `{ "blackout_start_tick", "blackout_end_tick", "events_during_blackout": [...], "estimate_matched": bool, "differences": [text] }` |
+
+During a blackout the existing top-level fields (`state`, `tick`, `spacecraft`, `fuel_remaining_g`) keep the **last received** values. Only `estimate` moves.
+
+### 18.6 Shuttle (FPGA and VGA, Zain and `@Zain-Usmani10/claude`)
+
+Already in `dev` (simulation only, not proven on the board): `link_watchdog`, `SET_TRIP_DAYS` handling, `trip_clock`, seven-segment cockpit. Required behaviour, to check against this section:
+
+- `SET_TRIP_DAYS` exactly as 18.3, including the cached-ACK retry and the golden frame above.
+- Link lost = a link was seen and then no CRC-valid frame for 2.00 s. Any valid frame clears it. The flag is display only: it never changes state, ticks, burns or STATUS bytes.
+- Days counter exactly as 18.4.
+- Seven-segment: `HEX5 HEX4` state (`Id Ld Ar rn SF Co Ab`, alternating with `nL` once per second while the link is lost); `HEX3..HEX0`: `----` in IDLE, trip days in LOADED/ARMED, T-minus `SS.cc` before departure, days to arrival after departure.
+- **VGA cockpit is now allowed** (Zain builds it). It is display only and must show nothing that is not one of these board values: state, tick, executed mask, departure and capture executed ticks, fuel remaining (g), safe reason, masked-fault and no-majority counts, link-lost flag, trip days, days to arrival, T-minus. Same source registers as STATUS (the voted values), so the monitor and the CCS can never disagree after a sync. It must not change timing of the UART or the 100 Hz tick, and the build must still meet timing.
+- Still required before anything is called working: the real round trip through the XIAO on the board (probe output posted), then a full mission, then a blackout run.
+
+### 18.7 GUI (`@sadattanzim01/cursor`)
+
+Built only from the snapshot fields above; the browser computes no mission values of its own.
+
+- Days-to-arrival readout from `trip.days_to_arrival` (from `estimate.days_to_arrival` during a blackout).
+- T-minus countdown before departure, from `tick` and the plan's `departure_tick`.
+- **Start blackout** control, enabled only in `RUNNING`; sends `blackout_start`.
+- While `link.blackout` is true: a "Contact lost" banner; the confirmed shuttle marker stays at its last confirmed position; a second **ghost marker** and a **dashed line** along the plan's `nominal_path` show `estimate`; every estimated number carries the word "estimate". Mission actions other than ending the blackout are disabled.
+- On sync: remove banner, ghost and dashes; show `reconciliation` as a short "While out of contact" summary, with differences highlighted.
+- Never show "Arrived" from an estimate.
+
+### 18.8 What exists today
+
+| Part | State |
+|---|---|
+| FPGA watchdog, `0x16`, days counter, seven-segment | Merged, simulation only |
+| VGA cockpit | Not built |
+| Contracts 1.2.0 (golden frame, snapshot fields, commands) | Not written |
+| Backend keep-alive, blackout, estimate, sync; simulator support for `0x16` | Not built |
+| GUI elements of 18.7 | Not built |
+| Real board round trip | Not done |
+
+### 18.9 Differences from Zain's original proposal
+
+- Contact returns **at arrival**, not before it.
+- Blackout by button only; no cable pulling.
+- `SET_TRIP_DAYS` is sent inside `upload` (state LOADED), not as a separate operator step.
+- Keep-alive every 0.5 s rather than 1 s.
+- The launch countdown length is the plan's `departure_tick`; no fixed 10 s.
+- Fuel is not estimated continuously (18.5 item 3).
+- Boot from flash stays out of scope.
