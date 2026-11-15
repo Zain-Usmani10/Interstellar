@@ -6,8 +6,10 @@ import { GuidedLaunch } from "./components/GuidedLaunch";
 import { PlanetBar } from "./components/PlanetBar";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
 import { RouteCards } from "./components/RouteCards";
+import { TripPicker } from "./components/TripPicker";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
+import { planetName } from "./state/planetBodies";
 import { useCoreBridge } from "./state/useCoreBridge";
 
 export default function App() {
@@ -23,11 +25,15 @@ export default function App() {
     commandBusy,
     routePlans,
     selectedPlan,
+    originBodyId,
+    destinationBodyId,
+    routesAvailable,
     snapshot,
     faultHistory,
     gates,
     simFaultsEnabled,
     selectPlanById,
+    setTrip,
     prepareMission,
     resetMission,
     sendCommand,
@@ -37,37 +43,20 @@ export default function App() {
   } = useCoreBridge();
 
   const [focusName, setFocusName] = useState<string | null>("Mars");
-  const [scenic, setScenic] = useState<{
-    destination: string;
-    progress: number;
-  } | null>(null);
 
   const scenePlan = useMemo(() => toScenePlan(selectedPlan), [selectedPlan]);
   const sceneSnapshot = useMemo(() => toSceneSnapshot(snapshot), [snapshot]);
   const live = linkMode === "live";
-
-  /** Mars = real controller mission; anything else = scenic destination. */
-  const destinationName =
-    !focusName || focusName === "Earth" ? "Mars" : focusName;
-  const controllerMission = destinationName === "Mars";
-
-  useEffect(() => {
-    if (!scenic || scenic.progress >= 1) return;
-    let raf = 0;
-    let last = performance.now();
-    const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      setScenic((s) => {
-        if (!s) return s;
-        const next = Math.min(1, s.progress + dt / 14);
-        return { ...s, progress: next };
-      });
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [scenic?.destination, Boolean(scenic && scenic.progress < 1)]);
+  const originLabel = planetName(originBodyId);
+  const destinationLabel = planetName(destinationBodyId);
+  const routeLabel = `${originLabel} → ${destinationLabel}`;
+  const tripLocked = commandBusy || Boolean(
+    snapshot &&
+      snapshot.state !== "IDLE" &&
+      snapshot.state !== "UNKNOWN" &&
+      snapshot.state !== "ABORTED" &&
+      snapshot.state !== "COMPLETE",
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -90,14 +79,8 @@ export default function App() {
       const key = event.key.toLowerCase();
       if (key === "o") {
         event.preventDefault();
-        void handleReset();
-      } else if (
-        key === "p" &&
-        live &&
-        controllerMission &&
-        selectedPlan &&
-        !commandBusy
-      ) {
+        void resetMission();
+      } else if (key === "p" && live && selectedPlan && !commandBusy) {
         event.preventDefault();
         void prepareMission();
       } else if (key === "r" && live && gates.canArm && !commandBusy) {
@@ -115,16 +98,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  async function handleReset() {
-    setScenic(null);
-    await resetMission();
-  }
-
-  async function handleAbort() {
-    await sendCommand("abort");
-    clearSelection("mouse");
-  }
-
   return (
     <div className="app-shell">
       <div className="scene-layer">
@@ -140,17 +113,12 @@ export default function App() {
           focusName={focusName}
           plan={scenePlan}
           snapshot={sceneSnapshot}
-          scenic={scenic}
         />
       </div>
 
       <header className="glass brand-glass">
         <p className="brand">Interstellar</p>
-        <p className="brand-sub">
-          {controllerMission
-            ? "Earth → Mars mission"
-            : `Earth → ${destinationName}`}
-        </p>
+        <p className="brand-sub">{routeLabel}</p>
       </header>
 
       <GlassStatus
@@ -159,17 +127,23 @@ export default function App() {
         dataMode={dataMode}
         snapshot={snapshot}
         lastError={lastError}
-        destinationName={destinationName}
-        scenicActive={Boolean(scenic)}
+        destinationName={destinationLabel}
       />
 
       <aside className="glass panel-left" aria-label="Route and launch">
-        <h2 className="panel-title">
-          {controllerMission
-            ? "Choose a route"
-            : `Destination: ${destinationName}`}
-        </h2>
-        {controllerMission ? (
+        <h2 className="panel-title">Choose a trip</h2>
+        <TripPicker
+          originBodyId={originBodyId}
+          destinationBodyId={destinationBodyId}
+          disabled={tripLocked}
+          onOrigin={(id) => setTrip({ origin: id })}
+          onDestination={(id) => {
+            setTrip({ destination: id });
+            setFocusName(planetName(id));
+          }}
+        />
+        <h2 className="panel-title panel-title-sub">Choose a route</h2>
+        {routesAvailable ? (
           <RouteCards
             leastFuel={routePlans.least_fuel}
             earliestArrival={routePlans.earliest_arrival}
@@ -179,9 +153,9 @@ export default function App() {
           />
         ) : (
           <p className="muted scenic-note">
-            Controller missions are validated for Earth→Mars. Pick another
-            world for an illustrative scenic flight (labeled on the scene —
-            not MissionSnapshot).
+            Route being calculated / not available yet for {routeLabel}.
+            Earth→Mars plans are available today; other pairs arrive with
+            planner work (#38).
           </p>
         )}
         <GuidedLaunch
@@ -191,17 +165,15 @@ export default function App() {
           snapshot={snapshot}
           gates={gates}
           simFaultsEnabled={simFaultsEnabled}
-          destinationName={destinationName}
-          scenicActive={Boolean(scenic)}
+          routeLabel={routeLabel}
           onPrepare={() => void prepareMission()}
           onArm={() => void sendCommand("arm")}
           onLaunch={() => void sendCommand("start")}
-          onAbort={() => void handleAbort()}
-          onReset={() => void handleReset()}
-          onScenic={() => {
-            if (controllerMission) return;
-            setScenic({ destination: destinationName, progress: 0 });
+          onAbort={() => {
+            void sendCommand("abort");
+            clearSelection("mouse");
           }}
+          onReset={() => void resetMission()}
           onFaultSingle={() => void injectFault("single")}
           onFaultDivergence={() => void injectFault("divergence")}
         />

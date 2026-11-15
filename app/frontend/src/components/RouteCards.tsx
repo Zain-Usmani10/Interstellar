@@ -84,7 +84,7 @@ export function RouteCards({
   if (!leastFuel && !earliestArrival) {
     return (
       <div className="route-cards empty">
-        <p>No routes available yet.</p>
+        <p>Route being calculated / not available yet.</p>
       </div>
     );
   }

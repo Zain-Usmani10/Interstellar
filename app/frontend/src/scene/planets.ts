@@ -12,7 +12,8 @@ export type VisualPlanet = {
   accent: string;
   surface: "rock" | "earth" | "gas";
   target?: PlanetTargetId;
-  bodyId?: "399" | "499";
+  /** Horizons id when this visual body maps to a plan origin/destination. */
+  bodyId?: string;
   rings?: boolean;
 };
 
@@ -27,6 +28,7 @@ export const VISUAL_PLANETS: VisualPlanet[] = [
     color: "#aaa39a",
     accent: "#5b5350",
     surface: "rock",
+    bodyId: "199",
   },
   {
     name: "Venus",
@@ -36,6 +38,7 @@ export const VISUAL_PLANETS: VisualPlanet[] = [
     color: "#d6ad79",
     accent: "#9b714e",
     surface: "gas",
+    bodyId: "299",
   },
   {
     name: "Earth",
@@ -67,6 +70,7 @@ export const VISUAL_PLANETS: VisualPlanet[] = [
     color: "#d8b58e",
     accent: "#946452",
     surface: "gas",
+    bodyId: "599",
   },
   {
     name: "Saturn",
@@ -76,6 +80,7 @@ export const VISUAL_PLANETS: VisualPlanet[] = [
     color: "#d3bf8f",
     accent: "#93846b",
     surface: "gas",
+    bodyId: "699",
     rings: true,
   },
   {
@@ -86,6 +91,7 @@ export const VISUAL_PLANETS: VisualPlanet[] = [
     color: "#9ed3d0",
     accent: "#638e9f",
     surface: "gas",
+    bodyId: "799",
   },
   {
     name: "Neptune",
@@ -95,6 +101,7 @@ export const VISUAL_PLANETS: VisualPlanet[] = [
     color: "#4b75bd",
     accent: "#244075",
     surface: "gas",
+    bodyId: "899",
   },
 ];
 

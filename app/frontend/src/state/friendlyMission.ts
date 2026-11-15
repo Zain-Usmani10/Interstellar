@@ -4,13 +4,9 @@ import type { MissionSnapshot } from "../api/missionTypes";
 export function friendlyMissionLabel(
   snapshot: MissionSnapshot | null,
   destinationName?: string | null,
-  scenicActive?: boolean,
 ): string {
-  if (scenicActive && destinationName) {
-    return `Scenic flight to ${destinationName}`;
-  }
   if (!snapshot) return "Ready to prepare";
-  const dest = destinationName && destinationName !== "Mars" ? destinationName : "Mars";
+  const dest = destinationName || "destination";
   switch (snapshot.state) {
     case "IDLE":
     case "UNKNOWN":
@@ -21,7 +17,7 @@ export function friendlyMissionLabel(
       return "Armed — ready to launch";
     case "RUNNING": {
       if (snapshot.spacecraft.phase === "coast") return `Flying to ${dest}`;
-      if (snapshot.spacecraft.phase === "at_origin") return "Waiting at Earth";
+      if (snapshot.spacecraft.phase === "at_origin") return "Waiting at origin";
       if (snapshot.spacecraft.phase === "captured") return "Arrived";
       if (snapshot.spacecraft.phase === "uncaptured_coast")
         return "Missed capture — coasting";
@@ -38,29 +34,12 @@ export function friendlyMissionLabel(
   }
 }
 
-export type GuidedStep = "prepare" | "arm" | "launch" | "reset" | "scenic" | "done";
+export type GuidedStep = "prepare" | "arm" | "launch" | "reset" | "done";
 
-export function guidedStep(
-  snapshot: MissionSnapshot | null,
-  opts?: { scenicDestination?: string | null; scenicActive?: boolean },
-): GuidedStep {
-  if (opts?.scenicActive) return "done";
+export function guidedStep(snapshot: MissionSnapshot | null): GuidedStep {
   const state = snapshot?.state;
-  if (
-    state === "ABORTED" ||
-    state === "COMPLETE" ||
-    state === "SAFE"
-  ) {
+  if (state === "ABORTED" || state === "COMPLETE" || state === "SAFE") {
     return "reset";
-  }
-  // Non-Mars destinations use an illustrative scenic flight (not controller).
-  if (
-    opts?.scenicDestination &&
-    opts.scenicDestination !== "Mars" &&
-    opts.scenicDestination !== "Earth" &&
-    (!snapshot || state === "IDLE" || state === "UNKNOWN")
-  ) {
-    return "scenic";
   }
   if (!snapshot || state === "IDLE" || state === "UNKNOWN") return "prepare";
   if (state === "LOADED") return "arm";

@@ -17,14 +17,12 @@ type Props = {
   snapshot: MissionSnapshot | null;
   gates: Gates;
   simFaultsEnabled: boolean;
-  destinationName: string | null;
-  scenicActive: boolean;
+  routeLabel: string;
   onPrepare: () => void;
   onArm: () => void;
   onLaunch: () => void;
   onAbort: () => void;
   onReset: () => void;
-  onScenic: () => void;
   onFaultSingle: () => void;
   onFaultDivergence: () => void;
 };
@@ -36,21 +34,16 @@ export function GuidedLaunch({
   snapshot,
   gates,
   simFaultsEnabled,
-  destinationName,
-  scenicActive,
+  routeLabel,
   onPrepare,
   onArm,
   onLaunch,
   onAbort,
   onReset,
-  onScenic,
   onFaultSingle,
   onFaultDivergence,
 }: Props) {
-  const step = guidedStep(snapshot, {
-    scenicDestination: destinationName,
-    scenicActive,
-  });
+  const step = guidedStep(snapshot);
   const locked = busy;
 
   const primary =
@@ -61,54 +54,47 @@ export function GuidedLaunch({
           enabled: true,
           run: onReset,
         }
-      : step === "scenic"
+      : step === "prepare"
         ? {
-            label: `Fly to ${destinationName}`,
-            hint: "Illustrative scenic flight — not a controller mission",
-            enabled: true,
-            run: onScenic,
+            label: "Prepare mission",
+            hint: hasPlan
+              ? `Loads your ${routeLabel} route onto the controller`
+              : "Pick a pair with an available MissionPlan first",
+            enabled: live && hasPlan && (gates.canCreate || gates.canUpload),
+            run: onPrepare,
           }
-        : step === "prepare"
+        : step === "arm"
           ? {
-              label: "Prepare mission",
-              hint: "Loads your Earth→Mars route onto the controller",
-              enabled: live && hasPlan && (gates.canCreate || gates.canUpload),
-              run: onPrepare,
+              label: "Arm",
+              hint: "Controller must be LOADED",
+              enabled: live && gates.canArm,
+              run: onArm,
             }
-          : step === "arm"
+          : step === "launch"
             ? {
-                label: "Arm",
-                hint: "Controller must be LOADED",
-                enabled: live && gates.canArm,
-                run: onArm,
+                label: "Launch",
+                hint: "Starts only when the controller is ARMED",
+                enabled: live && gates.canStart,
+                run: onLaunch,
               }
-            : step === "launch"
-              ? {
-                  label: "Launch",
-                  hint: "Starts only when the controller is ARMED",
-                  enabled: live && gates.canStart,
-                  run: onLaunch,
-                }
-              : {
-                  label: scenicActive
-                    ? "Scenic flight running"
-                    : "Mission under way",
-                  hint: scenicActive
-                    ? "Illustrative path — labeled on the scene"
-                    : "Follow the live snapshot",
-                  enabled: false,
-                  run: () => undefined,
-                };
+            : {
+                label: "Mission under way",
+                hint: "Follow the live snapshot",
+                enabled: false,
+                run: () => undefined,
+              };
 
   return (
     <div className="guided-launch" aria-label="Mission controls">
       <div className="step-rail" aria-hidden="true">
-        <span className={step === "prepare" || step === "scenic" ? "on" : "done"}>
-          Prepare
-        </span>
+        <span className={step === "prepare" ? "on" : "done"}>Prepare</span>
         <span
           className={
-            step === "arm" ? "on" : step === "launch" || step === "done" ? "done" : ""
+            step === "arm"
+              ? "on"
+              : step === "launch" || step === "done"
+                ? "done"
+                : ""
           }
         >
           Arm
@@ -130,16 +116,10 @@ export function GuidedLaunch({
         <button
           type="button"
           className="abort-btn"
-          disabled={
-            locked ||
-            (scenicActive ? false : !(live && gates.canAbort))
-          }
-          onClick={() => {
-            if (scenicActive) onReset();
-            else onAbort();
-          }}
+          disabled={locked || !(live && gates.canAbort)}
+          onClick={onAbort}
         >
-          {scenicActive ? "Stop tour" : "Abort"}
+          Abort
         </button>
         <button type="button" disabled={locked} onClick={onReset}>
           Start over

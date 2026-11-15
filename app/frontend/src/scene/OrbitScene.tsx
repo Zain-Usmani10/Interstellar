@@ -10,19 +10,13 @@ import { CameraRig } from "./CameraRig";
 import { ScenePerformance } from "./ScenePerformance";
 import { Spacecraft, Station } from "./Spacecraft";
 import { VISUAL_PLANETS, planetPosition } from "./planets";
-import { flightView, routePoints, type FlightView } from "./flightState";
-import { scenicPath, scenicPosition } from "./scenicFlight";
+import { flightView, routePoints } from "./flightState";
 import { sunGlow } from "./surfaces";
 import { loadTexture } from "./textureMaps";
 import type { ScenePlan, SceneSnapshot, Vec3 } from "./types";
 import "./scene.css";
 
 export type { ScenePlan, SceneSnapshot } from "./types";
-
-export type ScenicTour = {
-  destination: string;
-  progress: number; // 0..1
-};
 
 export type OrbitSceneProps = {
   selectedId: PlanetTargetId | null;
@@ -32,8 +26,6 @@ export type OrbitSceneProps = {
   focusName?: string | null;
   plan?: ScenePlan | null;
   snapshot?: SceneSnapshot | null;
-  /** Illustrative Earth→destination flight (not MissionSnapshot). */
-  scenic?: ScenicTour | null;
 };
 
 const BLACK_HOLE_POS: Vec3 = [Math.cos(5.1) * 92, 0, -Math.sin(5.1) * 92];
@@ -119,7 +111,6 @@ export function OrbitScene({
   focusName = null,
   plan,
   snapshot,
-  scenic = null,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
   const [performanceReport, setPerformanceReport] = useState(
@@ -134,62 +125,23 @@ export function OrbitScene({
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
 
-  const telemetryView = flightView(snapshot, plan);
+  const view = flightView(snapshot, plan);
   const points = useMemo(() => routePoints(plan), [plan]);
   const planets = VISUAL_PLANETS.map((body) => ({
     body,
     position: planetPosition(
       body,
       plan,
-      telemetryView.mode === "unavailable" ? null : snapshot,
+      view.mode === "unavailable" ? null : snapshot,
     ),
   }));
   const selected = planets.find((p) => p.body.target === selectedId);
   const focused = focusName
-    ? planets.find((p) => p.body.name === focusName) ??
-      (focusName === "Black Hole" ? null : null)
+    ? planets.find((p) => p.body.name === focusName)
     : null;
   const origin = planets.find(
     (p) => p.body.bodyId === (plan?.origin_body_id ?? "399"),
-  )!;
-  const destinationPlanet = scenic
-    ? scenic.destination === "Black Hole"
-      ? { position: BLACK_HOLE_POS, body: { name: "Black Hole", radius: 1.2 } }
-      : planets.find((p) => p.body.name === scenic.destination)
-    : null;
-
-  const scenicPts = useMemo(() => {
-    if (!destinationPlanet) return [] as Vec3[];
-    return scenicPath(origin.position, destinationPlanet.position);
-  }, [
-    destinationPlanet?.position[0],
-    destinationPlanet?.position[1],
-    destinationPlanet?.position[2],
-    origin.position[0],
-    origin.position[1],
-    origin.position[2],
-    scenic?.destination,
-  ]);
-
-  const scenicView: FlightView | null =
-    scenic && scenicPts.length > 1
-      ? {
-          mode: scenic.progress >= 1 ? "captured" : "coast",
-          position: scenicPosition(scenicPts, scenic.progress),
-          departed: scenic.progress > 0.02,
-          stale: false,
-          label:
-            scenic.progress >= 1
-              ? `ILLUSTRATIVE ARRIVAL · ${scenic.destination}`
-              : `ILLUSTRATIVE FLIGHT · ${scenic.destination}`,
-        }
-      : null;
-
-  // Real MissionSnapshot wins over scenic tour when a live mission has departed.
-  const view =
-    scenicView && !(telemetryView.departed && snapshot)
-      ? scenicView
-      : telemetryView;
+  ) ?? planets.find((p) => p.body.bodyId === "399")!;
 
   const captured = view.mode === "captured";
   const visitTarget =
@@ -201,7 +153,7 @@ export function OrbitScene({
     : !view.departed
       ? ((visitTarget?.position as Vec3 | null) ?? null)
       : view.position;
-  const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${scenic?.destination ?? "none"}:${view.mode}`;
+  const transitionKey = `${focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}`;
 
   return (
     <div className="orbital-scene" aria-label="Three-dimensional solar system">
@@ -276,10 +228,10 @@ export function OrbitScene({
             selected={focusName === "Black Hole"}
             onSelect={() => onFocusName?.("Black Hole")}
           />
-          {(scenicPts.length > 1 ? scenicPts : points).length > 1 && (
+          {points.length > 1 && (
             <Line
-              points={scenicPts.length > 1 ? scenicPts : points}
-              color={scenicPts.length > 1 ? "#e0b06a" : "#8cdece"}
+              points={points}
+              color="#8cdece"
               lineWidth={1.6}
               transparent
               opacity={0.8}
@@ -290,7 +242,7 @@ export function OrbitScene({
           </group>
           <Spacecraft
             view={view}
-            snapshot={scenicView ? null : snapshot}
+            snapshot={snapshot}
             origin={origin.position}
             originRadius={origin.body.radius}
           />

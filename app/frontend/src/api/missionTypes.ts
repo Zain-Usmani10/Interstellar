@@ -43,6 +43,8 @@ export type MissionPlan = {
 export type PlanSummary = {
   plan_id: string;
   objectives_won?: string[];
+  origin_body_id?: string;
+  destination_body_id?: string;
   data_mode?: string;
   departure?: PlanEpoch;
   arrival?: PlanEpoch;
