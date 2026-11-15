@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   connectEvents,
   getHealth,
+  getPlan,
   getPlanetInfo,
   getSession,
+  listPlans,
   postIntent,
   registerInputSession,
 } from "../api/coreClient";
 import { cardFromApi, cardFromMock, type PlanetCardModel } from "../api/mapPlanetInfo";
+import type { MissionPlan, MissionSnapshot, PlanSummary } from "../api/missionTypes";
 import type { BodyId, InputContext, PlanetTargetId, TargetId } from "../api/types";
 
 export type LinkMode = "connecting" | "live" | "offline_mock";
@@ -37,12 +40,36 @@ export function useCoreBridge() {
     "idle",
   );
   const [lastError, setLastError] = useState<string | null>(null);
+  const [planSummaries, setPlanSummaries] = useState<PlanSummary[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<MissionPlan | null>(null);
+  const [snapshot, setSnapshot] = useState<MissionSnapshot | null>(null);
 
   const sessionRef = useRef<SessionBits | null>(null);
   const serverSeqRef = useRef(0);
+  const snapshotSeqRef = useRef(-1);
   const contextRevisionRef = useRef(0);
   const fetchGenRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
+
+  const applySnapshot = useCallback((next: MissionSnapshot) => {
+    if (next.server_seq <= snapshotSeqRef.current) return;
+    snapshotSeqRef.current = next.server_seq;
+    setSnapshot(next);
+    if (next.controller_label) setControllerLabel(next.controller_label);
+  }, []);
+
+  const loadPreferredPlan = useCallback(async () => {
+    const { plans } = await listPlans();
+    setPlanSummaries(plans);
+    if (plans.length === 0) {
+      setSelectedPlan(null);
+      return;
+    }
+    const preferred =
+      plans.find((p) => p.objectives_won?.includes("least_fuel")) ?? plans[0];
+    const full = await getPlan(preferred.plan_id);
+    setSelectedPlan(full);
+  }, []);
 
   const applySelection = useCallback(
     (
@@ -124,6 +151,13 @@ export function useCoreBridge() {
         setDataMode(health.data_mode ?? "unknown");
         setLinkMode("live");
 
+        try {
+          await loadPreferredPlan();
+        } catch {
+          if (!cancelled) setLastError("plans_unavailable");
+        }
+        if (cancelled) return;
+
         socket = connectEvents({
           onOpen: () => {
             if (!cancelled) setLinkMode("live");
@@ -196,6 +230,11 @@ export function useCoreBridge() {
               if (sessionRef.current) {
                 sessionRef.current.revision = data.context_revision;
               }
+              return;
+            }
+
+            if (msg.type === "mission_snapshot") {
+              applySnapshot(msg.data as MissionSnapshot);
             }
           },
         });
@@ -206,6 +245,8 @@ export function useCoreBridge() {
         setControllerLabel("OFFLINE — local mock");
         setDataMode("mock");
         setLastError("backend_unreachable");
+        setSelectedPlan(null);
+        setSnapshot(null);
       }
     }
 
@@ -215,7 +256,7 @@ export function useCoreBridge() {
       socket?.close();
       socketRef.current = null;
     };
-  }, [applySelection]);
+  }, [applySelection, applySnapshot, loadPreferredPlan]);
 
   const proposeTarget = useCallback(
     async (targetId: TargetId, source: "mouse" | "keyboard") => {
@@ -291,6 +332,18 @@ export function useCoreBridge() {
 
   void syncContextFromHello;
 
+  const selectPlanById = useCallback(async (planId: string) => {
+    try {
+      const full = await getPlan(planId);
+      setSelectedPlan(full);
+      // Changing the preview plan does not invent mission progression.
+      setSnapshot(null);
+      snapshotSeqRef.current = -1;
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "plan_fetch_failed");
+    }
+  }, []);
+
   return {
     linkMode,
     controllerLabel,
@@ -301,6 +354,10 @@ export function useCoreBridge() {
     card,
     cardStatus,
     lastError,
+    planSummaries,
+    selectedPlan,
+    snapshot,
+    selectPlanById,
     selectPlanet,
     clearSelection,
   };

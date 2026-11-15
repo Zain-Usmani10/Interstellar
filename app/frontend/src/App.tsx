@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { ComponentProps } from "react";
 import { MockBanner } from "./components/MockBanner";
 import { MissionPanel } from "./components/MissionPanel";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
@@ -7,6 +8,16 @@ import { StatusStrip } from "./components/StatusStrip";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
 import { useCoreBridge } from "./state/useCoreBridge";
+
+/**
+ * Affan's OrbitScene will declare optional `plan` / `snapshot` props
+ * (ScenePlan / SceneSnapshot). Until that lands we forward them at runtime
+ * without editing app/frontend/src/scene/.
+ */
+type OrbitSceneProps = ComponentProps<typeof OrbitScene> & {
+  plan?: unknown;
+  snapshot?: unknown;
+};
 
 export default function App() {
   const {
@@ -18,6 +29,10 @@ export default function App() {
     card,
     cardStatus,
     lastError,
+    planSummaries,
+    selectedPlan,
+    snapshot,
+    selectPlanById,
     selectPlanet,
     clearSelection,
   } = useCoreBridge();
@@ -35,6 +50,14 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [clearSelection, planetChoiceEnabled, selectPlanet]);
+
+  const sceneProps = {
+    selectedId,
+    selectionEnabled: planetChoiceEnabled,
+    onSelect: selectPlanet,
+    plan: selectedPlan,
+    snapshot,
+  } as OrbitSceneProps;
 
   return (
     <div className="app-shell">
@@ -64,11 +87,7 @@ export default function App() {
       <main className="stage">
         <div className="canvas-column">
           <div className="canvas-wrap">
-            <OrbitScene
-              selectedId={selectedId}
-              selectionEnabled={planetChoiceEnabled}
-              onSelect={selectPlanet}
-            />
+            <OrbitScene {...sceneProps} />
           </div>
           <div className="bci-dock" aria-label="Optional brain widget">
             <BciSlot />
@@ -92,7 +111,12 @@ export default function App() {
               <p className="muted">Keys: 1 Earth · 2 Mars · Esc back</p>
             </aside>
           )}
-          <MissionPanel />
+          <MissionPanel
+            plan={selectedPlan}
+            planSummaries={planSummaries}
+            snapshot={snapshot}
+            onSelectPlan={(id) => void selectPlanById(id)}
+          />
         </div>
       </main>
     </div>

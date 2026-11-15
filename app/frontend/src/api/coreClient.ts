@@ -1,4 +1,5 @@
 import { apiFetch, wsUrl } from "./http";
+import type { MissionPlan, MissionSnapshot, PlanSummary } from "./missionTypes";
 import type {
   ApiPlanetInfo,
   BodyId,
@@ -68,6 +69,18 @@ export async function getPlanetInfo(
       ? ""
       : `?scene_epoch_jd_tdb=${encodeURIComponent(String(sceneEpochJdTdb))}`;
   return apiFetch(`/api/v1/planets/${bodyId}/info${query}`);
+}
+
+export async function listPlans(): Promise<{ plans: PlanSummary[] }> {
+  return apiFetch("/api/v1/plans");
+}
+
+export async function getPlan(planId: string): Promise<MissionPlan> {
+  return apiFetch(`/api/v1/plans/${planId}`);
+}
+
+export async function getMission(missionId: string): Promise<MissionSnapshot> {
+  return apiFetch(`/api/v1/missions/${missionId}`);
 }
 
 export function connectEvents(handlers: {
