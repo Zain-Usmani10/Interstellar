@@ -352,6 +352,20 @@ def test_planet_positions_for_all_eight_planets(ctx):
     assert client.get("/api/v1/planets/positions").status_code == 422
 
 
+def test_planet_track_block_matches_single_positions(ctx):
+    client, _, _ = ctx
+    limits = client.get("/api/v1/planets/positions", params={"date_utc": "2027-03-01T00:00:00Z"}).json()
+    start = limits["epoch_jd_tdb"]
+    block = client.get("/api/v1/planets/track", params={"start_jd_tdb": start, "end_jd_tdb": start + 30, "step_days": 7.5}).json()
+    assert block["epochs_jd_tdb"] == [start, start + 7.5, start + 15, start + 22.5, start + 30]
+    assert len(block["planets"]) == 8 and all(len(pl["r_km"]) == 5 for pl in block["planets"])
+    assert [pl["r_km"][0] for pl in block["planets"]] == [pl["r_km"] for pl in limits["planets"]]
+    assert block["planets"][2]["r_km"][0] != block["planets"][2]["r_km"][4]             # Earth moved
+    bad = {"start_jd_tdb": start, "end_jd_tdb": start + 5000, "step_days": 1}
+    assert client.get("/api/v1/planets/track", params=bad).status_code in (404, 422)
+    assert client.get("/api/v1/planets/track", params={"start_jd_tdb": start, "end_jd_tdb": start + 1, "step_days": 0}).status_code == 422
+
+
 def test_start_is_refused_until_armed(ctx):
     client, app, _ = ctx
     mission_id = new_mission(client, app)

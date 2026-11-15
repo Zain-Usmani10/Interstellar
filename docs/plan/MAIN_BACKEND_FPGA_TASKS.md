@@ -748,27 +748,37 @@ Whatever the route maths produces, it ends in one number: the trip length in day
 | Phase | Board ticks (100 Hz) | Real time | Simulated time |
 |---|---|---|---|
 | Launch countdown | `departure_tick = 500` | 5 s | 1 : 1 with real time (5 simulated seconds) |
-| Flight | `arrival_tick = departure_tick + 6000` | 60 s | the whole trip: `sim_days_per_second = trip_days / 60` |
+| Flight | `arrival_tick = departure_tick + 3000` | 30 s | the whole trip: `sim_days_per_second = trip_days / 30` |
 | After planned arrival | `end_tick = arrival_tick + 300` | 3 s | room to show a missed capture |
 
-- Every catalogue plan uses exactly these three tick values, whatever its trip length. A 3-year trip and a 4-month trip both fly in 60 s; only `sim_days_per_second` differs.
-- `trip_days` is the value of section 18.2. Sim days per tick = `trip_days / 6000`. The shuttle never receives this fraction: it receives `trip_days` (`SET_TRIP_DAYS`) and already knows its ticks, and counts days with the integer formula of 18.4.
-- The numbers 500 / 6000 / 300 live in **one place** (`backend/timescale/`); planner, backend and tests import them. Changing the demo length is a one-line change followed by regenerating the plans.
+- Every catalogue plan uses exactly these three tick values, whatever its trip length. A 3-year trip and a 4-month trip both fly in 30 s; only `sim_days_per_second` differs. (Changed from 60 s on 2026-11-15; plans made before that use 6000 flight ticks until regenerated.)
+- `trip_days` is the value of section 18.2. Sim days per tick = `trip_days / 3000`. The shuttle never receives this fraction: it receives `trip_days` (`SET_TRIP_DAYS`) and already knows its ticks, and counts days with the integer formula of 18.4.
+- The numbers 500 / 3000 / 300 live in **one place** (`backend/timescale/`); planner, backend and tests import them. Changing the demo length is a one-line change followed by regenerating the plans.
 
 ### 19.2 What each clock shows
 
 - **CCS (laptop):** an absolute calendar date (day, month, year), **shown in a screen corner at all times** so the viewer can see how fast simulated time is moving in each phase. It comes from the snapshot's `date_utc` (`estimate.date_utc`, marked as an estimate, during a blackout). It is the real date of the plan's NASA data (`epoch_jd_tdb` of the confirmed tick; of `estimate.tick` in a blackout). Plans currently depart in 2026 to 2027; moving the story to another year means refetching and revalidating the NASA data, so it is not done by relabelling.
 - **Shuttle (FPGA):** relative time only: days to arrival, starting at `trip_days` and counting down uniformly to 0 (18.4). No calendar.
 
-### 19.3 When time moves (GUI behaviour)
+### 19.3 When time moves (GUI behaviour, revised 2026-11-15)
 
-1. **Browsing and planet close-up:** time stands still. The date is the fixed scene date; planets do not run ahead and no counter spins.
-2. **Launch approved:** the calendar and the planets fast-forward to the departure date (a short GUI animation, about 3 s, while the backend uploads and arms). This is presentation only; nothing is sent to the board about it.
-3. **START:** a 5 s real-time countdown (the 500 predeparture ticks), with the launch animation. Sim time equals real time.
-4. **After the departure burn is confirmed:** sim time takes over at `sim_days_per_second`. The date, the days-to-arrival readout, the planets and the shuttle all advance together from the confirmed tick; none of them has its own clock.
-5. **Arrival or end:** time stops at the confirmed final tick.
+1. **Overview (no planet selected, no flight):** the calendar runs forward by itself and all eight planets move with it, from the NASA track (`GET /api/v1/planets/track`). Default speed 7 days per second; a slider sets the speed in days per second. The date readout shows the running date.
+2. **Planet selected:** the date pauses. The From → To tab shows each option's own launch date.
+3. **Launch pressed:** the date jumps to that option's launch date (forward or back), with the planets, while the backend uploads and arms. Presentation only; nothing is sent to the board about it.
+4. **START:** a 5 s real-time countdown (the 500 predeparture ticks). Sim time equals real time.
+5. **After the departure burn is confirmed:** sim time takes over at `sim_days_per_second = trip_days / 30`. The date, the days-to-arrival readout, the planets and the shuttle all advance together from the confirmed tick; none of them has its own clock. A flight-progress readout shows: progress bar, days elapsed and days left, the date, and the current speed in days per second.
+6. **Arrival or end:** time stops at the confirmed final tick. Returning to the overview resumes the free-running calendar from that date.
 
-All eight planets move by the same date (real angles from NASA positions; display distances may stay compressed and are labelled).
+All eight planets move by the same date (real angles from NASA positions; display distances may stay compressed).
+
+### 19.4 What the two route options mean
+
+For each route and shuttle class the search covers launch dates across the stored NASA range at a fine step, not a handful of dates.
+
+- **Saves the most fuel:** the launch date and trip length with the lowest fuel in the searched window. It usually waits for the planets to line up.
+- **Gets there fastest:** the earliest arrival date among options the shuttle's tank can pay for. It usually leaves sooner and burns more.
+
+Each option shows: launch date, arrival date, trip days, fuel. If both rules pick the same trip, show one option, not two.
 
 ## 20. Fleet: shuttles are tracked, not assumed (adopted 2026-11-15)
 
