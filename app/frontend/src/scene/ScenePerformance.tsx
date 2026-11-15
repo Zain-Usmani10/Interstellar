@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
-import type { RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 
 /** Opt-in development probe: measures actual scene frames, never mission time. */
-export function ScenePerformance({ output }: { output: RefObject<HTMLPreElement | null> }) {
+export function ScenePerformance({ onSample }: { onSample: (report: string) => void }) {
   const samples = useRef<number[]>([]);
   const warmup = useRef(0);
   const elapsed = useRef(0);
@@ -20,7 +19,7 @@ export function ScenePerformance({ output }: { output: RefObject<HTMLPreElement 
   }, [size.width, size.height]);
   useFrame((_, delta) => {
     warmup.current += delta;
-    if (warmup.current < 5 || !output.current) return;
+    if (warmup.current < 5) return;
     samples.current.push(delta * 1000);
     elapsed.current += delta;
     if (elapsed.current < 15) return;
@@ -35,7 +34,7 @@ export function ScenePerformance({ output }: { output: RefObject<HTMLPreElement 
       pixel_ratio: gl.getPixelRatio(),
       renderer: gl.getContext().getParameter(gl.getContext().RENDERER),
     };
-    output.current.textContent = JSON.stringify(report, null, 2);
+    onSample(JSON.stringify(report, null, 2));
     samples.current = [];
     elapsed.current = 0;
   });

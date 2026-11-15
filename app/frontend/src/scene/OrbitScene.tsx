@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Line, Stars } from "@react-three/drei";
@@ -94,7 +94,7 @@ export function OrbitScene({
   snapshot,
 }: OrbitSceneProps) {
   const [visible, setVisible] = useState(() => !document.hidden);
-  const performanceOutput = useRef<HTMLPreElement>(null);
+  const [performanceReport, setPerformanceReport] = useState("Development frame probe: 5s warmup + 15s sample.");
   const performanceEnabled = import.meta.env.DEV && new URLSearchParams(location.search).has("scenePerf");
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
@@ -121,7 +121,7 @@ export function OrbitScene({
   const isReported = !!snapshot;
   return (
     <div className="orbital-scene" aria-label="Three-dimensional solar system">
-      {performanceEnabled && <pre ref={performanceOutput} aria-label="Scene frame measurement" style={{ position: "absolute", zIndex: 20, right: 12, top: 12, padding: 12, pointerEvents: "none", background: "#07121cee", color: "#bce8dc", font: "11px monospace" }}>Development frame probe: 5s warmup + 15s sample.</pre>}
+      {performanceEnabled && <pre aria-label="Scene frame measurement" style={{ position: "absolute", zIndex: 20, right: 12, top: 12, padding: 12, pointerEvents: "none", background: "#07121cee", color: "#bce8dc", font: "11px monospace" }}>{performanceReport}</pre>}
       <div className="scene-heading" aria-hidden="true">
         <span>INTERSTELLAR / ORBITAL VIEW</span>
         <strong>{selected?.body.name ?? "SOLAR SYSTEM"}</strong>
@@ -163,7 +163,7 @@ export function OrbitScene({
             speed={0}
           />
           <Sun />
-          {performanceEnabled && <ScenePerformance output={performanceOutput} />}
+          {performanceEnabled && <ScenePerformance onSample={setPerformanceReport} />}
           {planets.map(({ body, position }) => (
             <group key={body.name}>
               <OrbitGuide radius={body.displayOrbitAU * 10} />
