@@ -21,8 +21,17 @@ does not hide it; its parent anchor remains at the reported position.
 Textures and meshes are original procedural code. No external models, textures,
 reference-repository code or new runtime packages are used. WebGL rendering stops
 when `document.hidden` is true. Pixel ratio is capped at 1.5 and textures are
-cached at 512x256. The 60 fps at 1080p demo-laptop target still needs measurement
-on the final integrated build; it is not a verified performance claim.
+cached at 512x256. An opt-in development probe (`/?scenePerf=1`) measures actual
+scene frames after five seconds of warmup, reporting each fifteen-second window.
+It is removed from the production build. Resize/visibility changes restart the
+sample. The probe does not alter mission timing or state.
+
+On 2026-11-14, the Codex in-app browser at a 1920x1080 viewport measured 127 fps
+and a 10.8 ms p95 frame interval (1905 frames / 15 seconds), with the live local
+simulator API and the 512-point NASA_CACHED least-fuel route selected. Canvas
+size was 1567.2x865.3 CSS pixels, DPR 1, renderer string `WebKit WebGL`. An earlier
+synthetic-plan overview window measured 130.4 fps. This is a browser development
+run, not a final demo-machine or full-mission performance guarantee.
 
 ## Verification
 
