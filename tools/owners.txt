@@ -23,9 +23,6 @@ app/tests/planet_data/ AffanSyed07/codex
 
 app/frontend/ sadattanzim01/cursor
 app/frontend/src/bci/ AffanSyed07/codex
-# 3D scene = heaviest GUI work, with the agent that has the most budget (2026-11-15)
-app/frontend/src/scene/ AffanSyed07/codex
-app/frontend/public/ AffanSyed07/codex
 # 3D scene returned to Cursor with the whole GUI (2026-11-14, by request of Abderrahmene)
 
 # Arduino Uno fallback bridge feasibility (2026-11-14, by request of Abderrahmene)
