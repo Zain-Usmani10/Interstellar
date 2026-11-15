@@ -1,5 +1,12 @@
 import { apiFetch, wsUrl } from "./http";
-import type { MissionPlan, MissionSnapshot, PlanSummary } from "./missionTypes";
+import type {
+  CommandResult,
+  MissionCommand,
+  MissionPlan,
+  MissionSnapshot,
+  PlanSummary,
+  SimFaultKind,
+} from "./missionTypes";
 import type {
   ApiPlanetInfo,
   BodyId,
@@ -8,7 +15,15 @@ import type {
   WsEnvelope,
 } from "./types";
 
-export async function getHealth(): Promise<{ status: string; data_mode?: string }> {
+export async function getHealth(): Promise<{
+  status: string;
+  data_mode?: string;
+  transport?: {
+    mode?: string;
+    controller_label?: string;
+    open?: boolean;
+  };
+}> {
   return apiFetch("/api/v1/health");
 }
 
@@ -81,6 +96,40 @@ export async function getPlan(planId: string): Promise<MissionPlan> {
 
 export async function getMission(missionId: string): Promise<MissionSnapshot> {
   return apiFetch(`/api/v1/missions/${missionId}`);
+}
+
+export async function createMission(
+  operatorToken: string,
+  planId: string,
+): Promise<MissionSnapshot> {
+  return apiFetch("/api/v1/missions", {
+    method: "POST",
+    headers: { "X-Operator-Token": operatorToken },
+    body: JSON.stringify({ plan_id: planId }),
+  });
+}
+
+export async function postMissionCommand(
+  operatorToken: string,
+  missionId: string,
+  command: MissionCommand,
+): Promise<CommandResult> {
+  return apiFetch(`/api/v1/missions/${missionId}/commands`, {
+    method: "POST",
+    headers: { "X-Operator-Token": operatorToken },
+    body: JSON.stringify({ command }),
+  });
+}
+
+export async function injectSimFault(
+  operatorToken: string,
+  kind: SimFaultKind,
+): Promise<{ injected: SimFaultKind; controller_label: string }> {
+  return apiFetch("/api/v1/sim/faults", {
+    method: "POST",
+    headers: { "X-Operator-Token": operatorToken },
+    body: JSON.stringify({ kind }),
+  });
 }
 
 export function connectEvents(handlers: {

@@ -1,6 +1,5 @@
 /**
- * Canonical MissionPlan / MissionSnapshot fields the scene needs.
- * Affan will mirror these as ScenePlan / SceneSnapshot in scene/types.ts.
+ * Canonical MissionPlan / MissionSnapshot fields used by mission control + scene.
  */
 
 export type Vec3 = [number, number, number];
@@ -17,14 +16,22 @@ export type PlanBodyState = {
   states: PathSample[];
 };
 
+export type PlanEpoch = {
+  jd_tdb?: number;
+  utc?: string;
+};
+
 export type MissionPlan = {
   schema_version: number;
   plan_id: string;
   plan_sha256?: string;
   data_mode?: string;
   objectives_won?: string[];
-  departure?: { jd_tdb?: number; utc?: string };
-  arrival?: { jd_tdb?: number; utc?: string };
+  departure?: PlanEpoch;
+  arrival?: PlanEpoch;
+  tof_s?: number;
+  dv?: { dv_total_km_s?: number };
+  masses?: { propellant_required_kg?: number };
   nominal_path: PathSample[];
   uncaptured_coast_path?: PathSample[];
   bodies?: PlanBodyState[];
@@ -36,10 +43,26 @@ export type PlanSummary = {
   plan_id: string;
   objectives_won?: string[];
   data_mode?: string;
-  departure?: unknown;
-  arrival?: unknown;
+  departure?: PlanEpoch;
+  arrival?: PlanEpoch;
   dv_total_km_s?: number;
   propellant_required_kg?: number;
+};
+
+export type MissionCommand =
+  | "upload"
+  | "arm"
+  | "start"
+  | "abort"
+  | "clear";
+
+export type SimFaultKind = "single" | "divergence";
+
+export type CommandResult = {
+  command: MissionCommand;
+  applied: boolean;
+  detail: string;
+  snapshot: MissionSnapshot;
 };
 
 export type MissionSnapshot = {
@@ -86,4 +109,11 @@ export type MissionSnapshot = {
   planets?: Array<{ body_id: string; r_km: Vec3 }>;
   outcome?: string;
   failure?: { code: string; message: string } | null;
+};
+
+export type FaultHistoryEntry = {
+  id: string;
+  at_seq: number;
+  kind: string;
+  detail: string;
 };

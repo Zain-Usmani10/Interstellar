@@ -1,17 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   connectEvents,
+  createMission,
   getHealth,
+  getMission,
   getPlan,
   getPlanetInfo,
   getSession,
+  injectSimFault,
   listPlans,
   postIntent,
+  postMissionCommand,
   registerInputSession,
 } from "../api/coreClient";
+import { formatApiError } from "../api/errors";
 import { cardFromApi, cardFromMock, type PlanetCardModel } from "../api/mapPlanetInfo";
-import type { MissionPlan, MissionSnapshot, PlanSummary } from "../api/missionTypes";
-import type { BodyId, InputContext, PlanetTargetId, TargetId } from "../api/types";
+import type {
+  FaultHistoryEntry,
+  MissionCommand,
+  MissionPlan,
+  MissionSnapshot,
+  PlanSummary,
+  SimFaultKind,
+} from "../api/missionTypes";
+import type { BodyId, PlanetTargetId, TargetId } from "../api/types";
+import { missionActionGates } from "./missionGates";
 
 export type LinkMode = "connecting" | "live" | "offline_mock";
 
@@ -27,10 +40,81 @@ function bodyToTarget(bodyId: BodyId | null): PlanetTargetId | null {
   return bodyId ? `planet.${bodyId}` : null;
 }
 
+function pushFaultHistory(
+  prev: FaultHistoryEntry[],
+  next: MissionSnapshot,
+  prevSnap: MissionSnapshot | null,
+): FaultHistoryEntry[] {
+  const entries: FaultHistoryEntry[] = [];
+  const prevFaults = prevSnap?.faults;
+  const faults = next.faults;
+  if (faults) {
+    const maskedDelta =
+      faults.masked_fault_count - (prevFaults?.masked_fault_count ?? 0);
+    if (maskedDelta > 0) {
+      entries.push({
+        id: `${next.server_seq}-masked`,
+        at_seq: next.server_seq,
+        kind: "masked_fault",
+        detail: `masked_fault_count=${faults.masked_fault_count}`,
+      });
+    }
+    const nomajDelta =
+      faults.no_majority_count - (prevFaults?.no_majority_count ?? 0);
+    if (nomajDelta > 0) {
+      entries.push({
+        id: `${next.server_seq}-nomaj`,
+        at_seq: next.server_seq,
+        kind: "no_majority",
+        detail: `no_majority_count=${faults.no_majority_count}`,
+      });
+    }
+  }
+  if (next.state === "SAFE" && prevSnap?.state !== "SAFE") {
+    entries.push({
+      id: `${next.server_seq}-safe`,
+      at_seq: next.server_seq,
+      kind: "SAFE",
+      detail: next.safe_reason ?? "SAFE",
+    });
+  }
+  if (next.state === "ABORTED" && prevSnap?.state !== "ABORTED") {
+    entries.push({
+      id: `${next.server_seq}-abort`,
+      at_seq: next.server_seq,
+      kind: "ABORTED",
+      detail: next.failure?.message ?? "ABORTED",
+    });
+  }
+  if (
+    next.outcome === "uncaptured" &&
+    prevSnap?.outcome !== "uncaptured"
+  ) {
+    entries.push({
+      id: `${next.server_seq}-uncaptured`,
+      at_seq: next.server_seq,
+      kind: "uncaptured",
+      detail: "outcome=uncaptured",
+    });
+  }
+  if (!entries.length) return prev;
+  const merged = [...entries, ...prev];
+  const seen = new Set<string>();
+  return merged.filter((e) => {
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  }).slice(0, 40);
+}
+
 export function useCoreBridge() {
   const [linkMode, setLinkMode] = useState<LinkMode>("connecting");
   const [controllerLabel, setControllerLabel] = useState("unknown");
+  const [controllerSource, setControllerSource] = useState<
+    "fpga" | "simulator" | "unknown"
+  >("unknown");
   const [dataMode, setDataMode] = useState("unknown");
+  const [inputSourceLabel, setInputSourceLabel] = useState("mouse");
   const [selectedId, setSelectedId] = useState<PlanetTargetId | null>(null);
   const [screen, setScreen] = useState<"planet_choice" | "planet_info" | string>(
     "planet_choice",
@@ -40,35 +124,63 @@ export function useCoreBridge() {
     "idle",
   );
   const [lastError, setLastError] = useState<string | null>(null);
+  const [commandBusy, setCommandBusy] = useState(false);
   const [planSummaries, setPlanSummaries] = useState<PlanSummary[]>([]);
+  const [routePlans, setRoutePlans] = useState<{
+    least_fuel: MissionPlan | null;
+    earliest_arrival: MissionPlan | null;
+  }>({ least_fuel: null, earliest_arrival: null });
   const [selectedPlan, setSelectedPlan] = useState<MissionPlan | null>(null);
   const [snapshot, setSnapshot] = useState<MissionSnapshot | null>(null);
+  const [faultHistory, setFaultHistory] = useState<FaultHistoryEntry[]>([]);
 
   const sessionRef = useRef<SessionBits | null>(null);
+  const operatorTokenRef = useRef<string | null>(null);
   const serverSeqRef = useRef(0);
   const snapshotSeqRef = useRef(-1);
+  const snapshotRef = useRef<MissionSnapshot | null>(null);
+  const missionIdRef = useRef<string | null>(null);
   const contextRevisionRef = useRef(0);
   const fetchGenRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
+  const acceptSnapshotsRef = useRef(false);
+  const bootReadyRef = useRef(false);
 
   const applySnapshot = useCallback((next: MissionSnapshot) => {
     if (next.server_seq <= snapshotSeqRef.current) return;
     snapshotSeqRef.current = next.server_seq;
+    setFaultHistory((prev) =>
+      pushFaultHistory(prev, next, snapshotRef.current),
+    );
+    snapshotRef.current = next;
+    missionIdRef.current = next.mission_id;
     setSnapshot(next);
     if (next.controller_label) setControllerLabel(next.controller_label);
+    if (next.controller_source) setControllerSource(next.controller_source);
   }, []);
 
-  const loadPreferredPlan = useCallback(async () => {
+  const loadPlans = useCallback(async () => {
     const { plans } = await listPlans();
     setPlanSummaries(plans);
-    if (plans.length === 0) {
-      setSelectedPlan(null);
-      return;
-    }
-    const preferred =
-      plans.find((p) => p.objectives_won?.includes("least_fuel")) ?? plans[0];
-    const full = await getPlan(preferred.plan_id);
-    setSelectedPlan(full);
+    const leastSummary =
+      plans.find((p) => p.objectives_won?.includes("least_fuel")) ?? null;
+    const fastSummary =
+      plans.find((p) => p.objectives_won?.includes("earliest_arrival")) ?? null;
+
+    const [least, fast] = await Promise.all([
+      leastSummary ? getPlan(leastSummary.plan_id) : Promise.resolve(null),
+      fastSummary ? getPlan(fastSummary.plan_id) : Promise.resolve(null),
+    ]);
+    setRoutePlans({ least_fuel: least, earliest_arrival: fast });
+    setSelectedPlan((current) => {
+      if (current) {
+        const still =
+          (least && least.plan_id === current.plan_id && least) ||
+          (fast && fast.plan_id === current.plan_id && fast);
+        if (still) return still;
+      }
+      return least ?? fast ?? null;
+    });
   }, []);
 
   const applySelection = useCallback(
@@ -81,9 +193,7 @@ export function useCoreBridge() {
       contextRevisionRef.current = contextRevision;
       const target = bodyToTarget(bodyId);
       setSelectedId(target);
-      setScreen(
-        nextScreen ?? (bodyId ? "planet_info" : "planet_choice"),
-      );
+      setScreen(nextScreen ?? (bodyId ? "planet_info" : "planet_choice"));
 
       if (!bodyId || !target) {
         fetchGenRef.current += 1;
@@ -100,17 +210,15 @@ export function useCoreBridge() {
 
       const gen = ++fetchGenRef.current;
       const expectedBody = bodyId;
-      const expectedRevision = contextRevision;
       setCardStatus("loading");
       setLastError(null);
 
       getPlanetInfo(bodyId)
         .then((info) => {
-          // Ignore stale responses after another selection.
           if (
             gen !== fetchGenRef.current ||
             expectedBody !== bodyId ||
-            expectedRevision !== contextRevisionRef.current
+            expectedRevisionMismatch(contextRevision)
           ) {
             return;
           }
@@ -120,23 +228,143 @@ export function useCoreBridge() {
         .catch((err: unknown) => {
           if (gen !== fetchGenRef.current) return;
           setCardStatus("error");
-          setLastError(err instanceof Error ? err.message : "planet_info_failed");
-          // Keep highlight; show mock card so UI stays usable.
+          setLastError(formatApiError(err, "planet_info_failed"));
           setCard(cardFromMock(target));
         });
+
+      function expectedRevisionMismatch(expected: number) {
+        return expected !== contextRevisionRef.current;
+      }
     },
     [],
   );
 
   useEffect(() => {
     let cancelled = false;
-    let socket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let intentionalClose = false;
+
+    async function refreshMissionSnapshot() {
+      const id = missionIdRef.current;
+      if (!id) {
+        acceptSnapshotsRef.current = true;
+        return;
+      }
+      try {
+        const snap = await getMission(id);
+        if (!cancelled) applySnapshot(snap);
+      } catch {
+        // Mission may have been cleared; keep waiting for WS.
+      } finally {
+        if (!cancelled) acceptSnapshotsRef.current = true;
+      }
+    }
+
+    function handleMessage(msg: {
+      type: string;
+      server_seq?: number;
+      data: unknown;
+    }) {
+      if (cancelled) return;
+      if (
+        typeof msg.server_seq === "number" &&
+        msg.server_seq <= serverSeqRef.current &&
+        msg.type !== "hello"
+      ) {
+        return;
+      }
+      if (typeof msg.server_seq === "number") {
+        serverSeqRef.current = Math.max(serverSeqRef.current, msg.server_seq);
+      }
+
+      if (msg.type === "hello") {
+        const data = msg.data as {
+          controller_label?: string;
+          data_mode?: string;
+          selection?: {
+            selected_body_id: BodyId | null;
+            context_id?: string;
+            context_revision: number;
+            screen?: string;
+          };
+        };
+        if (data.controller_label) setControllerLabel(data.controller_label);
+        if (data.data_mode) setDataMode(data.data_mode);
+        if (data.selection && sessionRef.current) {
+          const sel = data.selection;
+          if (sel.context_id) sessionRef.current.context_id = sel.context_id;
+          sessionRef.current.revision = sel.context_revision;
+          applySelection(
+            sel.selected_body_id,
+            sel.context_revision,
+            false,
+            sel.screen,
+          );
+        }
+        return;
+      }
+
+      if (msg.type === "selection") {
+        const data = msg.data as {
+          selected_body_id: BodyId | null;
+          context_revision: number;
+          screen?: string;
+          source?: string;
+        };
+        if (data.source) setInputSourceLabel(data.source);
+        applySelection(
+          data.selected_body_id,
+          data.context_revision,
+          false,
+          data.screen,
+        );
+        if (sessionRef.current) {
+          sessionRef.current.revision = data.context_revision;
+        }
+        return;
+      }
+
+      if (msg.type === "mission_snapshot") {
+        if (!acceptSnapshotsRef.current) return;
+        applySnapshot(msg.data as MissionSnapshot);
+        return;
+      }
+
+      if (msg.type === "transport") {
+        const data = msg.data as { transport_state?: string; detail?: string };
+        if (data.detail) setLastError(data.detail);
+      }
+    }
+
+    function openSocket() {
+      if (cancelled || !bootReadyRef.current) return;
+      acceptSnapshotsRef.current = false;
+      const socket = connectEvents({
+        onOpen: () => {
+          if (cancelled) return;
+          setLinkMode("live");
+          void refreshMissionSnapshot();
+        },
+        onClose: () => {
+          if (cancelled || intentionalClose) return;
+          setLinkMode("offline_mock");
+          acceptSnapshotsRef.current = false;
+          reconnectTimer = setTimeout(openSocket, 1500);
+        },
+        onError: () => {
+          if (!cancelled) setLinkMode("offline_mock");
+        },
+        onMessage: handleMessage,
+      });
+      socketRef.current = socket;
+    }
 
     async function boot() {
       try {
         const health = await getHealth();
         if (cancelled) return;
-        await getSession();
+        const session = await getSession();
+        operatorTokenRef.current = session.operator_token;
         const registered = await registerInputSession("mouse");
         if (cancelled) return;
 
@@ -149,96 +377,22 @@ export function useCoreBridge() {
         };
         contextRevisionRef.current = registered.context.revision;
         setDataMode(health.data_mode ?? "unknown");
+        if (health.transport?.controller_label) {
+          setControllerLabel(health.transport.controller_label);
+        }
+        if (health.transport?.mode === "fpga" || health.transport?.mode === "simulator") {
+          setControllerSource(health.transport.mode);
+        }
         setLinkMode("live");
+        bootReadyRef.current = true;
 
         try {
-          await loadPreferredPlan();
+          await loadPlans();
         } catch {
           if (!cancelled) setLastError("plans_unavailable");
         }
         if (cancelled) return;
-
-        socket = connectEvents({
-          onOpen: () => {
-            if (!cancelled) setLinkMode("live");
-          },
-          onClose: () => {
-            if (!cancelled) setLinkMode("offline_mock");
-          },
-          onError: () => {
-            if (!cancelled) setLinkMode("offline_mock");
-          },
-          onMessage: (msg) => {
-            if (cancelled) return;
-            if (
-              typeof msg.server_seq === "number" &&
-              msg.server_seq <= serverSeqRef.current &&
-              msg.type !== "hello"
-            ) {
-              return;
-            }
-            if (typeof msg.server_seq === "number") {
-              serverSeqRef.current = Math.max(serverSeqRef.current, msg.server_seq);
-            }
-
-            if (msg.type === "hello") {
-              const data = msg.data as {
-                controller_label?: string;
-                data_mode?: string;
-                selection?: {
-                  selected_body_id: BodyId | null;
-                  context_id?: string;
-                  context_revision: number;
-                };
-              };
-              if (data.controller_label) setControllerLabel(data.controller_label);
-              if (data.data_mode) setDataMode(data.data_mode);
-              if (data.selection && sessionRef.current) {
-                const sel = data.selection as {
-                  selected_body_id: BodyId | null;
-                  context_id?: string;
-                  context_revision: number;
-                  screen?: string;
-                };
-                if (sel.context_id) {
-                  sessionRef.current.context_id = sel.context_id;
-                }
-                sessionRef.current.revision = sel.context_revision;
-                applySelection(
-                  sel.selected_body_id,
-                  sel.context_revision,
-                  false,
-                  sel.screen,
-                );
-              }
-              return;
-            }
-
-            if (msg.type === "selection") {
-              const data = msg.data as {
-                selected_body_id: BodyId | null;
-                context_revision: number;
-                screen?: string;
-              };
-              applySelection(
-                data.selected_body_id,
-                data.context_revision,
-                false,
-                data.screen,
-              );
-              // Refresh local context revision for the next intent.
-              if (sessionRef.current) {
-                sessionRef.current.revision = data.context_revision;
-              }
-              return;
-            }
-
-            if (msg.type === "mission_snapshot") {
-              applySnapshot(msg.data as MissionSnapshot);
-            }
-          },
-        });
-        socketRef.current = socket;
+        openSocket();
       } catch {
         if (cancelled) return;
         setLinkMode("offline_mock");
@@ -253,10 +407,12 @@ export function useCoreBridge() {
     void boot();
     return () => {
       cancelled = true;
-      socket?.close();
+      intentionalClose = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [applySelection, applySnapshot, loadPreferredPlan]);
+  }, [applySelection, applySnapshot, loadPlans]);
 
   const proposeTarget = useCallback(
     async (targetId: TargetId, source: "mouse" | "keyboard") => {
@@ -280,6 +436,7 @@ export function useCoreBridge() {
 
       const session = sessionRef.current!;
       try {
+        setInputSourceLabel(source);
         const result = await postIntent({
           token: session.token,
           input_session_id: session.input_session_id,
@@ -292,9 +449,8 @@ export function useCoreBridge() {
         if (!result.accepted) {
           setLastError(`intent_${result.reason}`);
         }
-        // Highlight/card update comes from the WS `selection` event (shared path with EEG).
       } catch (err) {
-        setLastError(err instanceof Error ? err.message : "intent_failed");
+        setLastError(formatApiError(err, "intent_failed"));
       }
     },
     [applySelection, linkMode],
@@ -302,7 +458,6 @@ export function useCoreBridge() {
 
   const selectPlanet = useCallback(
     (targetId: PlanetTargetId, source: "mouse" | "keyboard" = "mouse") => {
-      // On planet_info only navigation.back / more_details are allowed — avoid action_unavailable noise.
       if (screen === "planet_info") {
         setLastError("select_unavailable_on_info_screen");
         return;
@@ -319,45 +474,116 @@ export function useCoreBridge() {
     [proposeTarget],
   );
 
-  // Keep InputContext revision in sync when hello/selection update context_id.
-  useEffect(() => {
-    // no-op placeholder for future GET /input/context polling if needed
-  }, []);
-
-  const syncContextFromHello = useCallback((ctx: InputContext) => {
-    if (!sessionRef.current) return;
-    sessionRef.current.context_id = ctx.context_id;
-    sessionRef.current.revision = ctx.revision;
-  }, []);
-
-  void syncContextFromHello;
-
   const selectPlanById = useCallback(async (planId: string) => {
     try {
-      const full = await getPlan(planId);
+      const fromRoutes =
+        (routePlans.least_fuel?.plan_id === planId && routePlans.least_fuel) ||
+        (routePlans.earliest_arrival?.plan_id === planId &&
+          routePlans.earliest_arrival);
+      const full = fromRoutes || (await getPlan(planId));
       setSelectedPlan(full);
-      // Changing the preview plan does not invent mission progression.
-      setSnapshot(null);
-      snapshotSeqRef.current = -1;
+      setLastError(null);
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "plan_fetch_failed");
+      setLastError(formatApiError(err, "plan_fetch_failed"));
     }
-  }, []);
+  }, [routePlans]);
+
+  const createMissionFromSelected = useCallback(async () => {
+    const token = operatorTokenRef.current;
+    const plan = selectedPlan;
+    if (!token || !plan || linkMode !== "live") {
+      setLastError("operator_or_plan_unavailable");
+      return;
+    }
+    setCommandBusy(true);
+    setLastError(null);
+    try {
+      const snap = await createMission(token, plan.plan_id);
+      applySnapshot(snap);
+    } catch (err) {
+      setLastError(formatApiError(err, "create_mission_failed"));
+    } finally {
+      setCommandBusy(false);
+    }
+  }, [applySnapshot, linkMode, selectedPlan]);
+
+  const sendCommand = useCallback(
+    async (command: MissionCommand) => {
+      const token = operatorTokenRef.current;
+      const missionId = missionIdRef.current;
+      if (!token || !missionId || linkMode !== "live") {
+        setLastError("mission_unavailable");
+        return;
+      }
+      setCommandBusy(true);
+      setLastError(null);
+      try {
+        const result = await postMissionCommand(token, missionId, command);
+        if (result.snapshot) applySnapshot(result.snapshot);
+        if (!result.applied) {
+          setLastError(`${command}: ${result.detail || "not_applied"}`);
+        }
+      } catch (err) {
+        setLastError(formatApiError(err, `${command}_failed`));
+      } finally {
+        setCommandBusy(false);
+      }
+    },
+    [applySnapshot, linkMode],
+  );
+
+  const injectFault = useCallback(
+    async (kind: SimFaultKind) => {
+      const token = operatorTokenRef.current;
+      if (!token || linkMode !== "live") {
+        setLastError("operator_unavailable");
+        return;
+      }
+      if (controllerSource !== "simulator") {
+        setLastError("sim_faults_fpga_only_on_board");
+        return;
+      }
+      setCommandBusy(true);
+      setLastError(null);
+      try {
+        await injectSimFault(token, kind);
+      } catch (err) {
+        setLastError(formatApiError(err, "sim_fault_failed"));
+      } finally {
+        setCommandBusy(false);
+      }
+    },
+    [controllerSource, linkMode],
+  );
+
+  const gates = missionActionGates(snapshot);
+  const simFaultsEnabled =
+    linkMode === "live" && controllerSource === "simulator";
 
   return {
     linkMode,
     controllerLabel,
+    controllerSource,
     dataMode,
+    inputSourceLabel,
     selectedId,
     screen,
     planetChoiceEnabled: screen === "planet_choice",
     card,
     cardStatus,
     lastError,
+    commandBusy,
     planSummaries,
+    routePlans,
     selectedPlan,
     snapshot,
+    faultHistory,
+    gates,
+    simFaultsEnabled,
     selectPlanById,
+    createMissionFromSelected,
+    sendCommand,
+    injectFault,
     selectPlanet,
     clearSelection,
   };
