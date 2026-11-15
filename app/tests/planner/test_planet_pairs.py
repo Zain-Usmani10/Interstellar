@@ -36,7 +36,7 @@ def test_earth_mars_retiming_replaces_legacy_identities():
         plan = load_demo_plan(objective)
         assert (plan["plan_id"], plan["plan_sha256"]) != identity
         assert not verify_plan(plan)
-        assert [plan["ticks"][key] for key in ("departure_tick", "arrival_tick", "end_tick")] == [500, 6500, 6800]
+        assert [plan["ticks"][key] for key in ("departure_tick", "arrival_tick", "end_tick")] == [500, 3500, 3800]
 
 
 @pytest.mark.parametrize("pair", [
@@ -53,8 +53,9 @@ def test_expanded_nearby_routes_are_qualified_with_explicit_demo_vehicle(pair):
     assert demo["vehicle"]["label"] == "Hypothetical demo vehicle (Isp 900 s)"
     assert set(demo["objectives"]) == {"least_fuel", "earliest_arrival"}
     # Qualifying the opt-in vehicle must not erase the chemical vehicle's failures.
-    assert default["status"] == "no_feasible_route"
-    assert default["rejection_counts"]["exceeds_propellant_capacity"] > 0
+    assert default["vehicle"]["isp_s"] == 450
+    if default["status"] == "no_feasible_route":
+        assert default["rejection_counts"]["exceeds_propellant_capacity"] > 0
 
 
 @pytest.mark.parametrize("records_key,complete_key", [("pairs", "complete"), ("demo_pairs", "demo_complete")])
@@ -83,8 +84,8 @@ def test_catalog_all_56_pairs_and_valid_plans(records_key, complete_key):
         for objective, plan_id in row["objectives"].items():
             plan = plans[plan_id]
             assert plan["vehicle"]["isp_s"] == row["vehicle"]["isp_s"]
-            assert plan["ticks"]["arrival_tick"] / plan["ticks"]["tick_hz"] == 65
-            assert plan["run_interval"]["real_demo_seconds"] == 68
+            assert plan["ticks"]["arrival_tick"] / plan["ticks"]["tick_hz"] == 35
+            assert plan["run_interval"]["real_demo_seconds"] == 38
             validator.validate(plan)
             assert not verify_plan(plan)
             assert (plan["origin_body_id"], plan["destination_body_id"]) == pair

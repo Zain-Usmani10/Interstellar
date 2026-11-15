@@ -50,6 +50,12 @@ class EphemerisCache:
 
     # -- loading and integrity ------------------------------------------------------------
 
+    def include_directory(self, directory: Path) -> None:
+        """Add independently verified raw rows, e.g. full-run validation coverage."""
+        for path in sorted(Path(directory).glob("horizons_*.json")):
+            if path.name not in self._entries:
+                self._load(path)
+
     def _load(self, path: Path) -> None:
         entry = json.loads(path.read_text(encoding="utf-8"))
         if entry.get("cache_schema_version") != CACHE_SCHEMA_VERSION:
