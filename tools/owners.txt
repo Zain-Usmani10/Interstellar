@@ -8,6 +8,8 @@ app/backend/transport/ ANaceri26/codex
 app/tests/transport/ ANaceri26/codex
 app/backend/timescale/ ANaceri26/codex
 app/tests/timescale/ ANaceri26/codex
+app/backend/fleet/ ANaceri26/codex
+app/tests/fleet/ ANaceri26/codex
 
 app/backend/ephemeris/ AffanSyed07/codex
 app/backend/planner/ AffanSyed07/codex
@@ -21,12 +23,13 @@ app/tests/planet_data/ AffanSyed07/codex
 
 app/frontend/ sadattanzim01/cursor
 app/frontend/src/bci/ AffanSyed07/codex
+# 3D scene = heaviest GUI work, with the agent that has the most budget (2026-11-15)
+app/frontend/src/scene/ AffanSyed07/codex
+app/frontend/public/ AffanSyed07/codex
 # 3D scene returned to Cursor with the whole GUI (2026-11-14, by request of Abderrahmene)
 
 # Arduino Uno fallback bridge feasibility (2026-11-14, by request of Abderrahmene)
 app/hardware/uno/ AffanSyed07/codex
-app/backend/fleet/ AffanSyed07/codex
-app/tests/fleet/ AffanSyed07/codex
 
 app/brain/ AffanSyed07/codex
 app/tests/brain/ AffanSyed07/codex
