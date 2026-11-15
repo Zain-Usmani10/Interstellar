@@ -4,28 +4,39 @@ import type { LinkMode } from "../state/useCoreBridge";
 
 type Props = {
   linkMode: LinkMode;
-  controllerLabel: string;
-  dataMode: string;
+  controllerSource: "fpga" | "simulator" | "unknown";
   snapshot: MissionSnapshot | null;
   lastError: string | null;
   destinationName?: string | null;
 };
 
+function linkChip(
+  linkMode: LinkMode,
+  controllerSource: "fpga" | "simulator" | "unknown",
+  snapshot: MissionSnapshot | null,
+): { label: string; warn: boolean } {
+  if (controllerSource !== "fpga" || linkMode !== "live") {
+    return { label: "Simulator", warn: false };
+  }
+  const transport = snapshot?.link?.transport_state ?? "unknown";
+  const age = snapshot?.link?.observed_age_ms;
+  const stale =
+    transport === "stale" ||
+    transport === "disconnected" ||
+    transport === "error" ||
+    (typeof age === "number" && age > 1000);
+  if (stale) return { label: "FPGA Link Lost", warn: true };
+  return { label: "FPGA Link Live", warn: false };
+}
+
 export function GlassStatus({
   linkMode,
-  controllerLabel,
-  dataMode,
+  controllerSource,
   snapshot,
   lastError,
   destinationName,
 }: Props) {
-  const transport = snapshot?.link?.transport_state ?? "unknown";
-  const stale =
-    transport === "stale" ||
-    linkMode !== "live" ||
-    (typeof snapshot?.link?.observed_age_ms === "number" &&
-      snapshot.link.observed_age_ms > 1000);
-  const delayDemo = snapshot?.link?.delay_demo_s;
+  const chip = linkChip(linkMode, controllerSource, snapshot);
 
   return (
     <div className="glass-status" role="status" aria-label="Mission status">
@@ -33,14 +44,9 @@ export function GlassStatus({
         {friendlyMissionLabel(snapshot, destinationName)}
       </p>
       <div className="honesty-row">
-        <span className="honesty">{controllerLabel}</span>
-        <span className="honesty">NASA {dataMode}</span>
-        <span className={stale ? "honesty warn" : "honesty"}>
-          link {stale ? "stale" : "live"}
+        <span className={chip.warn ? "honesty warn" : "honesty"}>
+          {chip.label}
         </span>
-        {delayDemo != null ? (
-          <span className="honesty">delay {delayDemo.toFixed(2)}s</span>
-        ) : null}
       </div>
       {lastError ? <p className="glass-error">{lastError}</p> : null}
     </div>

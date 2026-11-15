@@ -102,6 +102,8 @@ export type MissionSnapshot = {
   departure_executed_tick: number | null;
   capture_executed_tick: number | null;
   fuel_remaining_g: number;
+  /** contracts 1.3.0 — shuttle bound to this mission */
+  shuttle_id?: string | null;
   safe_reason?: string;
   faults?: {
     masked_fault_count: number;

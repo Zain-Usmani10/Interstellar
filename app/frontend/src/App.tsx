@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getPlanetPositions } from "./api/coreClient";
 import { toScenePlan, toSceneSnapshot } from "./api/mapToSceneViews";
 import { BlackoutBanner } from "./components/BlackoutBanner";
 import { DateCorner } from "./components/DateCorner";
@@ -12,9 +13,10 @@ import { ReconciliationCard } from "./components/ReconciliationCard";
 import { TripReadout } from "./components/TripReadout";
 import { BciSlot } from "./integrations/bciSlot";
 import { OrbitScene } from "./scene/OrbitScene";
+import type { SceneBodyId, ScenePlanetPosition } from "./scene/types";
 import {
-  MOCK_FLEET,
   dockedAt,
+  toSceneFleet,
   type FleetShuttle,
 } from "./state/fleetMock";
 import {
@@ -50,10 +52,21 @@ function formatTMinus(
   return `T−${String(whole).padStart(2, "0")}.${String(centi).padStart(2, "0")}`;
 }
 
+const BODY_IDS: SceneBodyId[] = [
+  "199",
+  "299",
+  "399",
+  "499",
+  "599",
+  "699",
+  "799",
+  "899",
+];
+
 export default function App() {
   const {
     linkMode,
-    controllerLabel,
+    controllerSource,
     dataMode,
     selectedId,
     planetChoiceEnabled,
@@ -66,6 +79,8 @@ export default function App() {
     originBodyId,
     destinationBodyId,
     shuttleClass,
+    selectedShuttleId,
+    fleet,
     routeUnavailable,
     snapshot,
     faultHistory,
@@ -73,8 +88,10 @@ export default function App() {
     simFaultsEnabled,
     selectPlanById,
     setTrip,
+    setSelectedShuttleId,
     prepareMission,
     resetMission,
+    resetFleet,
     sendCommand,
     injectFault,
     selectPlanet,
@@ -82,13 +99,13 @@ export default function App() {
   } = useCoreBridge();
 
   const [focusName, setFocusName] = useState<string | null>("Earth");
-  const [shuttleId, setShuttleId] = useState<string | null>(
-    "shuttle-std-earth-1",
-  );
-  const [fleet] = useState(MOCK_FLEET);
+  const [planetPositions, setPlanetPositions] = useState<
+    ScenePlanetPosition[]
+  >([]);
 
   const scenePlan = useMemo(() => toScenePlan(selectedPlan), [selectedPlan]);
   const sceneSnapshot = useMemo(() => toSceneSnapshot(snapshot), [snapshot]);
+  const sceneFleet = useMemo(() => toSceneFleet(fleet), [fleet]);
   const live = linkMode === "live";
   const originLabel = planetName(originBodyId);
   const destinationLabel = planetName(destinationBodyId);
@@ -139,6 +156,32 @@ export default function App() {
     : null;
 
   useEffect(() => {
+    if (linkMode !== "live" || !dateUtc) {
+      setPlanetPositions([]);
+      return;
+    }
+    let cancelled = false;
+    void getPlanetPositions({ date_utc: dateUtc })
+      .then((res) => {
+        if (cancelled) return;
+        setPlanetPositions(
+          (res.planets ?? [])
+            .filter((p) => (BODY_IDS as string[]).includes(p.body_id))
+            .map((p) => ({
+              body_id: p.body_id as SceneBodyId,
+              r_km: p.r_km,
+            })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setPlanetPositions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dateUtc, linkMode]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         clearSelection("keyboard");
@@ -147,14 +190,12 @@ export default function App() {
       }
       if (planetChoiceEnabled) {
         if (event.key === "1") {
-          setFocusName("Earth");
+          visitPlanet("Earth");
           selectPlanet("planet.399", "keyboard");
-          setTrip({ origin: "399" });
         }
         if (event.key === "2") {
-          setFocusName("Mars");
+          visitPlanet("Mars");
           selectPlanet("planet.499", "keyboard");
-          setTrip({ origin: "499" });
         }
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -186,16 +227,17 @@ export default function App() {
     if (!bodyId) return;
     const docked = dockedAt(fleet, bodyId);
     const first = docked[0] ?? null;
-    setShuttleId(first?.id ?? null);
+    setSelectedShuttleId(first?.id ?? null);
     setTrip({
       origin: bodyId,
       shuttleClass: first?.class ?? "standard",
+      shuttleId: first?.id ?? null,
     });
   }
 
   function pickShuttle(shuttle: FleetShuttle) {
-    setShuttleId(shuttle.id);
-    setTrip({ shuttleClass: shuttle.class });
+    setSelectedShuttleId(shuttle.id);
+    setTrip({ shuttleClass: shuttle.class, shuttleId: shuttle.id });
   }
 
   return (
@@ -206,14 +248,16 @@ export default function App() {
           selectionEnabled={planetChoiceEnabled && !blackout}
           onSelect={(id) => {
             const name = id === "planet.399" ? "Earth" : "Mars";
-            setFocusName(name);
+            visitPlanet(name);
             selectPlanet(id);
-            setTrip({ origin: id === "planet.399" ? "399" : "499" });
           }}
           onFocusName={(name) => visitPlanet(name)}
           focusName={focusName}
           plan={scenePlan}
           snapshot={sceneSnapshot}
+          fleet={sceneFleet}
+          mockFleet={false}
+          planetPositions={planetPositions}
         />
       </div>
 
@@ -228,8 +272,7 @@ export default function App() {
 
       <GlassStatus
         linkMode={linkMode}
-        controllerLabel={controllerLabel}
-        dataMode={dataMode}
+        controllerSource={controllerSource}
         snapshot={snapshot}
         lastError={lastError}
         destinationName={destinationLabel}
@@ -240,7 +283,7 @@ export default function App() {
           originBodyId={originBodyId}
           destinationBodyId={destinationBodyId}
           dockedShuttles={dockedShuttles}
-          shuttleId={shuttleId}
+          shuttleId={selectedShuttleId}
           shuttleClass={shuttleClass}
           leastFuel={routePlans.least_fuel}
           earliestArrival={routePlans.earliest_arrival}
@@ -279,6 +322,7 @@ export default function App() {
           onReset={() => void resetMission()}
           onBlackoutStart={() => void sendCommand("blackout_start")}
           onBlackoutEnd={() => void sendCommand("blackout_end")}
+          onResetFleet={() => void resetFleet()}
           onFaultSingle={() => void injectFault("single")}
           onFaultDivergence={() => void injectFault("divergence")}
         />
@@ -286,6 +330,7 @@ export default function App() {
           plan={selectedPlan}
           snapshot={snapshot}
           faultHistory={faultHistory}
+          dataMode={dataMode}
         />
       </aside>
 
