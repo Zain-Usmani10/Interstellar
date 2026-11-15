@@ -7,8 +7,6 @@
 //   3. A byte with a bad stop bit is rejected, and the next good byte works.
 //   4. A sender that is 2% fast or 2% slow is still received.
 //   5. A short low glitch on the line is not taken as a byte.
-//   6. Top level with TX wired to RX: LEDR1 (loopback OK) turns on and
-//      LEDR2 (error) stays off; breaking the wire turns LEDR1 off.
 
 `timescale 1ns / 1ps
 
@@ -121,26 +119,6 @@ module tb_uart;
             start_bit_clocks = start_bit_clocks + 1;
     end
 
-    // ---------------------------------------------------------- DUT 3: top level in loopback
-    reg        loop_closed = 1'b1;
-    reg  [1:0] key = 2'b11;
-    wire [9:0] ledr;
-    wire       top_tx;
-    wire       top_rx = loop_closed ? top_tx : 1'b1;
-
-    // 16 clocks per bit -> a byte is 160 clocks; a tick every 400 clocks.
-    interstellar_top #(
-        .TICK_DIVISOR         (400),
-        .HEARTBEAT_HALF_TICKS (5),
-        .UART_CLKS_PER_BIT    (16)
-    ) u_top (
-        .MAX10_CLK1_50 (clk),
-        .KEY           (key),
-        .UART_RX       (top_rx),
-        .UART_TX       (top_tx),
-        .LEDR          (ledr)
-    );
-
     integer n;
 
     initial begin
@@ -185,21 +163,6 @@ module tb_uart;
         line = 1'b1;
         repeat (BIT * 12) @(negedge clk);
         check(b_count == 3 && b_ferr_count == 1, "short low glitch is ignored");
-
-        // --- 6. Top-level loopback LEDs.
-        // By now the top level has been running for a long time with the
-        // loop closed.
-        check(ledr[1] === 1'b1, "LEDR1 on with TX wired to RX");
-        check(ledr[2] === 1'b0, "LEDR2 off (no loopback errors)");
-
-        loop_closed = 1'b0;                       // pull the jumper
-        repeat (400 * 40) @(posedge clk);         // 40 ticks > 25-tick hold
-        check(ledr[1] === 1'b0, "LEDR1 off after the wire is removed");
-
-        loop_closed = 1'b1;                       // put it back
-        repeat (400 * 5) @(posedge clk);
-        check(ledr[1] === 1'b1, "LEDR1 on again after the wire is restored");
-        check(ledr[8:3] === 6'b0, "LEDR8..3 stay off");
 
         if (errors == 0)
             $display("\nSIMULATION PASS: tb_uart (simulation only, not a board test)");

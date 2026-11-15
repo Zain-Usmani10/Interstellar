@@ -17,7 +17,12 @@ set_global_assignment -name VERILOG_FILE rtl/tick_gen.v
 set_global_assignment -name VERILOG_FILE rtl/heartbeat.v
 set_global_assignment -name VERILOG_FILE rtl/uart_rx.v
 set_global_assignment -name VERILOG_FILE rtl/uart_tx.v
-set_global_assignment -name VERILOG_FILE rtl/uart_loopback_check.v
+set_global_assignment -name VERILOG_FILE rtl/crc16.v
+set_global_assignment -name VERILOG_FILE rtl/frame_rx.v
+set_global_assignment -name VERILOG_FILE rtl/frame_tx.v
+set_global_assignment -name VERILOG_FILE rtl/status_gen.v
+set_global_assignment -name VERILOG_FILE rtl/debounce.v
+set_global_assignment -name VERILOG_FILE rtl/bringup_selftest.v
 set_global_assignment -name SDC_FILE interstellar.sdc
 
 # ---------------------------------------------------------------- Pin policy

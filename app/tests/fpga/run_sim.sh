@@ -8,6 +8,9 @@ rtl="$here/../../hardware/fpga/rtl"
 build="$here/build"
 mkdir -p "$build"
 
+# Testbenches read the golden frames by a path relative to the repo root.
+cd "$here/../../.."
+
 command -v iverilog >/dev/null || { echo "iverilog not found on PATH"; exit 2; }
 
 fail=0
@@ -15,7 +18,8 @@ for tb in "$here"/tb_*.v; do
     name="$(basename "$tb" .v)"
     echo "=== $name ==="
     iverilog -g2001 -Wall -Wno-timescale -o "$build/$name.vvp" -s "$name" "$tb" "$rtl"/*.v
-    out="$(vvp -n "$build/$name.vvp")"
+    # Fixture files are shorter than the 256-byte test arrays; that warning is expected.
+    out="$(vvp -n "$build/$name.vvp" | grep -v "Not enough words in the file")"
     echo "$out"
     echo "$out" | grep -q "SIMULATION PASS" || fail=1
 done

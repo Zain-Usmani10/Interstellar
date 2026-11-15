@@ -11,6 +11,13 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `rtl/reset_sync.v` | KEY0 reset: asserts immediately, releases on a clock edge |
 | `rtl/tick_gen.v` | 100 Hz mission tick: one pulse per 500,000 clocks |
 | `rtl/heartbeat.v` | Blinks LEDR0 once per second from the 100 Hz tick |
+| `rtl/uart_rx.v`, `rtl/uart_tx.v` | Serial bytes in and out, 115200 8N1 |
+| `rtl/crc16.v` | CRC-16/CCITT-FALSE, one byte per step |
+| `rtl/frame_rx.v` | Finds and checks protocol v1 frames in the received bytes |
+| `rtl/frame_tx.v` | Sends one protocol v1 frame |
+| `rtl/status_gen.v` | Builds the 40-byte STATUS reply |
+| `rtl/debounce.v` | Cleans up a button or switch |
+| `rtl/bringup_selftest.v` | KEY1 self-test for the frame path (bring-up only) |
 | `../../tests/fpga/` | Testbenches and `run_sim.sh` (simulation only) |
 
 ## Pins
@@ -18,10 +25,12 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 |---|---|---|
 | `MAX10_CLK1_50` | `PIN_P11` | Onboard 50 MHz oscillator |
 | `KEY[0]` | `PIN_B8` | Reset, active low (hold to reset) |
-| `KEY[1]` | `PIN_A7` | Not used yet |
+| `KEY[1]` | `PIN_A7` | Bring-up self-test: send a DISCOVER frame |
 | `UART_RX` | `PIN_V10` | JP1 pin 1 (GPIO0), from XIAO D6/TX, weak pull-up |
 | `UART_TX` | `PIN_W10` | JP1 pin 2 (GPIO1), to XIAO D7/RX, idles high |
 | `LEDR[0]` | `PIN_A8` | Heartbeat |
+| `LEDR[1]` | `PIN_A9` | Flips per good command frame received |
+| `LEDR[2]` | `PIN_A10` | Flips per dropped frame (error count bit 0) |
 | `LEDR[9]` | `PIN_B11` | On while in reset |
 
 All I/O is 3.3 V. Unused pins are high-impedance inputs.
@@ -47,10 +56,11 @@ Plug in the DE10-Lite USB-Blaster cable, then:
 ```
 Or use **Tools > Programmer** in Quartus. A `.sof` is volatile: reprogram after every power cycle.
 
-## What to expect on the board (bring-up stage)
+## What to expect on the board (milestone B)
 - LEDR0 blinks once per second (0.5 s on, 0.5 s off).
-- Holding KEY0 turns LEDR9 on and LEDR0 off; releasing it restarts the blink.
-- UART loopback check (temporary, milestone A): with one jumper from JP1 pin 2 (TX) to JP1 pin 1 (RX), LEDR1 is on. Remove the jumper and LEDR1 goes off. LEDR2 must stay off; it latches on if a wrong byte or bad stop bit is seen (KEY0 clears it).
+- Holding KEY0 turns LEDR9 on and every other LED off; releasing it restarts the blink.
+- Frame self-test, with one jumper from JP1 pin 2 (TX) to JP1 pin 1 (RX): each KEY1 press flips LEDR1 (the board received its own DISCOVER) and LEDR2 (it received its own STATUS reply, which is not a command, so it is dropped and counted).
+- Without the jumper, KEY1 changes nothing.
 - All other red LEDs are off.
 
 ## Board test log
