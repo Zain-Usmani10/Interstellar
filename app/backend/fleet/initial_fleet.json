@@ -1,0 +1,8 @@
+[
+  {"id":"earth-standard","name":"Earth Standard","class":"standard","body_id":"399"},
+  {"id":"earth-long-range","name":"Earth Long-range","class":"long_range","body_id":"399"},
+  {"id":"venus-standard","name":"Venus Standard","class":"standard","body_id":"299"},
+  {"id":"mars-standard","name":"Mars Standard","class":"standard","body_id":"499"},
+  {"id":"mercury-long-range","name":"Mercury Long-range","class":"long_range","body_id":"199"},
+  {"id":"jupiter-long-range","name":"Jupiter Long-range","class":"long_range","body_id":"599"}
+]
