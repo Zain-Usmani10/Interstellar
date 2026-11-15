@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interstellar.local/contracts/v1/mission_snapshot.schema.json",
+  "title": "MissionSnapshot",
+  "description": "Last authoritative observed controller state plus the physics reconstructed from it. The browser renders this; it never advances a mission on its own. Ignore snapshots whose server_seq is not greater than the last one applied.",
+  "type": "object",
+  "required": ["schema_version", "server_seq", "mission_id", "plan_id", "plan_sha256", "wire", "controller_source", "controller_label",
+               "state", "tick", "executed_mask", "departure_executed_tick", "capture_executed_tick", "fuel_remaining_g",
+               "safe_reason", "faults", "link", "epoch_jd_tdb", "spacecraft", "planets", "outcome", "failure"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "server_seq": { "type": "integer", "minimum": 0, "description": "Increases with every snapshot the backend emits" },
+    "mission_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "plan_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "plan_sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "wire": {
+      "type": "object",
+      "required": ["session_id", "mission_id", "plan_crc16"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": { "$ref": "common.schema.json#/$defs/u32" },
+        "mission_id": { "$ref": "common.schema.json#/$defs/u32" },
+        "plan_crc16": { "$ref": "common.schema.json#/$defs/u16" }
+      }
+    },
+    "controller_source": { "enum": ["fpga", "simulator"] },
+    "controller_label": { "enum": ["FPGA", "SIMULATED CONTROLLER"], "description": "Show this text persistently in the UI" },
+    "state": { "enum": ["UNKNOWN", "IDLE", "LOADED", "ARMED", "RUNNING", "SAFE", "COMPLETE", "ABORTED"],
+      "description": "Controller state from the last STATUS. UNKNOWN until the board has answered." },
+    "tick": { "$ref": "common.schema.json#/$defs/u32" },
+    "executed_mask": { "type": "integer", "minimum": 0, "maximum": 3, "description": "bit 0 departure, bit 1 capture" },
+    "departure_executed_tick": { "anyOf": [{ "$ref": "common.schema.json#/$defs/u32" }, { "type": "null" }] },
+    "capture_executed_tick": { "anyOf": [{ "$ref": "common.schema.json#/$defs/u32" }, { "type": "null" }] },
+    "fuel_remaining_g": { "$ref": "common.schema.json#/$defs/u32" },
+    "safe_reason": { "enum": ["NONE", "NO_MAJORITY", "ILLEGAL_STATE", "FUEL", "INTERNAL_INVARIANT"] },
+    "faults": {
+      "type": "object",
+      "required": ["masked_fault_count", "no_majority_count", "rx_error_count"],
+      "additionalProperties": false,
+      "properties": {
+        "masked_fault_count": { "$ref": "common.schema.json#/$defs/u32" },
+        "no_majority_count": { "$ref": "common.schema.json#/$defs/u32" },
+        "rx_error_count": { "$ref": "common.schema.json#/$defs/u32" }
+      }
+    },
+    "link": {
+      "type": "object",
+      "required": ["transport_state", "observed_age_ms", "view", "delay_demo_s", "delay_physical_s"],
+      "properties": {
+        "transport_state": { "enum": ["connected", "stale", "disconnected", "error", "unknown"],
+          "description": "stale = no telemetry recently; the picture is the last received state, not a stopped spacecraft" },
+        "observed_age_ms": { "type": ["integer", "null"], "minimum": 0, "description": "Milliseconds since the last STATUS was received; null if none yet" },
+        "view": { "enum": ["ground_delayed", "local_onboard"] },
+        "delay_demo_s": { "type": ["number", "null"], "minimum": 0, "description": "Applied one-way demo delay: clamp(physical/300, 0.1, 3.0)" },
+        "delay_physical_s": { "type": ["number", "null"], "minimum": 0, "description": "Geometric Earth-spacecraft light time estimate" }
+      }
+    },
+    "epoch_jd_tdb": { "type": ["number", "null"], "description": "Mission epoch for 'tick' from the plan's tick mapping" },
+    "spacecraft": {
+      "type": "object",
+      "required": ["phase", "r_km", "v_km_s"],
+      "properties": {
+        "phase": { "enum": ["at_origin", "coast", "captured", "uncaptured_coast", "unknown"] },
+        "r_km": { "anyOf": [{ "$ref": "common.schema.json#/$defs/vec3" }, { "type": "null" }] },
+        "v_km_s": { "anyOf": [{ "$ref": "common.schema.json#/$defs/vec3" }, { "type": "null" }] }
+      }
+    },
+    "planets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["body_id", "r_km"],
+        "properties": {
+          "body_id": { "$ref": "common.schema.json#/$defs/body_id" },
+          "r_km": { "$ref": "common.schema.json#/$defs/vec3" }
+        }
+      }
+    },
+    "outcome": { "enum": ["pending", "captured", "uncaptured", "aborted", "plan_invalid", "lost"],
+      "description": "captured only with a board capture event at the planned tick. lost = board reset / session gone." },
+    "failure": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string" } } }
+      ]
+    }
+  }
+}

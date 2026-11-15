@@ -1,0 +1,160 @@
+{
+ "schema_version": 1,
+ "body_id": "499",
+ "name": "Mars",
+ "scene_epoch_jd_tdb": 2461359.5,
+ "facts": [
+  {
+   "key": "diameter",
+   "label": "Diameter",
+   "value": 6792,
+   "unit": "km",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "mass",
+   "label": "Mass",
+   "value": 6.42e+23,
+   "unit": "kg",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "surface_gravity",
+   "label": "Surface gravity",
+   "value": 3.7,
+   "unit": "m/s^2",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "length_of_day",
+   "label": "Length of day",
+   "value": 24.7,
+   "unit": "h",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "orbital_period",
+   "label": "Orbital period",
+   "value": 687.0,
+   "unit": "days",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "distance_from_sun",
+   "label": "Mean distance from Sun",
+   "value": 228000000.0,
+   "unit": "km",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  },
+  {
+   "key": "mean_temperature",
+   "label": "Mean temperature",
+   "value": -65,
+   "unit": "degC",
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   },
+   "note": "Long-term mean, not a current weather reading"
+  },
+  {
+   "key": "moons",
+   "label": "Moons",
+   "value": 2,
+   "unit": null,
+   "source": {
+    "name": "NASA Planetary Fact Sheet (NSSDCA)",
+    "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  }
+ ],
+ "orbital_state": {
+  "availability": "available",
+  "epoch_jd_tdb": 2461359.5,
+  "r_km": [
+   -23471488.149,
+   226727453.271,
+   0.0
+  ],
+  "v_km_s": [
+   -24.001124287,
+   -2.484666485,
+   0.0
+  ],
+  "frame": {
+   "center": "500@10",
+   "ref_system": "ICRF",
+   "ref_plane": "ECLIPTIC",
+   "units": "KM-S",
+   "time_scale": "TDB"
+  },
+  "provenance": {
+   "mode": "synthetic",
+   "source": {
+    "name": "Interstellar contract fixture generator (synthetic, not NASA data)",
+    "url": "app/contracts/tools/generate.py",
+    "retrieved_utc": null,
+    "sha256": null,
+    "api_signature": null
+   }
+  }
+ },
+ "conditions": {
+  "scope": "mars",
+  "kind": "current_weather",
+  "label": "Current Mars weather",
+  "availability": "unavailable",
+  "delivery": null,
+  "observed_from_utc": null,
+  "observed_to_utc": null,
+  "retrieved_utc": null,
+  "items": [],
+  "note": "No current Mars surface weather source is integrated. NASA InSight ended in 2022; its old measurements are not live data.",
+  "provenance": {
+   "mode": null,
+   "source": null
+  }
+ }
+}

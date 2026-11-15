@@ -1,0 +1,102 @@
+{
+  "name": "interstellar-wire-protocol",
+  "protocol_version": 1,
+  "contracts_version": "1.0.0",
+  "spec": "docs/plan/MAIN_BACKEND_FPGA_TASKS.md section 8",
+  "reference_implementation": "app/contracts/protocol_v1.py",
+  "link": { "baud": 115200, "data_bits": 8, "parity": "none", "stop_bits": 1 },
+  "byte_order": "little-endian, unsigned",
+  "frame": {
+    "magic_hex": "A55A",
+    "header_length": 12,
+    "max_payload": 128,
+    "max_frame": 142,
+    "incomplete_frame_timeout_ms": 100,
+    "fields": [
+      { "name": "magic", "offset": 0, "size": 2, "value_hex": "A55A", "note": "literal byte order A5 then 5A" },
+      { "name": "version", "offset": 2, "size": 1, "value": 1 },
+      { "name": "type", "offset": 3, "size": 1 },
+      { "name": "sequence", "offset": 4, "size": 2 },
+      { "name": "session_id", "offset": 6, "size": 4 },
+      { "name": "payload_length", "offset": 10, "size": 2, "max": 128 },
+      { "name": "payload", "offset": 12, "size": "payload_length" },
+      { "name": "crc16", "offset": "12 + payload_length", "size": 2 }
+    ]
+  },
+  "crc": {
+    "name": "CRC-16/CCITT-FALSE",
+    "poly_hex": "1021",
+    "init_hex": "FFFF",
+    "refin": false,
+    "refout": false,
+    "xorout_hex": "0000",
+    "covers": "version through last payload byte (frame bytes 2 .. 12+N-1); magic and CRC excluded",
+    "wire_order": "little-endian",
+    "check": { "ascii": "123456789", "value_hex": "29B1", "wire_hex": "B129" }
+  },
+  "messages": {
+    "DISCOVER":     { "type_hex": "01", "direction": "host_to_board", "payload_length": 0,  "kind": "read_only", "reply": "STATUS" },
+    "OPEN_SESSION": { "type_hex": "02", "direction": "host_to_board", "payload_length": 4,  "kind": "session",   "reply": "ACK", "payload": [["new_session_id", "u32"]] },
+    "GET_STATUS":   { "type_hex": "03", "direction": "host_to_board", "payload_length": 0,  "kind": "read_only", "reply": "STATUS" },
+    "LOAD_PLAN":    { "type_hex": "10", "direction": "host_to_board", "payload_length": 28, "kind": "mutation",  "reply": "ACK",
+                      "payload": [["mission_id", "u32"], ["departure_tick", "u32"], ["arrival_tick", "u32"], ["end_tick", "u32"],
+                                  ["initial_fuel_g", "u32"], ["departure_fuel_g", "u32"], ["capture_fuel_g", "u32"]] },
+    "COMMIT_PLAN":  { "type_hex": "11", "direction": "host_to_board", "payload_length": 6,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"], ["plan_crc16", "u16"]] },
+    "ARM":          { "type_hex": "12", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
+    "START":        { "type_hex": "13", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
+    "ABORT":        { "type_hex": "14", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
+    "CLEAR":        { "type_hex": "15", "direction": "host_to_board", "payload_length": 4,  "kind": "mutation",  "reply": "ACK", "payload": [["mission_id", "u32"]] },
+    "ACK":          { "type_hex": "80", "direction": "board_to_host", "payload_length": 16,
+                      "payload": [["original_type", "u8"], ["result", "u8"], ["detail", "u16"], ["mission_id", "u32"],
+                                  ["applied_tick", "u32"], ["plan_crc16", "u16"], ["reserved", "u16", 0]] },
+    "STATUS":       { "type_hex": "81", "direction": "board_to_host", "payload_length": 40,
+                      "payload": [["mission_id", "u32"], ["tick", "u32"], ["state", "u8"], ["executed_mask", "u8"],
+                                  ["safe_reason", "u8"], ["reserved0", "u8", 0], ["fuel_remaining_g", "u32"],
+                                  ["departure_executed_tick", "u32"], ["capture_executed_tick", "u32"],
+                                  ["masked_fault_count", "u32"], ["no_majority_count", "u32"], ["rx_error_count", "u32"],
+                                  ["plan_crc16", "u16"], ["reserved1", "u16", 0]] }
+  },
+  "enums": {
+    "state": { "IDLE": 0, "LOADED": 1, "ARMED": 2, "RUNNING": 3, "SAFE": 4, "COMPLETE": 5, "ABORTED": 6 },
+    "result": { "APPLIED": 0, "REJECTED": 1 },
+    "detail": { "OK": 0, "BAD_STATE": 1, "BAD_MISSION": 2, "BAD_SESSION": 3, "BAD_PLAN": 4, "BAD_PLAN_CRC": 5,
+                "SEQ_CONFLICT": 6, "STALE_SEQ": 7, "INSUFFICIENT_FUEL": 8, "UNSUPPORTED": 9 },
+    "safe_reason": { "NONE": 0, "NO_MAJORITY": 1, "ILLEGAL_STATE": 2, "FUEL": 3, "INTERNAL_INVARIANT": 4 },
+    "executed_mask_bits": { "DEPARTURE": 0, "CAPTURE": 1 }
+  },
+  "constants": {
+    "tick_hz": 100,
+    "unset_event_tick_hex": "FFFFFFFF",
+    "max_end_tick": 360000,
+    "status_period_ms": 100,
+    "retry_timeout_ms": 500,
+    "retry_attempts": 3
+  },
+  "plan_rules": [
+    "mission_id != 0",
+    "0 < departure_tick < arrival_tick < end_tick <= 360000",
+    "departure_fuel_g > 0 and capture_fuel_g > 0",
+    "departure_fuel_g + capture_fuel_g <= initial_fuel_g (compare in more than 32 bits)",
+    "plan_crc16 = CRC-16/CCITT-FALSE over exactly the 28 LOAD_PLAN payload bytes"
+  ],
+  "sequencing": {
+    "read_only": "DISCOVER and GET_STATUS carry sequence 0 and any session (0 allowed). They never touch mutation sequencing. The STATUS reply header carries the board's active session (0 after reset) and the board's own wrapping telemetry sequence.",
+    "open_session": "Header session 0, sequence 0, payload = new nonzero session id. Allowed only in IDLE. Clears the replay cache; the next mutation uses sequence 1. An identical repeat while IDLE with that session already active returns APPLIED without resetting history.",
+    "mutations": "Header session must equal the active nonzero session. Stop-and-wait. Sequence starts at 1 and increases by 1 up to 65535; open a fresh IDLE session before wrap. Exact retry (same sequence, identical frame bytes) returns the cached ACK without re-applying. Same sequence with different bytes: SEQ_CONFLICT. Lower sequence: STALE_SEQ.",
+    "validation_order": ["frame integrity, known type, exact payload length (else discard and count, no reply)", "session (BAD_SESSION)", "duplicate / conflict / stale sequence", "mission, state and value guards", "atomic application"],
+    "sequence_consumption": "After shape, session and sequence checks pass, both APPLIED and REJECTED results consume and cache that sequence. Integrity, shape, session, conflict and stale failures do not advance it.",
+    "ack_header": "Echoes the request sequence; session field is the board's actual active session (so BAD_SESSION reveals the real one, and OPEN_SESSION returns the new one)."
+  },
+  "ack_semantics": {
+    "LOAD_PLAN": "APPLIED = staged only (state stays IDLE)",
+    "COMMIT_PLAN": "APPLIED = plan active, state LOADED, tick 0, mask 0",
+    "ARM": "LOADED -> ARMED",
+    "START": "ARMED -> RUNNING, tick divider and counter reset",
+    "ABORT": "LOADED/ARMED/RUNNING/SAFE -> ABORTED",
+    "CLEAR": "any non-RUNNING state with a mission -> IDLE, plan invalidated",
+    "applied_tick": "board tick when the command was applied (0 before START)",
+    "mission_id": "echoes the mission_id from the request payload (0 for OPEN_SESSION)",
+    "plan_crc16": "after LOAD_PLAN: CRC of the staged plan; otherwise CRC of the active plan; 0 if there is none",
+    "unknown_type_with_valid_crc": "discarded and counted in rx_error_count, no reply. Detail UNSUPPORTED (9) is reserved for a known type the build does not implement."
+  }
+}

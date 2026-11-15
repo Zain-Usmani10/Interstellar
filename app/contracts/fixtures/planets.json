@@ -1,0 +1,15 @@
+{
+ "schema_version": 1,
+ "planets": [
+  {
+   "body_id": "399",
+   "name": "Earth",
+   "target_id": "planet.399"
+  },
+  {
+   "body_id": "499",
+   "name": "Mars",
+   "target_id": "planet.499"
+  }
+ ]
+}
