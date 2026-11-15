@@ -124,6 +124,9 @@ class SimulatedController:
             crc = self.staged.crc16()
         elif self.plan:
             crc = self.plan.crc16()
+        elif self.staged:
+            # No active plan: report the staged plan's CRC (golden frame 29, same as the FPGA).
+            crc = self.staged.crc16()
         result = R.APPLIED if detail == D.OK else R.REJECTED
         ack = p.Ack(request.msg_type, result, detail, mission_id, self.tick, crc)
         return p.encode_frame(T.ACK, request.sequence, self.session, ack.pack())

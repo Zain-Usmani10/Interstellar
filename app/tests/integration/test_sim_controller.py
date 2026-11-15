@@ -109,7 +109,9 @@ def test_guards(sim):
     sim.handle(golden("03_open_session"))
     sim.handle(golden("06_load_plan"))
     bad_crc = p.encode_frame(T.COMMIT_PLAN, 2, SESSION, p.pack_commit(MISSION, 0x1234))
-    assert ack(sim.handle(bad_crc)).detail == D.BAD_PLAN_CRC
+    reply = sim.handle(bad_crc)
+    assert ack(reply).detail == D.BAD_PLAN_CRC
+    assert reply == golden("29_nack_commit_bad_plan_crc")  # carries the staged plan's CRC
     assert status(sim).state == S.IDLE                    # an uncommitted plan cannot be armed
     arm = p.encode_frame(T.ARM, 3, SESSION, p.pack_u32(MISSION))
     assert ack(sim.handle(arm)).detail == D.BAD_STATE
