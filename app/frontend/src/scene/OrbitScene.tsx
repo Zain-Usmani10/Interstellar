@@ -265,7 +265,7 @@ export function OrbitScene({
               <group position={position}>
                 <DockStation
                   radius={body.radius}
-                  showLabels={!overview && !compact && focused}
+                  showLabels={!overview && !compact && focused && !followCraft}
                   shuttles={dockedShuttles(ships, body.bodyId ?? "", sceneSnapshot)
                   .filter(ship => ship.id !== sceneSnapshot?.shuttle_id)}
                 />

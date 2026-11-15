@@ -36,11 +36,11 @@
   pointer-events: none;
   z-index: 1;
   background:
-    radial-gradient(ellipse 75% 50% at 14% 22%, rgba(88, 48, 170, 0.32), transparent 72%),
-    radial-gradient(ellipse 60% 42% at 86% 16%, rgba(28, 90, 210, 0.26), transparent 68%),
-    radial-gradient(ellipse 65% 55% at 72% 82%, rgba(160, 36, 120, 0.2), transparent 72%),
-    radial-gradient(ellipse 45% 35% at 42% 58%, rgba(40, 140, 220, 0.14), transparent 70%),
-    radial-gradient(ellipse 30% 22% at 55% 35%, rgba(200, 120, 255, 0.08), transparent 70%);
+    radial-gradient(ellipse 80% 55% at 12% 20%, rgba(98, 52, 190, 0.42), transparent 72%),
+    radial-gradient(ellipse 65% 48% at 88% 14%, rgba(24, 96, 220, 0.34), transparent 68%),
+    radial-gradient(ellipse 70% 58% at 74% 84%, rgba(180, 32, 130, 0.28), transparent 72%),
+    radial-gradient(ellipse 50% 38% at 40% 58%, rgba(36, 150, 230, 0.18), transparent 70%),
+    radial-gradient(ellipse 35% 26% at 55% 34%, rgba(210, 130, 255, 0.14), transparent 70%);
   mix-blend-mode: screen;
   opacity: 1;
 }

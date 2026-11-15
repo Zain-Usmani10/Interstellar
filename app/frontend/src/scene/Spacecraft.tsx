@@ -173,8 +173,21 @@ export function Spacecraft({ view, snapshot, origin, originRadius, destination, 
         <RocketModel warning={view.mode === "uncaptured"} />
       </group>
       {view.departed && (
-        <Html center position={[0, 1.2, 0]} style={{ pointerEvents: "none" }}>
-          <span style={{ color: view.mode === "uncaptured" ? "#f0ac77" : "#a5eadb", font: "10px monospace", whiteSpace: "nowrap" }}>
+        <Html
+          center
+          sprite
+          distanceFactor={10}
+          position={[0, 0.85, 0]}
+          style={{ pointerEvents: "none" }}
+        >
+          <span
+            style={{
+              color: view.mode === "uncaptured" ? "#f0ac77" : "#a5eadb",
+              font: "10px monospace",
+              whiteSpace: "nowrap",
+              textShadow: "0 1px 6px rgba(0,0,0,0.9)",
+            }}
+          >
             {view.mode === "captured" ? "CAPTURED" : "◇ SPACECRAFT"}
           </span>
         </Html>
