@@ -8,10 +8,12 @@ export function BlackHole({
   position,
   selected,
   onSelect,
+  showLabel = true,
 }: {
   position: [number, number, number];
   selected?: boolean;
   onSelect?: () => void;
+  showLabel?: boolean;
 }) {
   const disk = useRef<Mesh>(null);
   const group = useRef<Group>(null);
@@ -106,28 +108,30 @@ export function BlackHole({
           />
         </mesh>
       ) : null}
-      <Html
-        position={[0, 4.2, 0]}
-        center
-        zIndexRange={[8, 0]}
-        style={{ pointerEvents: "none" }}
-      >
-        <span
-          style={{
-            display: "block",
-            color: selected ? "#e8fffb" : "#a8b8cc",
-            font: "600 11px/1 Avenir Next, Segoe UI, sans-serif",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-            textShadow: "0 2px 12px rgba(0,0,0,0.85)",
-            borderBottom: selected ? "1px solid #7de8da" : "none",
-            paddingBottom: 3,
-          }}
+      {showLabel ? (
+        <Html
+          position={[0, 4.2, 0]}
+          center
+          zIndexRange={[8, 0]}
+          style={{ pointerEvents: "none" }}
         >
-          Black Hole
-        </span>
-      </Html>
+          <span
+            style={{
+              display: "block",
+              color: selected ? "#e8fffb" : "#a8b8cc",
+              font: "600 11px/1 Avenir Next, Segoe UI, sans-serif",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              textShadow: "0 2px 12px rgba(0,0,0,0.85)",
+              borderBottom: selected ? "1px solid #7de8da" : "none",
+              paddingBottom: 3,
+            }}
+          >
+            Black Hole
+          </span>
+        </Html>
+      ) : null}
     </group>
   );
 }

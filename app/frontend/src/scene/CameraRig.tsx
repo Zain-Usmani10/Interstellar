@@ -10,6 +10,8 @@ type Props = {
   focusRadius: number;
   transitionKey: string;
   extent: number;
+  /** After launch: track the craft and ease the camera outward. */
+  follow?: boolean;
 };
 
 /** Camera motion is presentation only. User drag cancels an in-progress fly-in. */
@@ -18,43 +20,46 @@ export function CameraRig({
   focusRadius,
   transitionKey,
   extent,
+  follow = false,
 }: Props) {
   const controls = useRef<Controls>(null);
   const { camera, size } = useThree();
   const previousKey = useRef("");
-  const progress = useRef(1),
-    from = useRef(new Vector3()),
-    to = useRef(new Vector3());
-  const fromTarget = useRef(new Vector3()),
-    toTarget = useRef(new Vector3());
-  const previousFocus = useRef(new Vector3()), focusOffset = useRef(new Vector3());
+  const progress = useRef(1);
+  const from = useRef(new Vector3());
+  const to = useRef(new Vector3());
+  const fromTarget = useRef(new Vector3());
+  const toTarget = useRef(new Vector3());
+  const previousFocus = useRef(new Vector3());
+  const focusOffset = useRef(new Vector3());
+  const zoomOut = useRef(0);
+
   useFrame((_, delta) => {
     const orbit = controls.current;
     if (!orbit) return;
-    const key = `${transitionKey}:${size.width}:${size.height}`;
+    const key = `${transitionKey}:${size.width}:${size.height}:${follow ? "follow" : "visit"}`;
     if (previousKey.current !== key) {
       previousKey.current = key;
       progress.current = 0;
+      zoomOut.current = follow ? 0 : 1;
       from.current.copy(camera.position);
       fromTarget.current.copy(orbit.target);
       if (focus) {
         previousFocus.current.fromArray(focus);
         toTarget.current.fromArray(focus);
-        // Aim above the centre so the surface occupies the lower half, leaving
-        // room for the owning panel's launch controls.
-        toTarget.current.y += focusRadius * 0.75;
-        const d = Math.max(2.2, focusRadius * 4);
+        if (!follow) {
+          toTarget.current.y += focusRadius * 0.75;
+        }
+        const d = Math.max(2.2, focusRadius * (follow ? 3.2 : 4));
         to.current
           .copy(toTarget.current)
-          .add(new Vector3(d * 0.25, d * 0.25, d));
+          .add(new Vector3(d * 0.25, d * 0.35, d));
       } else {
         toTarget.current.set(0, 0, 0);
         const distance = extent * 2.1 * Math.max(1, size.height / size.width);
         to.current.set(distance * 0.32, distance * 0.6, distance * 0.85);
       }
     } else if (focus) {
-      // A new backend date can move the focused planet after the fly-in.
-      // Translate the camera with that received position, not an orbital clock.
       focusOffset.current.fromArray(focus).sub(previousFocus.current);
       previousFocus.current.fromArray(focus);
       from.current.add(focusOffset.current);
@@ -63,6 +68,23 @@ export function CameraRig({
       toTarget.current.add(focusOffset.current);
       camera.position.add(focusOffset.current);
       orbit.target.add(focusOffset.current);
+
+      if (follow) {
+        // Slow zoom-out toward a system-scale chase distance (~18s).
+        zoomOut.current = Math.min(1, zoomOut.current + delta / 18);
+        const near = Math.max(2.4, focusRadius * 3.2);
+        const far = Math.max(near * 4, extent * 0.55);
+        const d = near + (far - near) * zoomOut.current;
+        toTarget.current.fromArray(focus);
+        to.current
+          .copy(toTarget.current)
+          .add(new Vector3(d * 0.28, d * 0.42, d));
+        if (progress.current >= 1) {
+          camera.position.lerp(to.current, Math.min(1, delta * 1.6));
+          orbit.target.lerp(toTarget.current, Math.min(1, delta * 1.6));
+          orbit.update();
+        }
+      }
     }
     if (progress.current < 1) {
       progress.current = Math.min(

@@ -104,7 +104,8 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
         fleet_path = Path(tempfile.mkdtemp(prefix="interstellar-fleet-")) / "fleet.json"
     fleet = FleetStore(fleet_path or Path(settings.db_path).with_name("fleet.json"))
     runtime = MissionRuntime(transport or make_transport(settings), plans, hub, MissionDb(settings.db_path),
-                             on_state_change=lambda: inputs.bump("mission_state"), fleet=fleet)
+                             on_state_change=lambda: inputs.bump("mission_state"), fleet=fleet,
+                             auto_blackout=settings.auto_blackout)
     planet_tracks: dict = {}            # loaded and integrity-checked once, on first use
     jobs = JobManager(plans, hub)
     operator_token = secrets.token_urlsafe(24)
@@ -185,6 +186,26 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
                 "frame": planet_tracks["frame"], "data_mode": planet_tracks["data_mode"],
                 "start_jd_tdb": planet_tracks["start_jd_tdb"], "end_jd_tdb": planet_tracks["end_jd_tdb"],
                 "planets": [{"body_id": body["body_id"], "r_km": [float(x) for x in hermite_state(body["states"], jd)[0]]}
+                            for body in planet_tracks["bodies"]]}
+
+    @app.get("/api/v1/planets/track")
+    def planet_track(start_jd_tdb: float, end_jd_tdb: float, step_days: float = 1.0):
+        """All eight planets over a date range in one call, so the GUI can animate them smoothly."""
+        if not planet_tracks:
+            planet_tracks.update(load_tracks())
+        lo, hi = planet_tracks["start_jd_tdb"], planet_tracks["end_jd_tdb"]
+        if not all(map(math.isfinite, (start_jd_tdb, end_jd_tdb, step_days))) or step_days <= 0 or end_jd_tdb < start_jd_tdb:
+            raise HTTPException(422, "need finite start_jd_tdb <= end_jd_tdb and step_days > 0")
+        if start_jd_tdb < lo or end_jd_tdb > hi:
+            raise HTTPException(404, {"code": "DATE_OUTSIDE_TRACK", "start_jd_tdb": lo, "end_jd_tdb": hi})
+        count = int((end_jd_tdb - start_jd_tdb) / step_days) + 1
+        if count > 2000:
+            raise HTTPException(422, "at most 2000 samples per call; use a larger step_days or a shorter range")
+        epochs = [start_jd_tdb + i * step_days for i in range(count)]
+        return {"schema_version": 1, "frame": planet_tracks["frame"], "data_mode": planet_tracks["data_mode"],
+                "start_jd_tdb": lo, "end_jd_tdb": hi, "step_days": step_days, "epochs_jd_tdb": epochs,
+                "planets": [{"body_id": body["body_id"],
+                             "r_km": [[float(x) for x in hermite_state(body["states"], jd)[0]] for jd in epochs]}
                             for body in planet_tracks["bodies"]]}
 
     @app.get("/api/v1/planets/{body_id}/info")

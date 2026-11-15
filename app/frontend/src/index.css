@@ -65,12 +65,17 @@ button {
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.brand-glass {
+.brand-block {
   position: absolute;
   top: 1.1rem;
   left: 1.25rem;
   z-index: 5;
-  padding: 0.75rem 1.1rem 0.85rem;
+  max-width: min(18rem, calc(100vw - 12rem));
+  padding: 0.7rem 0.95rem 0.8rem;
+  pointer-events: auto;
+}
+
+.brand-block-text {
   pointer-events: none;
 }
 
@@ -90,26 +95,40 @@ button {
   color: var(--muted);
 }
 
+.about-toggle {
+  margin-top: 0.45rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.about-toggle.open,
+.about-toggle:hover {
+  color: var(--ink);
+  border-color: rgba(126, 200, 192, 0.45);
+}
+
+.about-copy {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 .glass-status {
-  position: absolute;
-  top: 1.1rem;
-  right: 1.25rem;
-  z-index: 5;
-  max-width: 18rem;
-  padding: 0.9rem 1.05rem;
-  background: linear-gradient(
-    155deg,
-    rgba(18, 28, 42, 0.72),
-    rgba(6, 12, 22, 0.55)
-  );
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(22px) saturate(1.35);
-  -webkit-backdrop-filter: blur(22px) saturate(1.35);
-  border-radius: 1rem;
-  box-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  text-align: right;
+  position: static;
+  max-width: none;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  text-align: left;
 }
 
 .glass-mission {
@@ -386,16 +405,20 @@ button {
 .date-corner {
   position: absolute;
   top: 1.1rem;
-  left: 50%;
+  right: 1rem;
+  left: auto;
   z-index: 8;
-  transform: translateX(-50%);
-  min-width: 9.5rem;
-  padding: 0.55rem 0.9rem;
+  transform: none;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  min-width: 0;
+  padding: 0.55rem 0.85rem;
   border-radius: 0.75rem;
   border: 1px solid var(--glass-border);
   background: rgba(6, 12, 22, 0.72);
   backdrop-filter: blur(16px);
-  text-align: center;
+  text-align: right;
   pointer-events: none;
 }
 
@@ -417,10 +440,168 @@ button {
   font-family: var(--font-mono);
   font-size: 0.95rem;
   color: var(--ink);
+  white-space: nowrap;
+}
+
+.date-corner-time {
+  display: block;
+  margin-top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .date-corner.estimate .date-corner-value {
   color: #f0d4a0;
+}
+
+.mini-system {
+  position: absolute;
+  top: 5.4rem;
+  right: 1rem;
+  z-index: 6;
+  box-sizing: border-box;
+  width: min(14rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  height: min(10.5rem, 18vh);
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0.85rem;
+}
+
+.mini-system .orbital-scene {
+  border-radius: 0.85rem;
+}
+
+.planet-focus-panel {
+  position: absolute;
+  top: 5.4rem;
+  left: 1.25rem;
+  z-index: 6;
+  width: min(22rem, calc(100vw - 2.5rem));
+  max-height: calc(100% - 10rem);
+  overflow: auto;
+  padding: 0.75rem 0.85rem 0.95rem;
+}
+
+.focus-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.7rem;
+}
+
+.focus-tab {
+  flex: 1;
+  padding: 0.45rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.focus-tab.active {
+  color: var(--ink);
+  border-color: rgba(126, 200, 192, 0.55);
+  background: rgba(126, 200, 192, 0.12);
+}
+
+.focus-panel-body {
+  min-height: 4rem;
+}
+
+.focus-planet-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 400;
+}
+
+.focus-about h3,
+.focus-trip .launch-label {
+  margin: 0.85rem 0 0.3rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.flight-hud {
+  position: absolute;
+  left: 50%;
+  bottom: 4.8rem;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: min(36rem, calc(100vw - 2rem));
+  padding: 0.65rem 0.85rem;
+}
+
+.details-tray {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 4.6rem;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.details-toggle {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: rgba(6, 12, 22, 0.72);
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+}
+
+.details-toggle.open,
+.details-toggle:hover {
+  color: var(--ink);
+  border-color: rgba(126, 200, 192, 0.45);
+}
+
+.details-panel {
+  width: min(22rem, calc(100vw - 2.5rem));
+  max-height: min(50vh, 24rem);
+  overflow: auto;
+  padding: 0.85rem 0.95rem;
+}
+
+.details-panel .glass-status {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.details-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.details-ops button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.overview-dot {
+  background: linear-gradient(135deg, #7ec8c0, #4a7ab8);
 }
 
 .blackout-btn {
@@ -858,31 +1039,41 @@ button {
 }
 
 @media (max-width: 900px) {
-  .panel-left,
-  .panel-right {
+  .brand-block {
+    top: 0.75rem;
+    left: 0.75rem;
+    max-width: calc(100vw - 9rem);
+  }
+
+  .date-corner {
+    top: 0.75rem;
+    right: 0.75rem;
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .mini-system {
+    top: 4.6rem;
+    right: 0.75rem;
+    width: min(11rem, calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
+    height: 8rem;
+  }
+
+  .planet-focus-panel {
     top: auto;
     bottom: 4.5rem;
-    max-height: 38vh;
-  }
-
-  .panel-left {
     left: 0.75rem;
-    width: calc(50% - 1rem);
+    width: calc(100vw - 1.5rem);
+    max-height: 42vh;
   }
 
-  .panel-right {
+  .details-tray {
     right: 0.75rem;
-    width: calc(50% - 1rem);
+    bottom: 4.4rem;
   }
 
-  .glass-status {
-    top: 0.75rem;
-    right: 0.75rem;
-  }
-
-  .brand-glass {
-    top: 0.75rem;
-    left: 0.75rem;
+  .flight-hud {
+    bottom: 4.4rem;
   }
 
   .planet-bar {

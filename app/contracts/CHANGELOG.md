@@ -2,6 +2,15 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.4.0 (2026-11-15): additive
+
+- `GET /api/v1/planets/track?start_jd_tdb=&end_jd_tdb=&step_days=`: all eight planets over a date range in one call (`epochs_jd_tdb` plus, per planet, one `r_km` per epoch; at most 2000 samples). For the free-running calendar of plan section 19.3.
+- Flight length for catalogue plans changes to 30 s (ticks 500 / 3500 / 3800) when the plans are regenerated; no field changes.
+
+## 1.3.1 (2026-11-15): behaviour only, no shape change
+
+- Automatic blackout: with `AUTO_BLACKOUT=true` (default from the environment) each flight enters a blackout once, when confirmed telemetry is 25 % into the flight. Any blackout now ends by itself when the estimate reaches 85 % of the flight (was: the arrival tick). `blackout_start` is refused after 85 %. Fields and commands are unchanged.
+
 ## 1.3.0 (2026-11-15): fleet and planet positions (plan sections 19 and 20)
 
 - `GET /api/v1/fleet`: every shuttle with `id`, `name`, `class` (`standard` / `long_range`), `label` and `location` (`docked` at a `body_id`, `in_flight` or `lost` with a `mission_id`). `POST /api/v1/fleet/reset` (operator) restores the starting fleet; 409 while the controller holds a mission.

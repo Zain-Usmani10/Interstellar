@@ -247,6 +247,28 @@ def test_fault_during_blackout_is_found_on_sync_not_estimated_away(ctx):
     assert VALIDATORS["mission_snapshot"].is_valid(snap)
 
 
+def test_automatic_blackout_once_per_flight(tmp_path):
+    clock = FakeClock()
+    settings = Settings(db_path=str(tmp_path / "test.sqlite3"), plans_dir=str(tmp_path / "plans"), auto_blackout=True)
+    app = create_app(settings, SimulatorTransport(SimulatedController(clock=clock)))
+    with TestClient(app) as client:
+        mission_id = new_mission(client, app)
+        for name in ("upload", "arm", "start"):
+            assert command(client, app, mission_id, name)["applied"], name
+        snap = client.get(f"/api/v1/missions/{mission_id}").json()
+        assert not snap["link"]["blackout"]                              # not before the window
+        clock.now += 60                                                  # tick 6000: inside 25 %..85 %
+        snap = wait_for(client, mission_id, lambda s: s["link"]["blackout"])
+        assert snap["estimate"] is not None and snap["executed_mask"] == 1
+        app.state.runtime._blackout["at"] -= 60                          # the estimate passes 85 %
+        snap = wait_for(client, mission_id, lambda s: s["reconciliation"] is not None)
+        assert not snap["link"]["blackout"] and snap["state"] == "RUNNING"   # back before arrival
+        time.sleep(0.4)
+        assert not client.get(f"/api/v1/missions/{mission_id}").json()["link"]["blackout"]   # only once
+        clock.now += 70
+        assert wait_for(client, mission_id, lambda s: s["state"] == "COMPLETE")["outcome"] == "captured"
+
+
 def test_blackout_needs_a_running_mission(ctx):
     client, app, clock = ctx
     mission_id = new_mission(client, app)
@@ -328,6 +350,20 @@ def test_planet_positions_for_all_eight_planets(ctx):
     assert same["planets"] == body["planets"] and body["data_mode"] == "nasa_cached"
     assert client.get("/api/v1/planets/positions", params={"jd_tdb": 2400000.5}).status_code == 404
     assert client.get("/api/v1/planets/positions").status_code == 422
+
+
+def test_planet_track_block_matches_single_positions(ctx):
+    client, _, _ = ctx
+    limits = client.get("/api/v1/planets/positions", params={"date_utc": "2027-03-01T00:00:00Z"}).json()
+    start = limits["epoch_jd_tdb"]
+    block = client.get("/api/v1/planets/track", params={"start_jd_tdb": start, "end_jd_tdb": start + 30, "step_days": 7.5}).json()
+    assert block["epochs_jd_tdb"] == [start, start + 7.5, start + 15, start + 22.5, start + 30]
+    assert len(block["planets"]) == 8 and all(len(pl["r_km"]) == 5 for pl in block["planets"])
+    assert [pl["r_km"][0] for pl in block["planets"]] == [pl["r_km"] for pl in limits["planets"]]
+    assert block["planets"][2]["r_km"][0] != block["planets"][2]["r_km"][4]             # Earth moved
+    bad = {"start_jd_tdb": start, "end_jd_tdb": start + 5000, "step_days": 1}
+    assert client.get("/api/v1/planets/track", params=bad).status_code in (404, 422)
+    assert client.get("/api/v1/planets/track", params={"start_jd_tdb": start, "end_jd_tdb": start + 1, "step_days": 0}).status_code == 422
 
 
 def test_start_is_refused_until_armed(ctx):

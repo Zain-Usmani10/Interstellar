@@ -5,7 +5,14 @@
   height: 100%;
   overflow: hidden;
   isolation: isolate;
-  background: #03060d;
+  background: #030616;
+}
+
+.orbital-scene.compact {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
 }
 
 .orbital-scene canvas {
@@ -20,7 +27,27 @@
   pointer-events: none;
   z-index: 2;
   background:
-    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+    radial-gradient(ellipse at center, transparent 42%, rgba(2, 4, 14, 0.62) 100%);
+}
+
+.scene-nebula {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse 80% 55% at 12% 20%, rgba(98, 52, 190, 0.42), transparent 72%),
+    radial-gradient(ellipse 65% 48% at 88% 14%, rgba(24, 96, 220, 0.34), transparent 68%),
+    radial-gradient(ellipse 70% 58% at 74% 84%, rgba(180, 32, 130, 0.28), transparent 72%),
+    radial-gradient(ellipse 50% 38% at 40% 58%, rgba(36, 150, 230, 0.18), transparent 70%),
+    radial-gradient(ellipse 35% 26% at 55% 34%, rgba(210, 130, 255, 0.14), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 1;
+}
+
+.orbital-scene.compact .scene-nebula,
+.orbital-scene.compact .scene-vignette {
+  opacity: 0.55;
 }
 
 .scene-fallback {

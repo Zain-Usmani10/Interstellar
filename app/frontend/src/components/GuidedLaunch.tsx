@@ -19,6 +19,8 @@ type Props = {
   simFaultsEnabled: boolean;
   routeLabel: string;
   blackoutActive: boolean;
+  /** Hide engineer controls (faults / fleet / manual blackout) — they live in Details. */
+  compact?: boolean;
   onPrepare: () => void;
   onArm: () => void;
   onLaunch: () => void;
@@ -40,6 +42,7 @@ export function GuidedLaunch({
   simFaultsEnabled,
   routeLabel,
   blackoutActive,
+  compact = false,
   onPrepare,
   onArm,
   onLaunch,
@@ -140,7 +143,7 @@ export function GuidedLaunch({
         >
           Abort
         </button>
-        {blackoutActive ? (
+        {!compact && blackoutActive ? (
           <button
             type="button"
             className="blackout-btn end"
@@ -149,7 +152,8 @@ export function GuidedLaunch({
           >
             End blackout
           </button>
-        ) : (
+        ) : null}
+        {!compact && !blackoutActive ? (
           <button
             type="button"
             className="blackout-btn"
@@ -159,19 +163,21 @@ export function GuidedLaunch({
           >
             Start blackout
           </button>
-        )}
-        <button type="button" disabled={locked} onClick={onReset}>
+        ) : null}
+        <button type="button" disabled={locked && !compact} onClick={onReset}>
           Start over
         </button>
-        <button
-          type="button"
-          disabled={busy || !live || blackoutActive}
-          title="Restore the starting fleet (operator)"
-          onClick={onResetFleet}
-        >
-          Reset fleet
-        </button>
-        {simFaultsEnabled ? (
+        {!compact ? (
+          <button
+            type="button"
+            disabled={busy || !live || blackoutActive}
+            title="Restore the starting fleet (operator)"
+            onClick={onResetFleet}
+          >
+            Reset fleet
+          </button>
+        ) : null}
+        {!compact && simFaultsEnabled ? (
           <>
             <button
               type="button"
