@@ -1,36 +1,41 @@
 /**
- * Mock PlanetInfo-shaped fixtures until Agent 1 schemas + Agent 2 data land.
+ * Mock PlanetInfo-shaped fixtures until backend PlanetInfo is wired.
  * Labelled MOCK — not live NASA / Horizons / EONET.
+ * Fact rows match contracts v1: render via label/value/unit/note only (do not hardcode keys).
  */
 
 export type PlanetTargetId = "planet.399" | "planet.499";
 
+export type FactSource = {
+  name: string;
+  url?: string | null;
+  retrieved_utc?: string | null;
+};
+
 export type Fact = {
   key: string;
   label: string;
-  value: string;
-  unit: string;
-  source: string;
+  value: number | string | null;
+  unit: string | null;
+  note?: string;
+  source: FactSource | string;
 };
 
 export type OrbitalState = {
-  frame: string;
-  center: string;
-  units: string;
-  epoch_jd_tdb: number;
-  position_km: [number, number, number];
-  velocity_km_s: [number, number, number];
-  provenance: string;
+  availability: "available" | "unavailable" | "error";
+  epoch_jd_tdb: number | null;
+  r_km: [number, number, number] | null;
+  v_km_s: [number, number, number] | null;
+  frame_label: string;
+  provenance_note: string;
 };
 
 export type Conditions = {
-  scope: string;
-  kind: string;
+  scope: "earth" | "mars";
+  kind: "natural_hazard_events" | "current_weather";
+  label: string;
   availability: "available" | "empty" | "unavailable" | "error";
-  delivery: "live_fetch" | "cached" | "mock";
-  observed_utc: string | null;
-  retrieved_utc: string | null;
-  items: Array<{ id: string; title: string; category: string; source: string }>;
+  delivery: "live_fetch" | "cached" | "mock" | null;
   note: string;
 };
 
@@ -55,6 +60,27 @@ export type PlanetInfo = {
 /** 1 au = 10 display units (MAIN_BACKEND_FPGA_TASKS §12). */
 export const AU_DISPLAY = 10;
 
+const MOCK_SOURCE: FactSource = {
+  name: "MOCK fixture — not NASA/JPL Horizons",
+  url: null,
+  retrieved_utc: null,
+};
+
+export function formatFactValue(value: Fact["value"], unit: Fact["unit"]): string {
+  if (value === null || value === undefined) return "—";
+  const text =
+    typeof value === "number"
+      ? Number.isInteger(value)
+        ? String(value)
+        : value.toPrecision(6)
+      : String(value);
+  return unit ? `${text} ${unit}` : text;
+}
+
+export function formatFactSource(source: Fact["source"]): string {
+  return typeof source === "string" ? source : source.name;
+}
+
 export const PLANETS: PlanetInfo[] = [
   {
     schema_version: 1,
@@ -70,43 +96,41 @@ export const PLANETS: PlanetInfo[] = [
       {
         key: "mean_radius",
         label: "Mean radius",
-        value: "6371",
+        value: 6371.01,
         unit: "km",
-        source: "MOCK — replace with NASA/JPL facts",
+        source: MOCK_SOURCE,
       },
       {
-        key: "atmosphere",
-        label: "Atmosphere",
-        value: "N2/O2 dominated",
-        unit: "",
-        source: "MOCK — replace with sourced dataset",
+        key: "mean_temperature",
+        label: "Mean surface temperature",
+        value: 287.6,
+        unit: "K",
+        note: "Long-term mean, not a current weather reading",
+        source: MOCK_SOURCE,
       },
       {
         key: "gm",
-        label: "GM (illustrative)",
-        value: "3.986004418e5",
-        unit: "km³/s²",
-        source: "MOCK — not a Horizons pull",
+        label: "Gravitational parameter (GM)",
+        value: 398600.435436,
+        unit: "km^3/s^2",
+        source: MOCK_SOURCE,
       },
     ],
     orbital_state: {
-      frame: "ICRF / ecliptic (mock)",
-      center: "500@10 (Sun)",
-      units: "KM-S",
+      availability: "available",
       epoch_jd_tdb: 2461000.5,
-      position_km: [149597870.7, 0, 0],
-      velocity_km_s: [0, 29.78, 0],
-      provenance: "MOCK fixture — not NASA/JPL Horizons",
+      r_km: [149597870.7, 0, 0],
+      v_km_s: [0, 29.78, 0],
+      frame_label: "ICRF / ecliptic (mock)",
+      provenance_note: "MOCK fixture — not NASA/JPL Horizons",
     },
     conditions: {
-      scope: "Earth",
+      scope: "earth",
       kind: "natural_hazard_events",
+      label: "Earth natural hazard events",
       availability: "unavailable",
       delivery: "mock",
-      observed_utc: null,
-      retrieved_utc: null,
-      items: [],
-      note: "MOCK: EONET Earth hazard events not wired yet. Empty/unavailable is not an all-clear.",
+      note: "MOCK: EONET Earth hazard events not wired yet. Unavailable is not an all-clear.",
     },
     data_mode: "mock",
   },
@@ -124,42 +148,40 @@ export const PLANETS: PlanetInfo[] = [
       {
         key: "mean_radius",
         label: "Mean radius",
-        value: "3389.5",
+        value: 3389.92,
         unit: "km",
-        source: "MOCK — replace with NASA/JPL facts",
+        source: MOCK_SOURCE,
       },
       {
-        key: "atmosphere",
-        label: "Atmosphere",
-        value: "Thin CO2",
-        unit: "",
-        source: "MOCK — replace with sourced dataset",
+        key: "mean_temperature",
+        label: "Mean temperature",
+        value: 210,
+        unit: "K",
+        note: "Long-term mean, not a current weather reading",
+        source: MOCK_SOURCE,
       },
       {
         key: "gm",
-        label: "GM (illustrative)",
-        value: "4.282837e4",
-        unit: "km³/s²",
-        source: "MOCK — not a Horizons pull",
+        label: "Gravitational parameter (GM)",
+        value: 42828.375662,
+        unit: "km^3/s^2",
+        source: MOCK_SOURCE,
       },
     ],
     orbital_state: {
-      frame: "ICRF / ecliptic (mock)",
-      center: "500@10 (Sun)",
-      units: "KM-S",
+      availability: "available",
       epoch_jd_tdb: 2461000.5,
-      position_km: [227939200, 0, 22400000],
-      velocity_km_s: [0, 24.07, 0],
-      provenance: "MOCK fixture — not NASA/JPL Horizons",
+      r_km: [227939200, 0, 22400000],
+      v_km_s: [0, 24.07, 0],
+      frame_label: "ICRF / ecliptic (mock)",
+      provenance_note: "MOCK fixture — not NASA/JPL Horizons",
     },
     conditions: {
-      scope: "Mars",
-      kind: "surface_weather",
+      scope: "mars",
+      kind: "current_weather",
+      label: "Mars current weather",
       availability: "unavailable",
       delivery: "mock",
-      observed_utc: null,
-      retrieved_utc: null,
-      items: [],
       note: "Current Mars weather unavailable (InSight ended 2022). MOCK panel does not invent live weather.",
     },
     data_mode: "mock",
