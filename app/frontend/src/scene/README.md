@@ -46,3 +46,10 @@ RUNNING-without-departure data to verify the visual launch gate.
 Browser checks on 2026-11-14: backend-down normal selection showed Earth with
 station and docked rocket; fixture coast/capture/SAFE/ABORTED/stale labels and
 capture camera were verified. These checks are synthetic, not live FPGA or EEG.
+
+Combined locally with mission-controls PR #25 at de94dc1, the live simulator API
+also passed Create -> Upload -> Arm -> Start -> COMPLETE/captured (tick 12010,
+executed mask 3) through the browser controls. A second mission was aborted after
+departure and displayed ABORTED / uncaptured coast with mask 1. These runs used
+the synthetic plan, an isolated database and SIM_SPEED=100; they are software
+simulator checks, not real hardware. The combined frontend production build passed.

@@ -112,6 +112,12 @@ export function OrbitScene({
     (p) => p.body.bodyId === (plan?.origin_body_id ?? "399"),
   )!;
   const captured = view.mode === "captured";
+  const destination = planets.find((p) => p.body.bodyId === (plan?.destination_body_id ?? "499"))!;
+  const heading = captured
+    ? destination.body.name
+    : view.departed
+      ? `${origin.body.name} → ${destination.body.name}`
+      : selected?.body.name ?? "SOLAR SYSTEM";
   const cameraFocus = captured
     ? view.position
     : !view.departed
@@ -124,7 +130,7 @@ export function OrbitScene({
       {performanceEnabled && <pre aria-label="Scene frame measurement" style={{ position: "absolute", zIndex: 20, right: 12, top: 12, padding: 12, pointerEvents: "none", background: "#07121cee", color: "#bce8dc", font: "11px monospace" }}>{performanceReport}</pre>}
       <div className="scene-heading" aria-hidden="true">
         <span>INTERSTELLAR / ORBITAL VIEW</span>
-        <strong>{selected?.body.name ?? "SOLAR SYSTEM"}</strong>
+        <strong>{heading}</strong>
       </div>
       <div
         className={`scene-telemetry ${view.stale || view.mode === "uncaptured" ? "scene-warning" : ""}`}
