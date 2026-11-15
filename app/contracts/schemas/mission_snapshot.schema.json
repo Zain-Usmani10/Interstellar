@@ -52,7 +52,8 @@
         "observed_age_ms": { "type": ["integer", "null"], "minimum": 0, "description": "Milliseconds since the last STATUS was received; null if none yet" },
         "view": { "enum": ["ground_delayed", "local_onboard"] },
         "delay_demo_s": { "type": ["number", "null"], "minimum": 0, "description": "Applied one-way demo delay: clamp(physical/300, 0.1, 3.0)" },
-        "delay_physical_s": { "type": ["number", "null"], "minimum": 0, "description": "Geometric Earth-spacecraft light time estimate" }
+        "delay_physical_s": { "type": ["number", "null"], "minimum": 0, "description": "Geometric Earth-spacecraft light time estimate" },
+        "blackout": { "type": "boolean", "description": "1.2.0: true while an operator-started blackout is active. Top-level values are then the last received ones; see 'estimate'." }
       }
     },
     "epoch_jd_tdb": { "type": ["number", "null"], "description": "Mission epoch for 'tick' from the plan's tick mapping" },
@@ -75,6 +76,50 @@
           "r_km": { "$ref": "common.schema.json#/$defs/vec3" }
         }
       }
+    },
+    "date_utc": { "type": ["string", "null"], "description": "1.2.0: calendar date-time (UTC) of 'tick' on the plan's real NASA timeline; null until the mission is on the controller" },
+    "trip": {
+      "type": "object",
+      "description": "1.2.0: trip length sent to the controller with SET_TRIP_DAYS and the countdown from confirmed telemetry",
+      "required": ["trip_days", "days_to_arrival"],
+      "properties": {
+        "trip_days": { "type": ["integer", "null"], "minimum": 1, "maximum": 9999 },
+        "days_to_arrival": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "estimate": {
+      "description": "1.2.0: null, or during a blackout the dead-reckoned state. ESTIMATE ONLY: never a result.",
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object",
+          "required": ["tick", "epoch_jd_tdb", "date_utc", "days_to_arrival", "spacecraft", "fuel_remaining_g", "expected_events"],
+          "properties": {
+            "tick": { "type": "integer", "minimum": 0 },
+            "epoch_jd_tdb": { "type": "number" },
+            "date_utc": { "type": "string" },
+            "days_to_arrival": { "type": ["integer", "null"], "minimum": 0 },
+            "spacecraft": { "type": "object", "required": ["phase", "r_km"],
+              "properties": { "phase": { "enum": ["at_origin", "coast", "capture_expected", "uncaptured_coast", "unknown"] },
+                              "r_km": { "anyOf": [ { "type": "null" }, { "$ref": "common.schema.json#/$defs/vec3" } ] } } },
+            "fuel_remaining_g": { "type": "integer" },
+            "expected_events": { "type": "array", "items": { "enum": ["departure", "capture"] } }
+          } }
+      ]
+    },
+    "reconciliation": {
+      "description": "1.2.0: null, or after contact returned: what happened out of contact and how the estimate compared",
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object",
+          "required": ["blackout_start_tick", "blackout_end_tick", "events_during_blackout", "estimate_matched", "differences"],
+          "properties": {
+            "blackout_start_tick": { "type": "integer", "minimum": 0 },
+            "blackout_end_tick": { "type": "integer", "minimum": 0 },
+            "events_during_blackout": { "type": "array", "items": { "type": "object", "required": ["event"] } },
+            "estimate_matched": { "type": "boolean" },
+            "differences": { "type": "array", "items": { "type": "string" } }
+          } }
+      ]
     },
     "outcome": { "enum": ["pending", "captured", "uncaptured", "aborted", "plan_invalid", "lost"],
       "description": "captured only with a board capture event at the planned tick. lost = board reset / session gone." },

@@ -2,6 +2,14 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.2.0 (2026-11-15): additive, nothing breaks (plan section 18, Shuttle and CCS)
+
+- Wire: new mutation `SET_TRIP_DAYS` (`0x16`, payload `mission_id:u32, trip_days:u32`, allowed in LOADED or ARMED, display only). Golden frames `31_set_trip_days`, `32_ack_set_trip_days`, `33_nack_set_trip_days_bad_value`. Every earlier frame is unchanged. `protocol_v1.py` adds `pack_trip_days`, `trip_days_from_tof` and the shared `days_to_arrival` formula.
+- Backend behaviour: `upload` = LOAD_PLAN + COMMIT_PLAN + SET_TRIP_DAYS. The upload still counts as applied if only SET_TRIP_DAYS is refused; `trip.trip_days` is then null. A `GET_STATUS` keep-alive is sent every 0.5 s except during a blackout.
+- Mission commands: `blackout_start` (only while RUNNING) and `blackout_end`. During a blackout nothing is sent, received frames are discarded, other commands answer HTTP 409, and contact returns by itself when the estimate reaches the arrival tick.
+- MissionSnapshot gains `link.blackout`, `date_utc`, `trip`, `estimate`, `reconciliation`. During a blackout the old top-level fields keep the last received values.
+- Not in this version yet: the fleet endpoints of plan section 20.
+
 ## 1.1.0 (2026-11-15): additive, nothing breaks
 
 - `body_id` now allows all eight planets (199, 299, 399, 499, 599, 699, 799, 899), so a MissionPlan may connect any two planets. The wire protocol is unchanged: the board only receives ticks and fuel.

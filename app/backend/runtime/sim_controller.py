@@ -42,6 +42,7 @@ class SimulatedController:
         self.departure_tick = p.UNSET_TICK
         self.capture_tick = p.UNSET_TICK
         self.safe_reason = p.SafeReason.NONE
+        self.trip_days = 0             # display only (SET_TRIP_DAYS); 0 = not set
         self.masked_faults = 0
         self.no_majority = 0
         self.rx_errors = 0
@@ -199,13 +200,21 @@ class SimulatedController:
             self.fuel = self.plan.initial_fuel_g
             self.departure_tick = self.capture_tick = p.UNSET_TICK
             self.safe_reason = p.SafeReason.NONE
+            self.trip_days = 0                   # a new plan forgets the old trip length
             return D.OK
         # ARM, START, ABORT, CLEAR all need an active mission with a matching id.
         if self.plan is None:
             return D.BAD_STATE
         if self.plan.mission_id != mission_id:
             return D.BAD_MISSION
-        if kind == T.ARM:
+        if kind == T.SET_TRIP_DAYS:
+            _, days = p.unpack_trip_days(frame.payload)
+            if self.state not in (S.LOADED, S.ARMED):
+                return D.BAD_STATE
+            if not 1 <= days <= p.MAX_TRIP_DAYS:
+                return D.BAD_PLAN
+            self.trip_days = days                # never affects ticks, burns or STATUS
+        elif kind == T.ARM:
             if self.state != S.LOADED:
                 return D.BAD_STATE
             self.state = S.ARMED
@@ -233,6 +242,7 @@ class SimulatedController:
         self.tick, self.mask, self.fuel = 0, 0, 0
         self.departure_tick = self.capture_tick = p.UNSET_TICK
         self.safe_reason = p.SafeReason.NONE
+        self.trip_days = 0
         self._clock_running = False
 
 

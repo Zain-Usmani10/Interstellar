@@ -437,6 +437,12 @@ def build_frames(wire_plan: p.Plan) -> tuple[list[dict], dict[str, bytes]]:
         "COMMIT carried a plan_crc16 that does not match the staged plan.")
     ack("30_nack_load_bad_plan", 1, T.LOAD_PLAN, R.REJECTED, D.BAD_PLAN, MISSION, 0, 0,
         "Plan broke a plan rule (e.g. arrival_tick <= departure_tick). Nothing staged.")
+    # Contracts 1.2.0: sent by the backend directly after COMMIT_PLAN (state LOADED), so sequence 3.
+    host("31_set_trip_days", T.SET_TRIP_DAYS, 3, SESSION, p.pack_trip_days(MISSION, 300),
+         {"mission_id": MISSION, "trip_days": 300}, "Display only: the trip lasts 300 days.")
+    ack("32_ack_set_trip_days", 3, T.SET_TRIP_DAYS, R.APPLIED, D.OK, MISSION, 0, crc, "")
+    ack("33_nack_set_trip_days_bad_value", 3, T.SET_TRIP_DAYS, R.REJECTED, D.BAD_PLAN, MISSION, 0, crc,
+        "trip_days was 0 or above 9999. The sequence is still consumed.")
 
     # Frames the receiver must discard and count, with no reply.
     def invalid(name, data, error, note):

@@ -183,6 +183,79 @@ def test_nominal_mission_through_the_delay_layer(tmp_path):
         assert snap["faults"]["masked_fault_count"] >= 1
 
 
+def running_mission(client, app, clock):
+    mission_id = new_mission(client, app)
+    for name in ("upload", "arm", "start"):
+        assert command(client, app, mission_id, name)["applied"], name
+    clock.now += 60
+    wait_for(client, mission_id, lambda s: s["executed_mask"] == 1)
+    return mission_id
+
+
+def test_upload_sends_trip_days_and_snapshot_counts_down(ctx):
+    client, app, clock = ctx
+    mission_id = new_mission(client, app)
+    assert client.get(f"/api/v1/missions/{mission_id}").json()["trip"] == {"trip_days": None, "days_to_arrival": None}
+    assert command(client, app, mission_id, "upload")["applied"]
+    snap = wait_for(client, mission_id, lambda s: s["state"] == "LOADED")
+    days = snap["trip"]["trip_days"]
+    assert days and snap["trip"]["days_to_arrival"] == days and snap["date_utc"].endswith("Z")
+    assert app.state.runtime.transport.controller.trip_days == days
+    for name in ("arm", "start"):
+        command(client, app, mission_id, name)
+    clock.now += 60
+    snap = wait_for(client, mission_id, lambda s: s["executed_mask"] == 1)
+    assert 0 < snap["trip"]["days_to_arrival"] < days and VALIDATORS["mission_snapshot"].is_valid(snap)
+
+
+def test_blackout_freezes_confirmed_values_and_shows_an_estimate(ctx):
+    client, app, clock = ctx
+    mission_id = running_mission(client, app, clock)
+    assert client.post(f"/api/v1/missions/{mission_id}/commands", json={"command": "blackout_end"},
+                       headers=operator(app)).status_code == 409        # nothing to end
+    before = command(client, app, mission_id, "blackout_start")["snapshot"]
+    assert before["link"]["blackout"] and before["estimate"]["tick"] >= before["tick"]
+    sent = app.state.runtime.transport.stats()["frames_sent"]
+    clock.now += 5                                                      # the controller keeps flying
+    time.sleep(0.8)
+    snap = client.get(f"/api/v1/missions/{mission_id}").json()
+    assert snap["tick"] == before["tick"] and snap["outcome"] == "pending"   # confirmed values frozen
+    assert snap["estimate"]["tick"] > before["estimate"]["tick"]             # only the estimate moves
+    assert snap["estimate"]["spacecraft"]["phase"] == "coast" and VALIDATORS["mission_snapshot"].is_valid(snap)
+    assert app.state.runtime.transport.stats()["frames_sent"] == sent      # nothing was sent to the shuttle
+    refused = client.post(f"/api/v1/missions/{mission_id}/commands", json={"command": "abort"}, headers=operator(app))
+    assert refused.status_code == 409 and "no contact" in refused.text
+
+    assert command(client, app, mission_id, "blackout_end")["applied"]
+    snap = wait_for(client, mission_id, lambda s: s["reconciliation"] is not None)
+    assert not snap["link"]["blackout"] and snap["estimate"] is None and snap["tick"] > before["tick"]
+    assert snap["reconciliation"]["blackout_start_tick"] == before["tick"]
+
+
+def test_fault_during_blackout_is_found_on_sync_not_estimated_away(ctx):
+    client, app, clock = ctx
+    mission_id = running_mission(client, app, clock)
+    command(client, app, mission_id, "blackout_start")
+    client.post("/api/v1/sim/faults", json={"kind": "divergence"}, headers=operator(app))   # SAFE, out of contact
+    runtime = app.state.runtime
+    runtime._blackout["at"] -= 200                       # pretend the blackout has lasted past arrival
+    snap = wait_for(client, mission_id, lambda s: s["reconciliation"] is not None)        # contact returns by itself
+    assert snap["state"] == "SAFE" and snap["outcome"] != "captured"
+    rec = snap["reconciliation"]
+    assert not rec["estimate_matched"] and any("Estimate: COMPLETE. Actual: SAFE." in d for d in rec["differences"])
+    assert {"event": "state_change", "from": "RUNNING", "to": "SAFE"} in rec["events_during_blackout"]
+    assert VALIDATORS["mission_snapshot"].is_valid(snap)
+
+
+def test_blackout_needs_a_running_mission(ctx):
+    client, app, clock = ctx
+    mission_id = new_mission(client, app)
+    command(client, app, mission_id, "upload")
+    response = client.post(f"/api/v1/missions/{mission_id}/commands", json={"command": "blackout_start"},
+                           headers=operator(app))
+    assert response.status_code == 409
+
+
 def test_start_is_refused_until_armed(ctx):
     client, app, _ = ctx
     mission_id = new_mission(client, app)
@@ -353,11 +426,12 @@ def test_source_must_match_registration(brain_ctx):
 
 def test_selection_never_touches_the_controller(ctx):
     client, app, _ = ctx
-    sent_before = client.get("/api/v1/health").json()["transport"]["stats"]["frames_sent"]
+    controller = app.state.runtime.transport.controller
     session, headers = register(client)
     assert client.post("/api/v1/input/intents", json=intent(session), headers=headers).json()["accepted"]
-    assert client.get("/api/v1/health").json()["transport"]["stats"]["frames_sent"] == sent_before
-    assert app.state.runtime._mission is None
+    # Only the read-only keep-alive may reach the controller: no session, no command, no plan.
+    assert controller.session == 0 and controller._last_seq == 0 and controller.plan is None
+    assert controller.state == 0 and app.state.runtime._mission is None    # 0 = IDLE
 
 
 def test_deleted_session_is_inactive(ctx):

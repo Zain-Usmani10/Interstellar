@@ -265,3 +265,41 @@ def test_link_reports_bad_session_and_uses_transport_timeout(sim):
     assert ack.detail == D.BAD_SESSION and link.next_seq == 1  # answered, sequence not consumed
     transport.retry_timeout_s = 6.5                            # what a DelayTransport would publish
     assert link.retry_timeout_s == 6.5
+
+
+def test_set_trip_days_matches_golden_frames(sim):
+    sim.handle(golden("03_open_session"))
+    sim.handle(golden("06_load_plan"))
+    sim.handle(golden("08_commit_plan"))
+    before = status(sim)
+    assert sim.handle(golden("31_set_trip_days")) == golden("32_ack_set_trip_days")
+    assert sim.trip_days == 300 and status(sim) == before          # display only: STATUS unchanged
+    assert sim.handle(golden("31_set_trip_days")) == golden("32_ack_set_trip_days")   # exact retry
+    arm = p.encode_frame(T.ARM, 4, SESSION, p.pack_u32(MISSION))
+    assert ack(sim.handle(arm)).result == p.Result.APPLIED
+
+
+def test_set_trip_days_guards(sim):
+    sim.handle(golden("03_open_session"))
+    days = lambda seq, value: p.encode_frame(T.SET_TRIP_DAYS, seq, SESSION, p.pack_trip_days(MISSION, value))  # noqa: E731
+    assert ack(sim.handle(days(1, 300))).detail == D.BAD_STATE      # no plan yet
+    sim.handle(p.encode_frame(T.LOAD_PLAN, 2, SESSION, p.decode_frame(golden("06_load_plan")).payload))
+    crc = p.Plan.unpack(p.decode_frame(golden("06_load_plan")).payload).crc16()
+    sim.handle(p.encode_frame(T.COMMIT_PLAN, 3, SESSION, p.pack_commit(MISSION, crc)))
+    assert ack(sim.handle(days(4, 0))).detail == D.BAD_PLAN
+    assert ack(sim.handle(days(5, 10000))).detail == D.BAD_PLAN
+    wrong = p.encode_frame(T.SET_TRIP_DAYS, 6, SESSION, p.pack_trip_days(MISSION + 1, 300))
+    assert ack(sim.handle(wrong)).detail == D.BAD_MISSION
+    assert ack(sim.handle(days(7, 9999))).detail == D.OK and sim.trip_days == 9999
+
+
+def test_days_to_arrival_formula_matches_the_board_accumulator():
+    for trip_days, dep, arr in ((300, 500, 6500), (1, 5, 6005), (9999, 500, 6500), (163, 10, 12010)):
+        acc = elapsed = 0                                   # the board's divide-free method (plan 18.4)
+        for tick in range(0, arr + 50):
+            assert p.days_to_arrival(tick, dep, arr, trip_days) == trip_days - elapsed, (trip_days, tick)
+            if dep <= tick < arr:                           # one accumulator step per flight tick
+                acc += trip_days
+                while acc >= arr - dep:
+                    acc -= arr - dep
+                    elapsed += 1

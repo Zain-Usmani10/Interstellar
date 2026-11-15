@@ -6,9 +6,16 @@ a time. Between jobs the worker reads telemetry and publishes MissionSnapshots.
 
 The snapshot only ever reflects what the controller reported. If telemetry stops, the last
 state is kept and marked stale; nothing is advanced on the backend's own clock.
+
+Shuttle / CCS storyline (plan section 18): the worker sends a GET_STATUS keep-alive, and an
+operator can start a blackout. During a blackout nothing is sent, received frames are
+discarded, and the snapshot carries a separate, labelled `estimate` next to the last received
+values. When contact returns the first STATUS replaces the estimate and a `reconciliation`
+record says what happened out of contact.
 """
 from __future__ import annotations
 
+import dataclasses
 import queue
 import secrets
 import threading
@@ -22,11 +29,15 @@ from app.contracts.transport import Transport, TransportError
 
 from .events import EventHub
 from .link import Link, LinkError
+from app.backend.ephemeris.timeconv import jd_tdb_to_utc
+
 from .physics_view import reconstruct
 from .stores import MissionDb, PlanStore
 
 T = p.MsgType
 STALE_AFTER_S = 1.0
+KEEPALIVE_S = 0.5            # the board calls the link lost after 2 s without a valid frame
+ESTIMATE_PUBLISH_S = 0.1     # how often the estimate is republished during a blackout
 LABELS = {"fpga": "FPGA", "simulator": "SIMULATED CONTROLLER"}
 COMMANDS = {"arm": T.ARM, "start": T.START, "abort": T.ABORT, "clear": T.CLEAR}
 
@@ -58,6 +69,11 @@ class MissionRuntime:
         self._link_error: str | None = None
         self._lost = False
         self._was_stale = False
+        self._blackout: dict | None = None         # {status, at}: last telemetry when contact was cut
+        self._reconcile: dict | None = None        # set when a blackout ends, used by the next STATUS
+        self._reconciliation: dict | None = None   # last 'while out of contact' report
+        self._last_keepalive = 0.0
+        self._last_estimate = 0.0
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="transport-worker", daemon=True)
 
@@ -92,6 +108,7 @@ class MissionRuntime:
         if plan is None or record["last_state"] == "IDLE":
             return
         self._mission = {"uuid": record["mission_uuid"], "plan": plan, "uploaded": True,
+                         "trip_days": p.trip_days_from_tof(plan["tof_s"]), "trip_days_set": True,
                          "wire_mission": record["wire_mission"], "plan_crc16": record["plan_crc16"]}
         self.link.session_id, self.link.next_seq = record["wire_session"], record["next_seq"]
 
@@ -104,9 +121,11 @@ class MissionRuntime:
             except queue.Empty:
                 try:
                     self.link.pump(0.05)
+                    self._keepalive()
                 except TransportError as err:
                     self._link_error = str(err)
                     time.sleep(0.2)
+                self._tick_blackout()
                 self._check_stale()
                 continue
             try:
@@ -122,9 +141,22 @@ class MissionRuntime:
             raise MissionBusy("command queue is full") from None
         return future
 
+    def _keepalive(self) -> None:
+        """GET_STATUS every 0.5 s so the shuttle knows the CCS is there. Silent during a blackout."""
+        now = time.monotonic()
+        if self._blackout is not None or now - self._last_keepalive < KEEPALIVE_S or not self.transport.is_open():
+            return
+        self._last_keepalive = now
+        self.transport.send(p.encode_frame(T.GET_STATUS, 0, self.link.session_id))
+
     def _on_status(self, board_session: int, status: p.Status) -> None:
         """Called on the worker thread for every STATUS frame."""
         with self._lock:
+            if self._blackout is not None:
+                return                             # out of contact: received frames are discarded
+            if self._reconcile is not None:
+                self._reconciliation = self._reconcile_with(status)
+                self._reconcile = None
             previous = self._status.state if self._status else None
             self._status, self._board_session = status, board_session
             self._status_at = time.monotonic()
@@ -149,6 +181,117 @@ class MissionRuntime:
             self._publish()
             self.hub.publish("transport", {"transport_state": "stale",
                                            "detail": "no telemetry; showing the last received state"})
+
+    # ------------------------------------------------------------ blackout, estimate, sync
+
+    def _estimate(self) -> tuple[p.Status, list[str]]:
+        """Dead reckoning from the last telemetry: what the shuttle is expected to be doing now.
+
+        Ticks are assumed to run at 100 Hz since the last STATUS. Burns that the plan schedules
+        before the estimated tick are listed as expected, never as done. Caller holds the lock.
+        """
+        last: p.Status = self._blackout["status"]
+        ticks, wire = self._mission["plan"]["ticks"], self._mission["plan"]["wire"]
+        tick = min(ticks["end_tick"], last.tick + int((time.monotonic() - self._blackout["at"]) * p.TICK_HZ))
+        est, expected = last, []
+        if last.state == p.State.RUNNING:
+            if not est.executed_mask & p.MASK_DEPARTURE and tick >= ticks["departure_tick"]:
+                expected.append("departure")
+                est = dataclasses.replace(est, executed_mask=est.executed_mask | p.MASK_DEPARTURE,
+                                          fuel_remaining_g=est.fuel_remaining_g - wire["departure_fuel_g"],
+                                          departure_executed_tick=ticks["departure_tick"])
+            if est.executed_mask == p.MASK_DEPARTURE and tick >= ticks["arrival_tick"]:
+                expected.append("capture")
+                tick = ticks["arrival_tick"]              # the board stops its clock at capture
+                est = dataclasses.replace(est, executed_mask=est.executed_mask | p.MASK_CAPTURE,
+                                          fuel_remaining_g=est.fuel_remaining_g - wire["capture_fuel_g"],
+                                          capture_executed_tick=tick, state=p.State.COMPLETE)
+        return dataclasses.replace(est, tick=tick), expected
+
+    def _estimate_block(self) -> dict:
+        """The `estimate` object of the snapshot. Caller holds the lock."""
+        est, expected = self._estimate()
+        mission = self._mission
+        view = reconstruct(mission["plan"], est)
+        phase = view["spacecraft"]["phase"]
+        ticks = mission["plan"]["ticks"]
+        return {"tick": est.tick, "epoch_jd_tdb": view["epoch_jd_tdb"], "date_utc": jd_tdb_to_utc(view["epoch_jd_tdb"]),
+                "days_to_arrival": (p.days_to_arrival(est.tick, ticks["departure_tick"], ticks["arrival_tick"],
+                                                      mission["trip_days"]) if mission.get("trip_days_set") else None),
+                "spacecraft": {"phase": "capture_expected" if phase == "captured" else phase,
+                               "r_km": view["spacecraft"]["r_km"]},
+                "fuel_remaining_g": est.fuel_remaining_g, "expected_events": expected}
+
+    def _tick_blackout(self) -> None:
+        """Worker thread: republish the moving estimate, and restore contact at the planned arrival."""
+        with self._lock:
+            if self._blackout is None or self._mission is None:
+                return
+            est, _ = self._estimate()
+            arrived = est.tick >= self._mission["plan"]["ticks"]["arrival_tick"]
+            due = time.monotonic() - self._last_estimate >= ESTIMATE_PUBLISH_S
+        if arrived:
+            self._end_blackout()
+        elif due:
+            self._last_estimate = time.monotonic()
+            self._publish()
+
+    def _end_blackout(self) -> None:
+        with self._lock:
+            if self._blackout is None:
+                return
+            est, expected = self._estimate()
+            self._reconcile = {"start": self._blackout["status"], "estimate": est, "expected": expected}
+            self._blackout = None
+            self._last_keepalive = 0.0                 # ask for a STATUS straight away
+        self.hub.publish("transport", {"transport_state": "reacquiring", "detail": "blackout ended; waiting for telemetry"})
+        self._publish()
+
+    def _reconcile_with(self, truth: p.Status) -> dict:
+        """Compare the first STATUS after a blackout with the estimate. Caller holds the lock."""
+        start, est = self._reconcile["start"], self._reconcile["estimate"]
+        events = []
+        for bit, name, tick in ((p.MASK_DEPARTURE, "departure", truth.departure_executed_tick),
+                                (p.MASK_CAPTURE, "capture", truth.capture_executed_tick)):
+            if truth.executed_mask & bit and not start.executed_mask & bit:
+                events.append({"event": f"{name}_burn", "tick": tick})
+        if truth.state != start.state:
+            events.append({"event": "state_change", "from": p.State(start.state).name,
+                           "to": p.State(truth.state).name})
+        if truth.masked_fault_count > start.masked_fault_count:
+            events.append({"event": "masked_fault", "count": truth.masked_fault_count - start.masked_fault_count})
+        if truth.no_majority_count > start.no_majority_count:
+            events.append({"event": "no_majority", "count": truth.no_majority_count - start.no_majority_count})
+        differences = []
+        if truth.state != est.state:
+            differences.append(f"Estimate: {p.State(est.state).name}. Actual: {p.State(truth.state).name}.")
+        for bit, name in ((p.MASK_DEPARTURE, "departure"), (p.MASK_CAPTURE, "capture")):
+            if bool(est.executed_mask & bit) != bool(truth.executed_mask & bit):
+                differences.append(f"Estimate expected the {name} burn; it did not happen." if est.executed_mask & bit
+                                   else f"The {name} burn happened; the estimate did not expect it yet.")
+        if truth.fuel_remaining_g != est.fuel_remaining_g:
+            differences.append(f"Fuel: estimate {est.fuel_remaining_g} g, actual {truth.fuel_remaining_g} g.")
+        return {"blackout_start_tick": start.tick, "blackout_end_tick": truth.tick,
+                "events_during_blackout": events, "estimate_matched": not differences, "differences": differences}
+
+    def _blackout_command(self, mission_uuid: str, name: str) -> dict:
+        with self._lock:
+            status, mission = self._status, self._mission
+            if name == "blackout_start":
+                if self._blackout is not None:
+                    raise ValueError("a blackout is already active")
+                ours = (status is not None and not self._lost and mission.get("uploaded")
+                        and status.mission_id == mission["wire_mission"])
+                if not ours or status.state != p.State.RUNNING or self._status_at is None:
+                    raise ValueError("a blackout can start only while the mission is RUNNING")
+                self._blackout = {"status": status, "at": self._status_at}
+                self._reconcile = self._reconciliation = None
+            elif self._blackout is None:
+                raise ValueError("no blackout is active")
+        if name == "blackout_end":
+            self._end_blackout()
+        self._publish()
+        return {"command": name, "applied": True, "detail": "OK", "snapshot": self.snapshot(mission_uuid)}
 
     # ------------------------------------------------------------ snapshots
 
@@ -185,7 +328,10 @@ class MissionRuntime:
             "link": {"transport_state": transport_state, "observed_age_ms": age, "view": "ground_delayed",
                      # Applied only when the transport is wrapped in a DelayTransport (LINK_DELAY_DEMO).
                      "delay_demo_s": self._demo_delay() if self._delayed else None,
-                     "delay_physical_s": None},
+                     "delay_physical_s": None, "blackout": self._blackout is not None},
+            "trip": {"trip_days": mission["trip_days"] if mission.get("trip_days_set") else None,
+                     "days_to_arrival": None},
+            "estimate": None, "reconciliation": self._reconciliation, "date_utc": None,
             "epoch_jd_tdb": None,
             "spacecraft": {"phase": "unknown", "r_km": None, "v_km_s": None},
             "planets": [], "outcome": "pending", "failure": None,
@@ -221,6 +367,14 @@ class MissionRuntime:
         failure = view.pop("failure")
         snapshot.update(view)
         snapshot["failure"] = snapshot["failure"] or failure
+        snapshot["date_utc"] = jd_tdb_to_utc(snapshot["epoch_jd_tdb"])
+        ticks = plan["ticks"]
+        if mission.get("trip_days_set"):
+            snapshot["trip"]["days_to_arrival"] = p.days_to_arrival(
+                status.tick, ticks["departure_tick"], ticks["arrival_tick"], mission["trip_days"])
+        if self._blackout is not None:
+            # Top-level fields stay at the last received values; only `estimate` moves.
+            snapshot["estimate"] = self._estimate_block()
         return snapshot
 
     def snapshot(self, mission_uuid: str) -> dict | None:
@@ -268,7 +422,9 @@ class MissionRuntime:
                           plan["wire"]["capture_fuel_g"])
             if wire.problem():
                 raise ValueError(f"plan cannot be sent to the controller: {wire.problem()}")
+            self._blackout = self._reconcile = self._reconciliation = None
             self._mission = {"uuid": str(uuid.uuid4()), "plan": plan, "wire": wire,
+                             "trip_days": p.trip_days_from_tof(plan["tof_s"]), "trip_days_set": False,
                              "wire_mission": wire.mission_id, "plan_crc16": wire.crc16()}
             self._lost, self._snapshot = False, None
             mission_uuid = self._mission["uuid"]
@@ -282,12 +438,16 @@ class MissionRuntime:
             mission = self._mission
             if mission is None or mission["uuid"] != mission_uuid:
                 raise KeyError(mission_uuid)
+        if name in ("blackout_start", "blackout_end"):
+            return self._blackout_command(mission_uuid, name)
+        if self._blackout is not None:
+            raise ValueError("no contact: a blackout is active; commands cannot reach the shuttle")
         if "wire" not in mission and name == "upload":
             raise ValueError("this mission was restored after a restart; it cannot be uploaded again")
         job = (lambda: self._upload(mission)) if name == "upload" else (lambda: self._simple(mission, name))
         try:
-            # Worst case: upload = status + open + load + commit, each up to `attempts` timeouts.
-            budget = 4 * self.link.attempts * self.link.retry_timeout_s + 5
+            # Worst case: upload = status + open + load + commit + trip days, each up to `attempts` timeouts.
+            budget = 5 * self.link.attempts * self.link.retry_timeout_s + 5
             applied, detail = self._submit(job).result(timeout=budget)
         except (LinkError, TransportError) as err:
             # A sent command may have been applied. Say so; never assume success.
@@ -300,7 +460,7 @@ class MissionRuntime:
                 "snapshot": self.snapshot(mission_uuid)}
 
     def _upload(self, mission: dict) -> tuple[bool, str]:
-        """OPEN_SESSION if the board has no session of ours, then LOAD_PLAN and COMMIT_PLAN."""
+        """OPEN_SESSION if the board has no session of ours, then LOAD_PLAN, COMMIT_PLAN, SET_TRIP_DAYS."""
         board_session, status = self.link.read_status()
         if board_session == 0 or board_session != self.link.session_id:
             if status.state != p.State.IDLE:
@@ -317,6 +477,14 @@ class MissionRuntime:
         if ack.result == p.Result.APPLIED:
             mission["uploaded"] = True
             mission.pop("cleared", None)
+            # Display only: lets the shuttle count down days to arrival (plan section 18.3).
+            # A controller build without this message discards it: the plan is still loaded, only
+            # the shuttle's days display stays unset.
+            try:
+                days = self.link.mutate(T.SET_TRIP_DAYS, p.pack_trip_days(wire.mission_id, mission["trip_days"]))
+                mission["trip_days_set"] = days.result == p.Result.APPLIED
+            except LinkError:
+                mission["trip_days_set"] = False
         return ack.result == p.Result.APPLIED, p.Detail(ack.detail).name
 
     def _simple(self, mission: dict, name: str) -> tuple[bool, str]:

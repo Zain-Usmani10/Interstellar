@@ -616,6 +616,62 @@
    "hex": "A5 5A 01 80 01 00 4D 3C 2B 1A 10 00 10 01 04 00 EE FF C0 00 00 00 00 00 00 00 00 00 3F 82"
   },
   {
+   "name": "31_set_trip_days",
+   "valid": true,
+   "direction": "host_to_board",
+   "type": "SET_TRIP_DAYS",
+   "type_hex": "16",
+   "sequence": 3,
+   "session_id": 439041101,
+   "payload_length": 8,
+   "fields": {
+    "mission_id": 12648430,
+    "trip_days": 300
+   },
+   "note": "Display only: the trip lasts 300 days.",
+   "hex": "A5 5A 01 16 03 00 4D 3C 2B 1A 08 00 EE FF C0 00 2C 01 00 00 58 85"
+  },
+  {
+   "name": "32_ack_set_trip_days",
+   "valid": true,
+   "direction": "board_to_host",
+   "type": "ACK",
+   "type_hex": "80",
+   "sequence": 3,
+   "session_id": 439041101,
+   "payload_length": 16,
+   "fields": {
+    "original_type": "SET_TRIP_DAYS",
+    "result": "APPLIED",
+    "detail": "OK",
+    "mission_id": 12648430,
+    "applied_tick": 0,
+    "plan_crc16": 61175
+   },
+   "note": "",
+   "hex": "A5 5A 01 80 03 00 4D 3C 2B 1A 10 00 16 00 00 00 EE FF C0 00 00 00 00 00 F7 EE 00 00 8B 0A"
+  },
+  {
+   "name": "33_nack_set_trip_days_bad_value",
+   "valid": true,
+   "direction": "board_to_host",
+   "type": "ACK",
+   "type_hex": "80",
+   "sequence": 3,
+   "session_id": 439041101,
+   "payload_length": 16,
+   "fields": {
+    "original_type": "SET_TRIP_DAYS",
+    "result": "REJECTED",
+    "detail": "BAD_PLAN",
+    "mission_id": 12648430,
+    "applied_tick": 0,
+    "plan_crc16": 61175
+   },
+   "note": "trip_days was 0 or above 9999. The sequence is still consumed.",
+   "hex": "A5 5A 01 80 03 00 4D 3C 2B 1A 10 00 16 01 04 00 EE FF C0 00 00 00 00 00 F7 EE 00 00 D2 59"
+  },
+  {
    "name": "40_invalid_bad_crc",
    "valid": false,
    "expected_error": "BAD_CRC",
