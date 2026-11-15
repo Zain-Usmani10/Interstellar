@@ -52,7 +52,12 @@ module interstellar_top #(
     output wire [7:0] HEX2,
     output wire [7:0] HEX3,
     output wire [7:0] HEX4,
-    output wire [7:0] HEX5
+    output wire [7:0] HEX5,
+    output wire [3:0] VGA_R,          // VGA monitor, 4 bits per colour
+    output wire [3:0] VGA_G,
+    output wire [3:0] VGA_B,
+    output wire       VGA_HS,         // sync pulses, active low
+    output wire       VGA_VS
 );
 
     wire clk = MAX10_CLK1_50;
@@ -388,6 +393,20 @@ module interstellar_top #(
         .hex3            (HEX3),
         .hex4            (HEX4),
         .hex5            (HEX5)
+    );
+
+    // ------------------------------------------------------------ VGA cockpit (display only)
+    vga_cockpit u_vga (
+        .clk       (clk),
+        .rst_n     (rst_n),
+        .state     (state),
+        .link_lost (link_lost),
+        .blink     (heartbeat_led),
+        .vga_r     (VGA_R),
+        .vga_g     (VGA_G),
+        .vga_b     (VGA_B),
+        .vga_hs    (VGA_HS),
+        .vga_vs    (VGA_VS)
     );
 
     // ------------------------------------------------------------ LEDs

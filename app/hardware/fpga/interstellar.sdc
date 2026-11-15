@@ -13,4 +13,5 @@ set_false_path -from [get_ports {UART_RX}]
 # clocked receiver that shares clk50.
 set_false_path -to [get_ports {LEDR[*]}]
 set_false_path -to [get_ports {HEX*}]
+set_false_path -to [get_ports {VGA_*}]
 set_false_path -to [get_ports {UART_TX}]
