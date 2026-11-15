@@ -36,11 +36,14 @@ def _canonical_json(obj) -> str:
 class EphemerisCache:
     """Reads and writes cache files; answers 'state of body X at epoch T' from verified rows only."""
 
-    def __init__(self, directory: Path | str = DEFAULT_CACHE_DIR):
+    def __init__(self, directory: Path | str = DEFAULT_CACHE_DIR, *, fallback_directory: Path | str | None = None):
         self.directory = Path(directory)
         self._rows: dict[tuple[str, str], tuple[StateRow, str]] = {}   # (body, epoch key) -> (row, file name)
         self._entries: dict[str, dict] = {}                            # file name -> provenance (no raw text)
         self._constants: dict[str, dict] = {}                          # body -> {gm, radius, file}
+        if fallback_directory is not None:
+            for path in sorted(Path(fallback_directory).glob("horizons_*.json")):
+                self._load(path)
         if self.directory.is_dir():
             for path in sorted(self.directory.glob("horizons_*.json")):
                 self._load(path)
