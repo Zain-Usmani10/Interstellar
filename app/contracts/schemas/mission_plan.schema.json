@@ -125,8 +125,8 @@
         "departure_end_utc": { "$ref": "common.schema.json#/$defs/utc" },
         "tof_min_days": { "type": "number", "exclusiveMinimum": 0 },
         "tof_max_days": { "type": "number", "exclusiveMinimum": 0 },
-        "n_departures": { "type": "integer", "minimum": 1, "maximum": 25 },
-        "n_durations": { "type": "integer", "minimum": 1, "maximum": 25 },
+        "n_departures": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "n_durations": { "type": "integer", "minimum": 1, "maximum": 1000 },
         "n_feasible": { "type": "integer", "minimum": 1 }
       }
     },
