@@ -87,8 +87,8 @@ The point for a viewer: **you can pull the wires out mid-flight and the mission 
 | Planet positions | Real NASA/JPL Horizons data, stored in the repo so the demo runs offline |
 | Routes | 13 routes between Mercury, Venus, Earth, Mars and Jupiter, 38 flight options. Each one is re-flown by an independent numerical check before it is accepted |
 | Shuttles | Two model ships, "Standard" and "Long-range". They are not real spacecraft |
-| FPGA mission computer | Runs on a real DE10-Lite. On the real board through the bridge: full mission to capture and a blackout run, reported by our FPGA owner in the board log (`app/hardware/fpga/README.md`) |
-| Fault protection (three copies and a vote) | Built in the FPGA design and passing in simulation. The switch runs on the physical board were not yet logged when this was written |
+| FPGA mission computer | Runs on a real DE10-Lite, booting from its own flash. On the real board through the bridge: full 30-second missions to capture with the automatic blackout, recorded by our FPGA owner in the board log (`app/hardware/fpga/README.md`) |
+| Fault protection (three copies and a vote) | On the real board, per the same log: switch SW0 corrupted one copy, it was outvoted and the mission still completed; switch SW1 made all three disagree and the board went to safe mode with no capture burn |
 | Simulated controller | A software stand-in for the board so the app runs with no hardware. The screen says "Simulator" when it is used |
 | Brain input (optional extra) | A two-choice selector that opens a planet's information card. Synthetic signals only; no live EEG result is claimed |
 
