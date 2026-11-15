@@ -21,6 +21,10 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `rtl/tmr_lanes.v` | Three stored copies of the control tuple (state, mask, fuel, burn ticks) |
 | `rtl/voter.v` | Whole-tuple majority vote over the three copies |
 | `rtl/debounce.v` | Cleans up a button or switch |
+| `rtl/link_watchdog.v` | Display only: "link lost" when no good frame arrived for 2 s |
+| `rtl/trip_clock.v` | Display only: days to arrival from the tick counter and SET_TRIP_DAYS |
+| `rtl/cockpit_display.v`, `rtl/seg7.v`, `rtl/bin2bcd.v` | Display only: the six seven-segment digits |
+| `docs/SHUTTLE_CCS_EXTENSION.md` | PROPOSAL: shuttle / control-station storyline, what each owner would build, the proposed SET_TRIP_DAYS command |
 | `../../tests/fpga/` | Testbenches and `run_sim.sh` (simulation only) |
 
 ## Pins
@@ -35,6 +39,7 @@ Board: Terasic DE10-Lite, MAX 10 `10M50DAF484C7G`. Tool: Quartus Prime Lite 25.1
 | `UART_TX` | `PIN_W10` | JP1 pin 2 (GPIO1), to XIAO D7/RX, idles high |
 | `LEDR[0]`..`LEDR[8]` | `PIN_A8` `A9` `A10` `B10` `D13` `C13` `E14` `D14` `A11` | Status LEDs, see below |
 | `LEDR[9]` | `PIN_B11` | On while in reset |
+| `HEX0`..`HEX5` | see `interstellar.qsf` | Seven-segment digits, active low, bit 7 = decimal point. Pin numbers typed from memory of the Terasic manual: not confirmed on the board yet |
 
 All I/O is 3.3 V. Unused pins are high-impedance inputs.
 
@@ -74,6 +79,16 @@ Or use **Tools > Programmer** in Quartus. A `.sof` is volatile: reprogram after 
 | LEDR9 | On while KEY0 holds the board in reset |
 
 With nothing connected only LEDR0 blinks. The board sends a STATUS frame out of UART_TX ten times a second.
+
+### Seven-segment cockpit readout (extension, display only)
+| Digits | Shows |
+|---|---|
+| HEX5 HEX4 | State: `Id` idle, `Ld` loaded, `Ar` armed, `rn` running, `SF` safe, `Co` complete, `Ab` aborted. Alternates with `nL` (no link) once a second when a link was seen and then no good frame arrived for 2 s |
+| HEX3..HEX0 | `----` when idle; trip length in days when loaded/armed (if set); T-minus `SS.cc` while running before the departure burn; days to arrival after it (mission seconds if the trip length was never set) |
+
+With nothing connected it shows `Id----`. None of this feeds back into the mission: the burns, the STATUS frame and the golden-frame behaviour are unchanged.
+
+`SET_TRIP_DAYS` (type `0x16`, payload `mission_id:u32, trip_days:u32`) is a **proposed** command, not in `app/contracts/protocol_v1.json`. A backend that never sends it sees exactly the old behaviour. The control station must send a frame at least once a second (GET_STATUS is enough) or the shuttle shows `nL`.
 
 ## Fault tolerance: what is and is not protected
 - Triplicated and voted: mission state, executed mask, remaining fuel, the two burn ticks.

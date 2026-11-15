@@ -12,4 +12,5 @@ set_false_path -from [get_ports {UART_RX}]
 # LEDs and the UART transmit line are slow, human/115200-baud outputs with no
 # clocked receiver that shares clk50.
 set_false_path -to [get_ports {LEDR[*]}]
+set_false_path -to [get_ports {HEX*}]
 set_false_path -to [get_ports {UART_TX}]

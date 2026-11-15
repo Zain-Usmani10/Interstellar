@@ -6,6 +6,8 @@
 // Commands handled here:
 //   0x02 OPEN_SESSION   0x10 LOAD_PLAN   0x11 COMMIT_PLAN
 //   0x12 ARM   0x13 START   0x14 ABORT   0x15 CLEAR
+//   0x16 SET_TRIP_DAYS  (proposed extension, see docs/SHUTTLE_CCS_EXTENSION.md:
+//        mission_id(4) trip_days(4); allowed in LOADED or ARMED; 1..9999 days)
 // (DISCOVER and GET_STATUS are answered by status_gen, not here.)
 //
 // Checks, in this order:
@@ -52,6 +54,8 @@ module cmd_handler (
     output reg          do_start,
     output reg          do_abort,
     output reg          do_clear,
+    output reg          do_set_days,        // SET_TRIP_DAYS accepted
+    output wire [31:0]  set_days_value,
 
     // staged plan (used by the sequencer on do_commit)
     output wire [31:0]  staged_mission_id,
@@ -82,7 +86,8 @@ module cmd_handler (
                      T_ARM          = 8'h12,
                      T_START        = 8'h13,
                      T_ABORT        = 8'h14,
-                     T_CLEAR        = 8'h15;
+                     T_CLEAR        = 8'h15,
+                     T_SET_TRIP_DAYS = 8'h16;
 
     // Mission states.
     localparam [2:0] ST_IDLE    = 3'd0,
@@ -182,6 +187,9 @@ module cmd_handler (
     wire [31:0] c_dep_fuel  = f_payload[191:160];
     wire [31:0] c_cap_fuel  = f_payload[223:192];
     wire [15:0] c_commit_crc = f_payload[47:32];
+    wire [31:0] c_trip_days  = f_payload[63:32];     // SET_TRIP_DAYS
+
+    assign set_days_value = c_trip_days;
 
     // Plan rules. The fuel sum is done in 33 bits so it cannot wrap.
     wire plan_bad = (c_mission == 32'd0)
@@ -252,6 +260,10 @@ module cmd_handler (
                         detail = D_BAD_STATE;
                     else if (f_type == T_CLEAR && state == ST_RUNNING)
                         detail = D_BAD_STATE;
+                    else if (f_type == T_SET_TRIP_DAYS && !(state == ST_LOADED || state == ST_ARMED))
+                        detail = D_BAD_STATE;
+                    else if (f_type == T_SET_TRIP_DAYS && (c_trip_days == 32'd0 || c_trip_days > 32'd9999))
+                        detail = D_BAD_PLAN;
                     else
                         apply = 1'b1;
                 end
@@ -313,6 +325,7 @@ module cmd_handler (
             do_start     <= 1'b0;
             do_abort     <= 1'b0;
             do_clear     <= 1'b0;
+            do_set_days  <= 1'b0;
             ack_start    <= 1'b0;
         end else begin
             do_commit <= 1'b0;
@@ -320,6 +333,7 @@ module cmd_handler (
             do_start  <= 1'b0;
             do_abort  <= 1'b0;
             do_clear  <= 1'b0;
+            do_set_days <= 1'b0;
             ack_start <= 1'b0;
 
             case (step)
@@ -396,6 +410,7 @@ module cmd_handler (
                                 do_clear     <= 1'b1;
                                 staged_valid <= 1'b0;
                             end
+                            T_SET_TRIP_DAYS: do_set_days <= 1'b1;
                             default: ;
                         endcase
                     end
