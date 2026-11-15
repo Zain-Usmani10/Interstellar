@@ -227,12 +227,18 @@ button {
   overflow: visible;
 }
 
-.mission-panel {
-  padding: 0.85rem 1.25rem 1.4rem;
+.route-compare,
+.mission-actions,
+.mission-panel,
+.fault-history {
+  padding: 0.85rem 1.25rem 1rem;
   border-top: 1px solid var(--line);
 }
 
-.mission-panel h3 {
+.route-compare h3,
+.mission-actions h3,
+.mission-panel h3,
+.fault-history h3 {
   margin: 0 0 0.35rem;
   font-size: 0.78rem;
   letter-spacing: 0.06em;
@@ -240,21 +246,78 @@ button {
   color: var(--muted);
 }
 
-.plan-picker {
+.route-grid {
   display: grid;
-  gap: 0.35rem;
-  margin: 0.55rem 0 0.35rem;
-  font-size: 0.82rem;
-  color: var(--muted);
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-top: 0.55rem;
 }
 
-.plan-picker select {
-  font: inherit;
-  color: var(--ink);
-  background: rgba(0, 0, 0, 0.35);
+.route-card {
+  text-align: left;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.route-card.selected {
+  border-color: rgba(216, 163, 92, 0.75);
+  background: rgba(216, 163, 92, 0.08);
+}
+
+.route-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.route-meta {
+  margin: 0.35rem 0 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.45rem 0;
+}
+
+.action-row button {
+  padding: 0.4rem 0.65rem;
   border: 1px solid var(--line);
   border-radius: 0.3rem;
-  padding: 0.35rem 0.45rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.action-row button:hover:not(:disabled) {
+  border-color: rgba(216, 163, 92, 0.7);
+}
+
+.action-row button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fault-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.fault-list li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.45rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+}
+
+.fault-kind {
+  font-family: var(--font-mono);
+  color: var(--accent);
 }
 
 .mission-dl {
