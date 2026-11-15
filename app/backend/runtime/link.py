@@ -26,10 +26,15 @@ class Link:
                  retry_timeout_s: float = 0.5, attempts: int = 3):
         self.transport = transport
         self.on_status = on_status          # called with (board session id, Status) for every STATUS
-        self.retry_timeout_s = retry_timeout_s
+        self._retry_timeout_s = retry_timeout_s
         self.attempts = attempts
         self.session_id = 0
         self.next_seq = 1
+
+    @property
+    def retry_timeout_s(self) -> float:
+        """Per-attempt wait. A DelayTransport publishes its own (0.5 s + 2 x max one-way delay)."""
+        return getattr(self.transport, "retry_timeout_s", self._retry_timeout_s)
 
     def pump(self, timeout_s: float) -> p.Frame | None:
         """Receive at most one frame. STATUS frames go to on_status; the frame is returned."""
@@ -64,22 +69,39 @@ class Link:
         """Start a fresh session with a random nonzero id. Only valid while the board is IDLE."""
         new_id = secrets.randbelow(0xFFFFFFFF) + 1
         request = p.encode_frame(T.OPEN_SESSION, 0, 0, p.pack_u32(new_id))
-        frame = self._exchange(request, lambda f: f.msg_type == T.ACK and f.sequence == 0
-                               and p.Ack.unpack(f.payload).original_type == T.OPEN_SESSION)
-        ack = p.Ack.unpack(frame.payload)
-        if ack.result == p.Result.APPLIED and frame.session_id == new_id:
+
+        def accept(frame: p.Frame) -> bool:
+            if frame.msg_type != T.ACK or frame.sequence != 0:
+                return False
+            ack = p.Ack.unpack(frame.payload)
+            if ack.original_type != T.OPEN_SESSION or ack.mission_id != 0:
+                return False
+            # An APPLIED answer must name exactly the session we asked for.
+            return ack.result == p.Result.REJECTED or frame.session_id == new_id
+
+        ack = p.Ack.unpack(self._exchange(request, accept).payload)
+        if ack.result == p.Result.APPLIED:
             self.session_id, self.next_seq = new_id, 1
         return ack
 
     def mutate(self, msg_type: int, payload: bytes) -> p.Ack:
-        """Send one mutation and wait for the ACK that matches its type and sequence."""
+        """Send one mutation and wait for the ACK that matches type, sequence, session and mission."""
         if self.next_seq > 0xFFFF:
             raise LinkError("sequence exhausted; open a fresh session while IDLE")
         seq = self.next_seq
+        mission_id = p.unpack_u32(payload[:4])
         request = p.encode_frame(msg_type, seq, self.session_id, payload)
-        frame = self._exchange(request, lambda f: f.msg_type == T.ACK and f.sequence == seq
-                               and p.Ack.unpack(f.payload).original_type == msg_type)
-        ack = p.Ack.unpack(frame.payload)
+
+        def accept(frame: p.Frame) -> bool:
+            if frame.msg_type != T.ACK or frame.sequence != seq:
+                return False
+            ack = p.Ack.unpack(frame.payload)
+            if ack.original_type != msg_type or ack.mission_id != mission_id:
+                return False
+            # A BAD_SESSION answer carries the board's real session, which is not ours.
+            return frame.session_id == self.session_id or ack.detail == p.Detail.BAD_SESSION
+
+        ack = p.Ack.unpack(self._exchange(request, accept).payload)
         # The board consumes the sequence for APPLIED and for guard rejections, but not for
         # session/sequence errors.
         if ack.detail not in (p.Detail.BAD_SESSION, p.Detail.SEQ_CONFLICT, p.Detail.STALE_SEQ):

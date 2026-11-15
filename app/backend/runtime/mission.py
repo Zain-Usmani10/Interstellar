@@ -276,7 +276,9 @@ class MissionRuntime:
             raise ValueError("this mission was restored after a restart; it cannot be uploaded again")
         job = (lambda: self._upload(mission)) if name == "upload" else (lambda: self._simple(mission, name))
         try:
-            applied, detail = self._submit(job).result(timeout=15)
+            # Worst case: upload = status + open + load + commit, each up to `attempts` timeouts.
+            budget = 4 * self.link.attempts * self.link.retry_timeout_s + 5
+            applied, detail = self._submit(job).result(timeout=budget)
         except (LinkError, TransportError) as err:
             # A sent command may have been applied. Say so; never assume success.
             self._link_error = f"{name}: {err}"
