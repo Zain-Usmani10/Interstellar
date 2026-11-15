@@ -38,11 +38,11 @@ module trip_clock (
     output reg         trip_days_valid,    // SET_TRIP_DAYS was received
     output reg  [31:0] trip_days,
     output wire [31:0] days_to_arrival,
-    output reg  [31:0] departure_tick      // active plan's departure tick
+    output reg  [31:0] departure_tick,     // active plan's departure tick
+    output reg  [31:0] trip_ticks          // arrival tick - departure tick
 );
 
     reg [31:0] arrival_tick;
-    reg [31:0] trip_ticks;
     reg [31:0] elapsed_days;
     reg [31:0] acc;
     reg [31:0] prev_tick;

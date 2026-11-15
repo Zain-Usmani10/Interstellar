@@ -35,7 +35,8 @@ set_global_assignment -name VERILOG_FILE rtl/vga_sync.v
 set_global_assignment -name VERILOG_FILE rtl/vga_cockpit.v
 set_global_assignment -name VERILOG_FILE rtl/vga_stars.v
 set_global_assignment -name VERILOG_FILE rtl/vga_font.v
-set_global_assignment -name VERILOG_FILE rtl/vga_reel_text.v
+set_global_assignment -name VERILOG_FILE rtl/vga_text.v
+set_global_assignment -name VERILOG_FILE rtl/vga_bcd8.v
 set_global_assignment -name SDC_FILE interstellar.sdc
 
 # ---------------------------------------------------------------- Pin policy

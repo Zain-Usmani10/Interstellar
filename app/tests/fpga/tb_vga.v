@@ -1,13 +1,13 @@
 // tb_vga.v
 // SIMULATION ONLY. Passing here does not mean the monitor shows a picture.
 //
-// The VGA cockpit (sample reel version):
+// The VGA cockpit:
 //   - line length 800 pixels, sync pulse 96 pixels, active low
 //   - frame length 525 lines, sync pulse 2 lines, active low
 //   - exactly 640 x 480 visible pixels per frame, black everywhere else
 //   - the picture is not blank
-//   - the reel steps through all eight scenes and wraps around
-// To keep the run short it uses one frame per scene and four stars.
+//   - the picture follows the mission state (docked, countdown, cruise, safe)
+// To keep the run short it uses four stars.
 // What the scenes look like is checked by eye, not here.
 
 `timescale 1ns / 1ps
@@ -36,12 +36,19 @@ module tb_vga;
     reg  [2:0] state = 3'd0;
     reg        link_lost = 1'b0;
     reg        blink = 1'b0;
+    reg        departed = 1'b0;
+    reg [31:0] tick_count = 32'd0;
     wire [3:0] r, g, b;
     wire       hs, vs;
 
-    vga_cockpit #(.SCENE_FRAMES(1), .STARS(4)) dut (
+    vga_cockpit #(.STARS(4)) dut (
         .clk(clk), .rst_n(rst_n),
-        .state(state), .link_lost(link_lost), .blink(blink),
+        .state(state), .departed(departed), .captured(1'b0),
+        .tick_count(tick_count), .departure_tick(32'd500), .trip_ticks(32'd6000),
+        .trip_days_valid(1'b1), .days_to_arrival(32'd111), .fuel_g(32'd4781982),
+        .link_seen(1'b1), .link_lost(link_lost),
+        .session_open(1'b1), .masked_seen(1'b0), .no_majority_seen(1'b0), .rx_error_seen(1'b0),
+        .blink(blink),
         .vga_r(r), .vga_g(g), .vga_b(b), .vga_hs(hs), .vga_vs(vs)
     );
 
@@ -84,8 +91,6 @@ module tb_vga;
     integer lit_outside = 0;
     integer visible = 0;
     integer lit_inside = 0;
-    integer scenes_seen = 0;
-    reg [7:0] seen_mask = 8'd0;
 
     always @(posedge clk) begin
         if (dut.pix_en) shown <= dut.act1;
@@ -97,7 +102,6 @@ module tb_vga;
             if (shown && rgb !== 12'h000) lit_inside = lit_inside + 1;
             if (!shown && rgb !== 12'h000) lit_outside = lit_outside + 1;
         end
-        seen_mask[dut.scene] = 1'b1;
     end
 
     task wait_frames;
@@ -126,9 +130,16 @@ module tb_vga;
         check(lit_outside == 0, "colour is black everywhere outside the visible picture");
         check(lit_inside > 100000, "the picture is not blank");
 
-        wait_frames(9);
-        check(seen_mask == 8'hFF, "the reel showed all eight scenes");
-        check(dut.scene <= 3'd7 && vs_count > 11, "and wrapped around to the start");
+        check(dut.scene == 3'd0, "idle shows the docked picture");
+        state = 3'd3;
+        wait_frames(2);
+        check(dut.scene == 3'd1, "running before the departure burn shows the countdown");
+        departed = 1'b1;  tick_count = 32'd1500;
+        wait_frames(2);
+        check(dut.scene == 3'd3, "after liftoff it shows the cruise picture");
+        state = 3'd4;
+        wait_frames(1);
+        check(dut.scene == 3'd7, "safe mode shows the alert picture");
 
         if (errors == 0) $display("SIMULATION PASS: tb_vga (simulation only, not a board test)");
         else             $display("SIMULATION FAIL: tb_vga, %0d error(s)", errors);

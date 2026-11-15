@@ -346,6 +346,7 @@ module interstellar_top #(
     wire [31:0] trip_days;
     wire [31:0] days_to_arrival;
     wire [31:0] plan_departure_tick;
+    wire [31:0] plan_trip_ticks;
 
     link_watchdog #(
         .TIMEOUT_TICKS (LINK_TIMEOUT_TICKS)
@@ -372,7 +373,8 @@ module interstellar_top #(
         .trip_days_valid       (trip_days_valid),
         .trip_days             (trip_days),
         .days_to_arrival       (days_to_arrival),
-        .departure_tick        (plan_departure_tick)
+        .departure_tick        (plan_departure_tick),
+        .trip_ticks            (plan_trip_ticks)
     );
 
     cockpit_display u_cockpit (
@@ -401,16 +403,29 @@ module interstellar_top #(
     // never defines it, so the board always has the picture.
 `ifndef SIM_NO_VGA
     vga_cockpit u_vga (
-        .clk       (clk),
-        .rst_n     (rst_n),
-        .state     (state),
-        .link_lost (link_lost),
-        .blink     (heartbeat_led),
-        .vga_r     (VGA_R),
-        .vga_g     (VGA_G),
-        .vga_b     (VGA_B),
-        .vga_hs    (VGA_HS),
-        .vga_vs    (VGA_VS)
+        .clk              (clk),
+        .rst_n            (rst_n),
+        .state            (state),
+        .departed         (executed_mask[0]),
+        .captured         (executed_mask[1]),
+        .tick_count       (tick_count),
+        .departure_tick   (plan_departure_tick),
+        .trip_ticks       (plan_trip_ticks),
+        .trip_days_valid  (trip_days_valid),
+        .days_to_arrival  (days_to_arrival),
+        .fuel_g           (fuel_g),
+        .link_seen        (link_seen),
+        .link_lost        (link_lost),
+        .session_open     (session != 32'd0),
+        .masked_seen      (masked_fault_count != 32'd0),
+        .no_majority_seen (no_majority_count != 32'd0),
+        .rx_error_seen    (rx_error_count != 32'd0),
+        .blink            (heartbeat_led),
+        .vga_r            (VGA_R),
+        .vga_g            (VGA_G),
+        .vga_b            (VGA_B),
+        .vga_hs           (VGA_HS),
+        .vga_vs           (VGA_VS)
     );
 `else
     assign VGA_R  = 4'd0;
