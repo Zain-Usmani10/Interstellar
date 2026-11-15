@@ -256,6 +256,80 @@ def test_blackout_needs_a_running_mission(ctx):
     assert response.status_code == 409
 
 
+def shuttle(client, shuttle_id):
+    return next(s for s in client.get("/api/v1/fleet").json()["shuttles"] if s["id"] == shuttle_id)
+
+
+def test_fleet_shuttle_moves_only_on_confirmed_events(ctx):
+    client, app, clock = ctx
+    assert shuttle(client, "earth-standard")["location"] == {"kind": "docked", "body_id": "399"}
+    assert shuttle(client, "earth-standard")["label"] == "Standard shuttle"
+    mission_id = new_mission(client, app)
+    snap = client.get(f"/api/v1/missions/{mission_id}").json()
+    assert snap["shuttle_id"] == "earth-standard"
+    for name in ("upload", "arm", "start"):
+        command(client, app, mission_id, name)
+    assert shuttle(client, "earth-standard")["location"]["kind"] == "docked"       # not departed yet
+    clock.now += 60
+    wait_for(client, mission_id, lambda s: s["executed_mask"] == 1)
+    assert shuttle(client, "earth-standard")["location"] == {"kind": "in_flight", "mission_id": mission_id}
+    clock.now += 70
+    wait_for(client, mission_id, lambda s: s["state"] == "COMPLETE")
+    assert shuttle(client, "earth-standard")["location"] == {"kind": "docked", "body_id": "499"}
+    command(client, app, mission_id, "clear")
+    # The only Standard shuttle that was at Earth is now at Mars: the same route cannot launch again.
+    again = client.post("/api/v1/missions", json={"plan_id": PLAN_ID}, headers=operator(app))
+    assert again.status_code == 409 and again.json()["detail"] == "NO_SHUTTLE_DOCKED"
+    assert client.post("/api/v1/fleet/reset").status_code in (401, 403)             # operator only
+    reset = client.post("/api/v1/fleet/reset", headers=operator(app)).json()
+    assert next(s for s in reset["shuttles"] if s["id"] == "earth-standard")["location"]["body_id"] == "399"
+
+
+def test_fleet_shuttle_is_lost_after_safe_in_flight_and_kept_after_early_clear(ctx):
+    client, app, clock = ctx
+    first = new_mission(client, app)
+    command(client, app, first, "upload")
+    command(client, app, first, "clear")                                            # never departed
+    assert shuttle(client, "earth-standard")["location"] == {"kind": "docked", "body_id": "399"}
+    mission_id = running_mission(client, app, clock)
+    client.post("/api/v1/sim/faults", json={"kind": "divergence"}, headers=operator(app))
+    wait_for(client, mission_id, lambda s: s["state"] == "SAFE")
+    assert shuttle(client, "earth-standard")["location"] == {"kind": "lost", "mission_id": mission_id}
+
+
+def test_fleet_refuses_wrong_class_or_absent_shuttle(ctx):
+    client, app, _ = ctx
+    for bad in ("earth-long-range", "mars-standard", "no-such-shuttle"):
+        response = client.post("/api/v1/missions", json={"plan_id": PLAN_ID, "shuttle_id": bad}, headers=operator(app))
+        assert response.status_code == 409 and response.json()["detail"] == "NO_SHUTTLE_DOCKED", bad
+    assert client.post("/api/v1/missions", json={"plan_id": PLAN_ID, "shuttle_id": "earth-standard"},
+                       headers=operator(app)).status_code == 201
+
+
+def test_fleet_does_not_move_during_a_blackout(ctx):
+    client, app, clock = ctx
+    mission_id = running_mission(client, app, clock)
+    command(client, app, mission_id, "blackout_start")
+    clock.now += 70                                                                  # the controller captures
+    time.sleep(0.5)
+    assert shuttle(client, "earth-standard")["location"]["kind"] == "in_flight"      # no evidence yet
+    command(client, app, mission_id, "blackout_end")
+    wait_for(client, mission_id, lambda s: s["state"] == "COMPLETE")
+    assert shuttle(client, "earth-standard")["location"] == {"kind": "docked", "body_id": "499"}
+
+
+def test_planet_positions_for_all_eight_planets(ctx):
+    client, _, _ = ctx
+    body = client.get("/api/v1/planets/positions", params={"date_utc": "2027-03-01T00:00:00Z"}).json()
+    assert [pl["body_id"] for pl in body["planets"]] == ["199", "299", "399", "499", "599", "699", "799", "899"]
+    earth = next(pl for pl in body["planets"] if pl["body_id"] == "399")["r_km"]
+    assert 1.45e8 < sum(x * x for x in earth) ** 0.5 < 1.53e8                        # about 1 au from the Sun
+    same = client.get("/api/v1/planets/positions", params={"jd_tdb": body["epoch_jd_tdb"]}).json()
+    assert same["planets"] == body["planets"] and body["data_mode"] == "nasa_cached"
+    assert client.get("/api/v1/planets/positions", params={"jd_tdb": 2400000.5}).status_code == 404
+    assert client.get("/api/v1/planets/positions").status_code == 422
+
+
 def test_start_is_refused_until_armed(ctx):
     client, app, _ = ctx
     mission_id = new_mission(client, app)

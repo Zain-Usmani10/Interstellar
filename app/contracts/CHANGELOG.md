@@ -2,6 +2,14 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.3.0 (2026-11-15): fleet and planet positions (plan sections 19 and 20)
+
+- `GET /api/v1/fleet`: every shuttle with `id`, `name`, `class` (`standard` / `long_range`), `label` and `location` (`docked` at a `body_id`, `in_flight` or `lost` with a `mission_id`). `POST /api/v1/fleet/reset` (operator) restores the starting fleet; 409 while the controller holds a mission.
+- `POST /api/v1/missions` accepts optional `shuttle_id`. **Behaviour change:** a mission now needs a docked shuttle of the plan's class at the plan's origin; otherwise HTTP 409 with detail `NO_SHUTTLE_DOCKED`. Without `shuttle_id` the backend picks one. MissionSnapshot gains `shuttle_id`.
+- Shuttles move only on confirmed controller telemetry: departure burn -> `in_flight`; COMPLETE with capture -> `docked` at the destination; SAFE or ABORTED after departure -> `lost`; abort or clear before departure -> still docked. Nothing moves during a blackout.
+- WebSocket event `fleet` carries the same body as `GET /api/v1/fleet` whenever it changes.
+- `GET /api/v1/planets/positions?jd_tdb=` or `?date_utc=`: all eight planets (`body_id`, `r_km`) at one date from the checked-in NASA track, with the track's date range. 404 `DATE_OUTSIDE_TRACK` outside it.
+
 ## 1.2.0 (2026-11-15): additive, nothing breaks (plan section 18, Shuttle and CCS)
 
 - Wire: new mutation `SET_TRIP_DAYS` (`0x16`, payload `mission_id:u32, trip_days:u32`, allowed in LOADED or ARMED, display only). Golden frames `31_set_trip_days`, `32_ack_set_trip_days`, `33_nack_set_trip_days_bad_value`. Every earlier frame is unchanged. `protocol_v1.py` adds `pack_trip_days`, `trip_days_from_tof` and the shared `days_to_arrival` formula.

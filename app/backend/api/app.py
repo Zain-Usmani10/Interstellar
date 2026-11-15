@@ -6,6 +6,7 @@ Run:  python -m app.backend.api          (one process, no reload, no extra worke
 from __future__ import annotations
 
 import asyncio
+import math
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -17,6 +18,10 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app.backend.ephemeris.interp import hermite_state
+from app.backend.ephemeris.planet_tracks import load_tracks
+from app.backend.ephemeris.timeconv import jd_tdb_to_utc, utc_to_jd_tdb
+from app.backend.fleet import FleetError, FleetStore
 from app.backend.runtime.events import EventHub
 from app.backend.runtime.inputs import InputError, InputManager
 from app.backend.runtime.jobs import JobManager, PlannerUnavailable
@@ -40,6 +45,7 @@ class InputSessionRequest(BaseModel):
 
 class MissionRequest(BaseModel):
     plan_id: str
+    shuttle_id: str | None = None       # omitted = any docked shuttle of the plan's class at the origin
 
 
 class CommandRequest(BaseModel):
@@ -91,8 +97,10 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
     hub = EventHub()
     plans = PlanStore(validators, settings.plans_dir)
     inputs = InputManager(hub, validators, settings.brain_enabled)
+    fleet = FleetStore(settings.fleet_path or Path(settings.db_path).with_name("fleet.json"))
     runtime = MissionRuntime(transport or make_transport(settings), plans, hub, MissionDb(settings.db_path),
-                             on_state_change=lambda: inputs.bump("mission_state"))
+                             on_state_change=lambda: inputs.bump("mission_state"), fleet=fleet)
+    planet_tracks: dict = {}            # loaded and integrity-checked once, on first use
     jobs = JobManager(plans, hub)
     operator_token = secrets.token_urlsafe(24)
     origins = {settings.frontend_dev_origin, f"http://{settings.host}:{settings.port}",
@@ -154,6 +162,26 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
     def planets():
         return fixture("planets")
 
+    @app.get("/api/v1/planets/positions")
+    def planet_positions(jd_tdb: float | None = None, date_utc: str | None = None):
+        """All eight planets at one date, from the checked-in NASA track. Give jd_tdb or date_utc."""
+        if (jd_tdb is None) == (date_utc is None):
+            raise HTTPException(422, "give exactly one of jd_tdb or date_utc")
+        try:
+            jd = jd_tdb if jd_tdb is not None else utc_to_jd_tdb(date_utc)
+        except ValueError as err:
+            raise HTTPException(422, str(err)) from None
+        if not planet_tracks:
+            planet_tracks.update(load_tracks())
+        if not math.isfinite(jd) or not planet_tracks["start_jd_tdb"] <= jd <= planet_tracks["end_jd_tdb"]:
+            raise HTTPException(404, {"code": "DATE_OUTSIDE_TRACK", "start_jd_tdb": planet_tracks["start_jd_tdb"],
+                                      "end_jd_tdb": planet_tracks["end_jd_tdb"]})
+        return {"schema_version": 1, "epoch_jd_tdb": jd, "date_utc": jd_tdb_to_utc(jd),
+                "frame": planet_tracks["frame"], "data_mode": planet_tracks["data_mode"],
+                "start_jd_tdb": planet_tracks["start_jd_tdb"], "end_jd_tdb": planet_tracks["end_jd_tdb"],
+                "planets": [{"body_id": body["body_id"], "r_km": [float(x) for x in hermite_state(body["states"], jd)[0]]}
+                            for body in planet_tracks["bodies"]]}
+
     @app.get("/api/v1/planets/{body_id}/info")
     async def planet(body_id: str, scene_epoch_jd_tdb: float | None = None):
         if body_id not in PLANET_IDS:
@@ -205,13 +233,27 @@ def create_app(settings: Settings | None = None, transport: Transport | None = N
     def create_mission(body: MissionRequest, x_operator_token: str | None = Header(default=None)):
         require_operator(x_operator_token)
         try:
-            return runtime.create_mission(body.plan_id)
+            return runtime.create_mission(body.plan_id, body.shuttle_id)
         except KeyError:
             raise HTTPException(404, "unknown_plan") from None
+        except FleetError as err:               # NO_SHUTTLE_DOCKED and the other fleet rule codes
+            raise HTTPException(409, err.code) from None
         except MissionBusy as err:
             raise HTTPException(409, str(err)) from None
         except ValueError as err:
             raise HTTPException(422, str(err)) from None
+
+    @app.get("/api/v1/fleet")
+    def get_fleet():
+        return runtime.fleet_view()
+
+    @app.post("/api/v1/fleet/reset")
+    def reset_fleet(x_operator_token: str | None = Header(default=None)):
+        require_operator(x_operator_token)
+        try:
+            return runtime.reset_fleet()
+        except MissionBusy as err:
+            raise HTTPException(409, str(err)) from None
 
     @app.get("/api/v1/missions/{mission_id}")
     def get_mission(mission_id: str):

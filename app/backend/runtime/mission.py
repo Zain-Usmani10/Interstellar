@@ -30,6 +30,7 @@ from app.contracts.transport import Transport, TransportError
 from .events import EventHub
 from .link import Link, LinkError
 from app.backend.ephemeris.timeconv import jd_tdb_to_utc
+from app.backend.fleet import FleetError, FleetStore
 
 from .physics_view import reconstruct
 from .stores import MissionDb, PlanStore
@@ -39,6 +40,12 @@ STALE_AFTER_S = 1.0
 KEEPALIVE_S = 0.5            # the board calls the link lost after 2 s without a valid frame
 ESTIMATE_PUBLISH_S = 0.1     # how often the estimate is republished during a blackout
 LABELS = {"fpga": "FPGA", "simulator": "SIMULATED CONTROLLER"}
+SHUTTLE_LABELS = {"standard": "Standard shuttle", "long_range": "Long-range shuttle"}
+
+
+def shuttle_class(plan: dict) -> str:
+    """Which shuttle class a plan was computed for (plan section 20): the 900 s model is long range."""
+    return "long_range" if plan["vehicle"]["isp_s"] >= 900 else "standard"
 COMMANDS = {"arm": T.ARM, "start": T.START, "abort": T.ABORT, "clear": T.CLEAR}
 
 
@@ -48,8 +55,10 @@ class MissionBusy(Exception):
 
 class MissionRuntime:
     def __init__(self, transport: Transport, plans: PlanStore, hub: EventHub, db: MissionDb,
-                 on_state_change: Callable[[], None] | None = None):
+                 on_state_change: Callable[[], None] | None = None, fleet: FleetStore | None = None):
         self.transport = transport
+        self.fleet = fleet                        # None = no fleet bookkeeping (plain unit tests)
+        self._fleet_seen: tuple | None = None      # last (mission, state, mask) handed to the fleet
         self.plans = plans
         self.hub = hub
         self.db = db
@@ -166,6 +175,7 @@ class MissionRuntime:
             if mission and mission.get("uploaded") and (
                     board_session != self.link.session_id or status.mission_id != mission["wire_mission"]):
                 self._lost = True                  # board reset/reprogrammed: our mission is gone
+        self._fleet_evidence(status)
         self._publish()
         if previous != status.state:
             self._persist()
@@ -181,6 +191,65 @@ class MissionRuntime:
             self._publish()
             self.hub.publish("transport", {"transport_state": "stale",
                                            "detail": "no telemetry; showing the last received state"})
+
+    # ------------------------------------------------------------ fleet (plan section 20)
+
+    def _fleet_evidence(self, status: p.Status) -> None:
+        """Hand confirmed, correlated telemetry to the fleet. Estimates never get here."""
+        with self._lock:
+            mission = self._mission
+            if (self.fleet is None or mission is None or self._lost or not mission.get("uploaded")
+                    or "shuttle_id" not in mission or status.mission_id != mission["wire_mission"]):
+                return
+            state = p.State(status.state).name
+            seen = (mission["uuid"], state, status.executed_mask)
+            if state == "IDLE" or seen == self._fleet_seen:
+                return
+            self._fleet_seen = seen
+        try:
+            self.fleet.confirm_status(mission["uuid"], state, status.executed_mask)
+        except FleetError:
+            return                      # evidence the fleet rules do not accept moves nothing
+        self.hub.publish("fleet", self.fleet_view())
+
+    def fleet_view(self) -> dict:
+        """The fleet as the GUI needs it: every shuttle with its class label and location."""
+        data = self.fleet.snapshot()
+        return {"schema_version": 1, "active_mission_id": data["active_mission_id"],
+                "shuttles": [{**s, "label": SHUTTLE_LABELS[s["class"]]} for s in data["shuttles"]]}
+
+    def reset_fleet(self) -> dict:
+        """Operator reset to the starting fleet. Refused while the controller holds a mission."""
+        with self._lock:
+            status, mission = self._status, self._mission
+            busy = (mission is not None and mission.get("uploaded") and not self._lost
+                    and status is not None and status.state != p.State.IDLE)
+            if busy:
+                raise MissionBusy("clear the mission on the controller before resetting the fleet")
+            if mission is not None:
+                mission.pop("shuttle_id", None)
+        self.fleet.reset()
+        self._fleet_seen = None
+        view = self.fleet_view()
+        self.hub.publish("fleet", view)
+        return view
+
+    def _bind_shuttle(self, mission_uuid: str, plan: dict, shuttle_id: str | None) -> str:
+        """Reserve a docked shuttle of the plan's class at the origin, or raise NO_SHUTTLE_DOCKED."""
+        data = self.fleet.snapshot()
+        if data["active_mission_id"] is not None:
+            # The previous mission never finished on the board (never uploaded, cleared, or lost):
+            # release its shuttle if it had not departed; a departed one stays lost.
+            self.fleet.confirm_clear(data["active_mission_id"])
+            data = self.fleet.snapshot()
+        wanted, origin = shuttle_class(plan), plan["origin_body_id"]
+        if shuttle_id is None:
+            shuttle_id = next((s["id"] for s in data["shuttles"] if s["class"] == wanted
+                               and s["location"] == {"kind": "docked", "body_id": origin}), None)
+            if shuttle_id is None:
+                raise FleetError("NO_SHUTTLE_DOCKED")
+        self.fleet.bind_mission(mission_uuid, shuttle_id, origin, plan["destination_body_id"], wanted)
+        return shuttle_id
 
     # ------------------------------------------------------------ blackout, estimate, sync
 
@@ -317,6 +386,7 @@ class MissionRuntime:
             transport_state = "stale" if age > STALE_AFTER_S * 1000 else "connected"
         snapshot = {
             "schema_version": 1, "server_seq": seq, "mission_id": mission["uuid"],
+            "shuttle_id": mission.get("shuttle_id"),
             "plan_id": plan["plan_id"], "plan_sha256": plan["plan_sha256"],
             "wire": {"session_id": self.link.session_id, "mission_id": mission["wire_mission"],
                      "plan_crc16": mission["plan_crc16"]},
@@ -405,8 +475,8 @@ class MissionRuntime:
                 "open": self.transport.is_open(), "stats": self.transport.stats(),
                 "link_error": self._link_error}
 
-    def create_mission(self, plan_id: str) -> dict:
-        """Bind a validated plan to the controller. Nothing is sent to the board yet."""
+    def create_mission(self, plan_id: str, shuttle_id: str | None = None) -> dict:
+        """Bind a validated plan (and a docked shuttle) to a mission. Nothing is sent to the board yet."""
         plan = self.plans.get(plan_id)
         if plan is None:
             raise KeyError(plan_id)
@@ -422,8 +492,12 @@ class MissionRuntime:
                           plan["wire"]["capture_fuel_g"])
             if wire.problem():
                 raise ValueError(f"plan cannot be sent to the controller: {wire.problem()}")
+            mission_uuid = str(uuid.uuid4())
+            bound = self._bind_shuttle(mission_uuid, plan, shuttle_id) if self.fleet is not None else None
             self._blackout = self._reconcile = self._reconciliation = None
-            self._mission = {"uuid": str(uuid.uuid4()), "plan": plan, "wire": wire,
+            self._fleet_seen = None
+            self._mission = {"uuid": mission_uuid, "plan": plan, "wire": wire,
+                             **({"shuttle_id": bound} if bound else {}),
                              "trip_days": p.trip_days_from_tof(plan["tof_s"]), "trip_days_set": False,
                              "wire_mission": wire.mission_id, "plan_crc16": wire.crc16()}
             self._lost, self._snapshot = False, None
@@ -492,6 +566,12 @@ class MissionRuntime:
         if name == "clear" and ack.result == p.Result.APPLIED:
             mission["cleared"] = True
             mission["uploaded"] = False
+            if self.fleet is not None and "shuttle_id" in mission:
+                try:
+                    self.fleet.confirm_clear(mission["uuid"])     # docked again unless it had departed
+                    self.hub.publish("fleet", self.fleet_view())
+                except FleetError:
+                    pass
         return ack.result == p.Result.APPLIED, p.Detail(ack.detail).name
 
     def inject_fault(self, kind: str) -> None:
