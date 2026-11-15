@@ -15,6 +15,9 @@
 //   K3  A 1000-day trip in 30 ticks. A new plan forgets the old length.
 //   K4  No SET_TRIP_DAYS (a backend that does not know the command): the
 //       mission runs as before and the display shows seconds elapsed.
+//   K5  Contracts 1.2.0 golden frames: 31 -> ACK 32 byte for byte, the
+//       identical retry, and a 0-day request -> NACK 33 byte for byte.
+//   K6  Plan section 19 timing (500 / 6500 / 6800): first countdown ticks only.
 //
 // The monitor, senders and check tasks below are the same as in tb_mission.v.
 
@@ -643,6 +646,51 @@ module tb_cockpit;
         fly(32'd5, 32'd130, 32'd0, 1'b0, 1'b0);
         check(bad_disp == 0, "display: T-minus, then mission seconds elapsed");
         check(dut.state == 3'd5 && dut.executed_mask == 2'b11, "COMPLETE with both burns");
+
+        // =========================================================== K5
+        $display("--- K5: contracts 1.2.0 golden frames 31 / 32 / 33");
+        reset_board;
+        cmd_file("app/contracts/fixtures/frames/03_open_session.hex",
+                 "app/contracts/fixtures/frames/04_ack_open_session.hex", "OPEN_SESSION -> golden ACK");
+        cmd_file("app/contracts/fixtures/frames/06_load_plan.hex",
+                 "app/contracts/fixtures/frames/07_ack_load_plan.hex", "LOAD_PLAN -> golden ACK");
+        cmd_file("app/contracts/fixtures/frames/08_commit_plan.hex",
+                 "app/contracts/fixtures/frames/09_ack_commit_plan.hex", "COMMIT_PLAN -> golden ACK");
+        cmd_file("app/contracts/fixtures/frames/31_set_trip_days.hex",
+                 "app/contracts/fixtures/frames/32_ack_set_trip_days.hex",
+                 "golden SET_TRIP_DAYS (seq 3, 300 days) -> golden ACK 32, byte for byte");
+        check(dut.trip_days_valid === 1'b1 && dut.trip_days == 32'd300, "trip length is 300");
+        cmd_file("app/contracts/fixtures/frames/31_set_trip_days.hex",
+                 "app/contracts/fixtures/frames/32_ack_set_trip_days.hex",
+                 "identical retry -> the same cached ACK");
+
+        reset_board;
+        cmd_file("app/contracts/fixtures/frames/03_open_session.hex",
+                 "app/contracts/fixtures/frames/04_ack_open_session.hex", "OPEN_SESSION -> golden ACK");
+        cmd_file("app/contracts/fixtures/frames/06_load_plan.hex",
+                 "app/contracts/fixtures/frames/07_ack_load_plan.hex", "LOAD_PLAN -> golden ACK");
+        cmd_file("app/contracts/fixtures/frames/08_commit_plan.hex",
+                 "app/contracts/fixtures/frames/09_ack_commit_plan.hex", "COMMIT_PLAN -> golden ACK");
+        cmd_built(8'h16, 16'd3, SESSION, {160'd0, 32'd0, MISSION}, 8,
+                  "app/contracts/fixtures/frames/33_nack_set_trip_days_bad_value.hex",
+                  "SET_TRIP_DAYS with 0 days -> golden NACK 33, byte for byte");
+        check(dut.trip_days_valid === 1'b0, "no trip length after the rejection");
+
+        // =========================================================== K6
+        $display("--- K6: plan section 19 timing (500 / 6500 / 6800), start of the countdown only");
+        reset_board;
+        seq = 0;
+        cmd_detail(8'h02, 16'd0, 32'd0, {192'd0, SESSION}, 4, 8'd0, "OPEN_SESSION applied");
+        load_commit(32'd500, 32'd6500, 32'd6800);
+        set_days(MISSION, 32'd9999, 8'd0, "9999 days applied");
+        cmd(8'h12, MISSION_PAY, 4, 8'd0, "ARM applied");
+        cmd(8'h13, MISSION_PAY, 4, 8'd0, "START applied");
+        wait_tick(32'd1);
+        repeat (400) @(posedge clk);
+        check(shown == 32'd499 && point, "T-minus shows 04.99 at tick 1");
+        wait_tick(32'd3);
+        repeat (400) @(posedge clk);
+        check(shown == 32'd497 && point && dut.days_to_arrival == 32'd9999, "T-minus shows 04.97 at tick 3, days still 9999");
 
         check(bad_frames == 0, "every frame from the board was well formed");
         check(dut.rx_error_count == 16'd0 || dut.rx_error_count == 0, "board counted no receive errors");
