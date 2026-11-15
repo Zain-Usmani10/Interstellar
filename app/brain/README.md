@@ -113,11 +113,14 @@ duplicate and stale-context rejection, and verifies the input token cannot creat
 a mission. Back navigation in that ten-trial test is explicitly ordinary input.
 The bridge test uses a real loopback WebSocket and the core API in-process.
 
+Browser smoke against frontend `481c6ba` passed: generated Earth selection, back,
+fresh Mars selection, then brain disconnect and ordinary Close -> Earth selection.
+See [browser evidence](results/browser_smoke.md) and its screenshot. This used
+synthetic core fixtures and a simulated controller, not the unmerged NASA adapter.
+Widget/card layout and unavailable picker targets need frontend polish as recorded.
+
 No headset, replay dataset, live calibration, physical FPGA, measured flashing
-monitor, browser-observed end-to-end demo or recording has been validated here.
-The frontend owner has supplied the mount; the shared browser planet-card flow
-still needs observed confirmation before marking the full issue integrated.
-Live/replay adapters should replace only
+monitor or video recording has been validated here. Live/replay adapters should replace only
 acquisition after device metadata, timing, units and separately reported held-out
 evaluation pass; synthetic thresholds are not a live-device calibration.
 
