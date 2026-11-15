@@ -311,6 +311,24 @@ button {
   font-size: 0.78rem !important;
 }
 
+.conditions-block {
+  margin-top: 0.35rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--line);
+}
+
+.obs-times {
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border-left: 2px solid rgba(216, 163, 92, 0.55);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.obs-sep {
+  margin-top: 0.35rem !important;
+  font-style: italic;
+}
+
 .bci-slot[data-bci-slot="reserved"] {
   display: none;
 }

@@ -71,7 +71,7 @@ export function PlanetInfoCard({ planet, onClose }: Props) {
         <p className="source">{orbital.provenance_note}</p>
       </section>
 
-      <section>
+      <section className="conditions-block">
         <h3>{planet.conditions.label}</h3>
         <p className="availability">
           availability: {planet.conditions.availability}
@@ -80,9 +80,37 @@ export function PlanetInfoCard({ planet, onClose }: Props) {
             : ""}
         </p>
         <p>{planet.conditions.note}</p>
-        <p className="muted">
-          Observation time is separate from mission/scene epoch.
-        </p>
+        <div className="obs-times" aria-label="Observation and retrieval times">
+          <p className="muted">
+            Observed (UTC):{" "}
+            {planet.conditions.observed_from_utc ||
+            planet.conditions.observed_to_utc
+              ? `${planet.conditions.observed_from_utc ?? "—"} → ${planet.conditions.observed_to_utc ?? "—"}`
+              : "n/a"}
+          </p>
+          <p className="muted">
+            Retrieved (UTC): {planet.conditions.retrieved_utc ?? "n/a"}
+          </p>
+          <p className="muted obs-sep">
+            These times are Earth-hazard observation/retrieval stamps — not the
+            scene/mission epoch above.
+          </p>
+        </div>
+        {planet.conditions.items.length > 0 ? (
+          <ul className="fact-list">
+            {planet.conditions.items.map((item) => (
+              <li key={item.id}>
+                <div className="fact-row">
+                  <span>{item.title}</span>
+                  <strong>{item.category}</strong>
+                </div>
+                {item.date_utc ? (
+                  <p className="muted">event date: {item.date_utc}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </section>
 
       <p className="scale-note">

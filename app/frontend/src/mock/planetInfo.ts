@@ -36,7 +36,18 @@ export type Conditions = {
   label: string;
   availability: "available" | "empty" | "unavailable" | "error";
   delivery: "live_fetch" | "cached" | "mock" | null;
+  /** Observation window — not the mission/scene epoch. */
+  observed_from_utc: string | null;
+  observed_to_utc: string | null;
+  retrieved_utc: string | null;
   note: string;
+  items: Array<{
+    id: string;
+    title: string;
+    category: string;
+    date_utc?: string;
+    source_url?: string;
+  }>;
 };
 
 export type PlanetInfo = {
@@ -130,7 +141,11 @@ export const PLANETS: PlanetInfo[] = [
       label: "Earth natural hazard events",
       availability: "unavailable",
       delivery: "mock",
-      note: "MOCK: EONET Earth hazard events not wired yet. Unavailable is not an all-clear.",
+      observed_from_utc: null,
+      observed_to_utc: null,
+      retrieved_utc: null,
+      items: [],
+      note: "MOCK: EONET Earth hazard events not wired yet. Unavailable is not an all-clear. Observation times below (when present) are not the mission epoch.",
     },
     data_mode: "mock",
   },
@@ -182,6 +197,10 @@ export const PLANETS: PlanetInfo[] = [
       label: "Mars current weather",
       availability: "unavailable",
       delivery: "mock",
+      observed_from_utc: null,
+      observed_to_utc: null,
+      retrieved_utc: null,
+      items: [],
       note: "Current Mars weather unavailable (InSight ended 2022). MOCK panel does not invent live weather.",
     },
     data_mode: "mock",
