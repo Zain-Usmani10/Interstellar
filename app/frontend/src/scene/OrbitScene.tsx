@@ -46,7 +46,7 @@ export type OrbitSceneProps = {
 
 const BLACK_HOLE_POS: Vec3 = [Math.cos(5.1) * 92, 0, -Math.sin(5.1) * 92];
 
-function Sun() {
+function Sun({ showLabel }: { showLabel: boolean }) {
   const map = useMemo(() => loadTexture("/textures/2k_sun.jpg"), []);
   return (
     <group>
@@ -71,31 +71,28 @@ function Sun() {
         />
       </sprite>
       <pointLight color="#ffe1b3" intensity={110} decay={2} />
+      {showLabel ? (
+        <Html
+          position={[0, 2.6, 0]}
+          center
+          sprite
+          distanceFactor={28}
+          style={{ pointerEvents: "none" }}
+        >
+          <span
+            style={{
+              color: "#f0e0b8",
+              font: "600 11px/1 Avenir Next, Segoe UI, sans-serif",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              textShadow: "0 2px 12px rgba(0,0,0,0.85)",
+            }}
+          >
+            Sun
+          </span>
+        </Html>
+      ) : null}
     </group>
-  );
-}
-
-function OrbitGuide({ radius }: { radius: number }) {
-  const points = useMemo(
-    () =>
-      Array.from({ length: 181 }, (_, i) => {
-        const angle = (i / 180) * Math.PI * 2;
-        return [Math.cos(angle) * radius, 0, Math.sin(angle) * radius] as [
-          number,
-          number,
-          number,
-        ];
-      }),
-    [radius],
-  );
-  return (
-    <Line
-      points={points}
-      color="#526578"
-      lineWidth={0.65}
-      transparent
-      opacity={0.27}
-    />
   );
 }
 
@@ -121,7 +118,7 @@ class SceneBoundary extends Component<
 
 export function OrbitScene({
   selectedId,
-  selectionEnabled = true,
+  selectionEnabled: _selectionEnabled = true,
   onSelect,
   onFocusName,
   focusName = null,
@@ -180,20 +177,20 @@ export function OrbitScene({
   const followCraft = Boolean(
     !overview && view.departed && view.position && !captured,
   );
+  // Visit camera always follows the focused body (A1). Never force Earth/origin
+  // just because a snapshot exists — that made outer-planet bar clicks open Earth.
   const visitTarget =
     overview
       ? null
-      : sceneSnapshot && !view.departed
-      ? origin
       : focusName === "Black Hole"
       ? { position: BLACK_HOLE_POS, body: { radius: 1.2 } }
       : (focused ?? selected);
   const cameraFocus = overview
     ? null
-    : captured
-      ? destination?.position ?? view.position
-      : followCraft
-        ? view.position
+    : followCraft
+      ? view.position
+      : captured && !focused && !selected
+        ? destination?.position ?? view.position
         : ((visitTarget?.position as Vec3 | null) ?? null);
   const transitionKey = `${overview ? "overview" : focusName ?? selectedId ?? "overview"}:${snapshot?.mission_id ?? "preview"}:${view.mode}:${followCraft ? "follow" : "visit"}:${positions ? "dated" : "fallback"}`;
 
@@ -223,49 +220,44 @@ export function OrbitScene({
       <SceneBoundary>
         <Canvas
           camera={{ position: [320, 500, 750], fov: 42, near: 0.03, far: 3000 }}
-          dpr={compact ? [1, 1] : [1, 1.5]}
+          dpr={compact ? [1, 1] : [1, 1.25]}
           frameloop={visible ? "always" : "never"}
           gl={{ antialias: !compact, powerPreference: "high-performance" }}
         >
           <color attach="background" args={["#01030c"]} />
           <fog attach="fog" args={["#03061a", 420, 2100]} />
-          <ambientLight intensity={0.22} color="#8aa0c0" />
-          <hemisphereLight args={["#b8d4ff", "#1a1010", 0.45]} />
+          <ambientLight intensity={0.28} color="#8aa0c0" />
+          <hemisphereLight args={["#b8d4ff", "#1a1010", 0.4]} />
           <directionalLight
             position={[40, 25, 10]}
             color="#fff4e0"
-            intensity={3.2}
-          />
-          <directionalLight
-            position={[-30, -10, -20]}
-            color="#4060a0"
-            intensity={0.55}
+            intensity={2.8}
           />
           <Starfield compact={compact} />
-          <Sun />
+          <Sun showLabel={!compact} />
           {performanceEnabled && !compact ? (
             <ScenePerformance onSample={setPerformanceReport} />
           ) : null}
           {planets.map(({ body, position }) => {
-            const focused =
+            const isFocus =
               !overview &&
-              (selectedId === body.target || focusName === body.name);
+              (focusName === body.name ||
+                (body.target != null && selectedId === body.target));
             return (
             <group key={body.name}>
-              <OrbitGuide radius={body.displayOrbitAU * 10} />
               <PlanetMesh
                 body={body}
                 position={position}
-                selected={focused}
-                interactive={selectionEnabled && !compact}
+                selected={isFocus}
+                interactive={!compact}
                 onSelect={onSelect}
                 onFocus={() => onFocusName?.(body.name)}
-                showLabel={!overview && !compact && focused}
+                showLabel={!compact}
               />
               <group position={position}>
                 <DockStation
                   radius={body.radius}
-                  showLabels={!overview && !compact && focused && !followCraft}
+                  showLabels={!overview && !compact && isFocus && !followCraft}
                   shuttles={dockedShuttles(ships, body.bodyId ?? "", sceneSnapshot)
                   .filter(ship => ship.id !== sceneSnapshot?.shuttle_id)}
                 />
@@ -277,7 +269,7 @@ export function OrbitScene({
             position={BLACK_HOLE_POS}
             selected={!overview && focusName === "Black Hole"}
             onSelect={() => onFocusName?.("Black Hole")}
-            showLabel={!overview && !compact && focusName === "Black Hole"}
+            showLabel={!compact}
           />
           {points.length > 1 && (
             <Line
@@ -301,9 +293,6 @@ export function OrbitScene({
             {points.length > 1 && <Line points={points} color="#e8b875" dashed dashSize={0.22} gapSize={0.15} lineWidth={2} />}
             <group position={ghost}>
               <mesh><octahedronGeometry args={[0.24]} /><meshBasicMaterial color="#e8b875" transparent opacity={0.45} wireframe /></mesh>
-              {!compact ? (
-                <Html center position={[0, 0.65, 0]} style={{ pointerEvents: "none", color: "#f4cf98", font: "11px monospace", whiteSpace: "nowrap" }}>ESTIMATE · NO CONTACT</Html>
-              ) : null}
             </group>
           </>}
           <CameraRig
@@ -311,16 +300,15 @@ export function OrbitScene({
             focusRadius={
               followCraft
                 ? 0.55
-                : captured
-                  ? destination?.body.radius ?? 0.65
-                  : focusName === "Black Hole"
-                    ? 1.4
-                    : ((visitTarget as { body?: { radius: number } })?.body
-                        ?.radius ?? 1)
+                : focusName === "Black Hole"
+                  ? 1.4
+                  : ((visitTarget as { body?: { radius: number } })?.body
+                      ?.radius ?? 1)
             }
             transitionKey={transitionKey}
             extent={Math.max(95, ...planets.map(p => Math.hypot(...p.position) + p.body.radius))}
             follow={followCraft}
+            overviewDistanceScale={1.05}
           />
         </Canvas>
       </SceneBoundary>

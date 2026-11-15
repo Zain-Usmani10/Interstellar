@@ -115,15 +115,13 @@ export function PlanetMesh({
           document.body.style.cursor = "auto";
         }}
       >
-        <sphereGeometry args={[body.radius, 96, 64]} />
+        <sphereGeometry args={[body.radius, 64, 48]} />
         <meshStandardMaterial
           map={maps.map}
           bumpMap={maps.bumpMap ?? undefined}
           bumpScale={maps.bumpMap ? (body.surface === "gas" ? 0.012 : 0.045) : 0}
           roughness={body.surface === "gas" ? 0.5 : 0.72}
           metalness={body.surface === "gas" ? 0.06 : 0.03}
-          emissive={selected ? body.color : "#000000"}
-          emissiveIntensity={selected ? 0.1 : 0}
         />
       </mesh>
 
@@ -174,22 +172,12 @@ export function PlanetMesh({
         </group>
       )}
 
-      {selected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[body.radius * 1.55, body.radius * 1.62, 96]} />
-          <meshBasicMaterial
-            color="#b8fff6"
-            side={DoubleSide}
-            transparent
-            opacity={0.9}
-          />
-        </mesh>
-      )}
-
       {showLabel ? (
         <Html
           position={[0, body.radius * 1.85, 0]}
           center
+          sprite
+          distanceFactor={18}
           zIndexRange={[8, 0]}
           style={{ pointerEvents: "none" }}
         >
@@ -202,8 +190,6 @@ export function PlanetMesh({
               textTransform: "uppercase",
               whiteSpace: "nowrap",
               textShadow: "0 2px 12px rgba(0,0,0,0.85)",
-              borderBottom: selected ? "1px solid #7de8da" : "none",
-              paddingBottom: 3,
             }}
           >
             {body.name}

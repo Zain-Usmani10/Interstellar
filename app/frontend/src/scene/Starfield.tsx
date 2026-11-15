@@ -95,8 +95,9 @@ function makeCloud(count: number, radius: number, seed: number): Cloud {
   return { positions, colors };
 }
 
-const FULL = makeCloud(16000, 1600, 0x51a7f1e1);
-const COMPACT = makeCloud(3500, 950, 0x0c0ffee);
+/** A6: denser than sparse squares, but capped for 1080p frame time. */
+const FULL = makeCloud(10000, 1600, 0x51a7f1e1);
+const COMPACT = makeCloud(2200, 950, 0x0c0ffee);
 
 /** Dense procedural starfield — round soft pinpoints, indigo / blue / violet / magenta. */
 export function Starfield({ compact = false }: Props) {
@@ -113,7 +114,7 @@ export function Starfield({ compact = false }: Props) {
     <points geometry={geometry} frustumCulled={false}>
       <pointsMaterial
         map={map}
-        size={compact ? 1.6 : 2.2}
+        size={compact ? 1.35 : 1.7}
         sizeAttenuation
         vertexColors
         transparent
