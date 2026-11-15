@@ -26,8 +26,21 @@ export function DockStation({
           <Pad x={0} />
           <group position={[0, 0.2, 0]}><RocketModel warning={false} /></group>
           {showLabels ? (
-            <Html center position={[0, -0.15, 0.4]} style={{ pointerEvents: "none" }}>
-              <span style={{ color: "#b9e8ed", font: "9px monospace", whiteSpace: "nowrap" }}>
+            <Html
+              center
+              sprite
+              distanceFactor={7}
+              position={[0, 0.55, 0]}
+              style={{ pointerEvents: "none" }}
+            >
+              <span
+                style={{
+                  color: "#b9e8ed",
+                  font: "9px monospace",
+                  whiteSpace: "nowrap",
+                  textShadow: "0 1px 6px rgba(0,0,0,0.9)",
+                }}
+              >
                 {ship.class === "standard" ? "STANDARD" : "LONG-RANGE"}
               </span>
             </Html>

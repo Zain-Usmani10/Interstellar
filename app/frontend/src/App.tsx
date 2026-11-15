@@ -136,7 +136,17 @@ export default function App() {
   const daysToArrival = blackout
     ? (snapshot?.estimate?.days_to_arrival ?? null)
     : (snapshot?.trip?.days_to_arrival ?? null);
-  const tripDays = snapshot?.trip?.trip_days ?? null;
+  /** Selected route length before / without a live trip field — never a stale prior trip. */
+  const planTripDays =
+    selectedPlan?.tof_s != null && Number.isFinite(selectedPlan.tof_s)
+      ? Math.round(selectedPlan.tof_s / 86400)
+      : null;
+  const tripDays =
+    snapshot?.state === "RUNNING" ||
+    snapshot?.state === "COMPLETE" ||
+    blackout
+      ? (snapshot?.trip?.trip_days ?? planTripDays)
+      : planTripDays;
   const tMinus = formatTMinus(
     snapshot?.tick,
     selectedPlan?.ticks?.departure_tick,

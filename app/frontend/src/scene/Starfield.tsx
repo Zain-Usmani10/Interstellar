@@ -1,5 +1,12 @@
 import { useMemo } from "react";
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Color } from "three";
+import {
+  AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
+  CanvasTexture,
+  Color,
+  type Texture,
+} from "three";
 
 type Props = {
   /** Fewer points for the compact inset canvas. */
@@ -20,8 +27,40 @@ const PALETTE = [
 type Cloud = {
   positions: Float32Array;
   colors: Float32Array;
-  sizes: Float32Array;
 };
+
+let cachedMap: Texture | null = null;
+
+/** Soft round sprite so PointsMaterial does not draw squares. */
+function softDiscTexture(): Texture {
+  if (cachedMap) return cachedMap;
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    cachedMap = new CanvasTexture(canvas);
+    return cachedMap;
+  }
+  const g = ctx.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2,
+  );
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.35, "rgba(255,255,255,0.75)");
+  g.addColorStop(0.7, "rgba(255,255,255,0.2)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  cachedMap = new CanvasTexture(canvas);
+  cachedMap.needsUpdate = true;
+  return cachedMap;
+}
 
 /** Deterministic LCG so the field is stable across renders (oxlint purity). */
 function makeCloud(count: number, radius: number, seed: number): Cloud {
@@ -32,57 +71,56 @@ function makeCloud(count: number, radius: number, seed: number): Cloud {
   };
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
-  const sizes = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
     const u = rand();
     const v = rand();
     const theta = 2 * Math.PI * u;
     let phi = Math.acos(2 * v - 1);
-    if (rand() < 0.22) {
-      phi = Math.PI * 0.5 + (rand() - 0.5) * 0.35;
+    if (rand() < 0.28) {
+      phi = Math.PI * 0.5 + (rand() - 0.5) * 0.4;
     }
-    const r = radius * (0.35 + rand() * 0.65);
+    const r = radius * (0.28 + rand() * 0.72);
     const i3 = i * 3;
     positions[i3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i3 + 1] = r * Math.cos(phi) * (0.55 + rand() * 0.45);
+    positions[i3 + 1] = r * Math.cos(phi) * (0.5 + rand() * 0.5);
     positions[i3 + 2] = r * Math.sin(phi) * Math.sin(theta);
 
     const c = PALETTE[(rand() * PALETTE.length) | 0].clone();
-    c.multiplyScalar(0.45 + rand() * 0.55);
+    c.multiplyScalar(0.4 + rand() * 0.6);
     colors[i3] = c.r;
     colors[i3 + 1] = c.g;
     colors[i3 + 2] = c.b;
-    sizes[i] =
-      0.5 + rand() * (rand() < 0.08 ? 4.5 : 2.4) * (radius < 1000 ? 0.75 : 1);
   }
-  return { positions, colors, sizes };
+  return { positions, colors };
 }
 
-const FULL = makeCloud(9000, 1500, 0x51a7f1e1);
-const COMPACT = makeCloud(2200, 900, 0x0c0ffee);
+const FULL = makeCloud(16000, 1600, 0x51a7f1e1);
+const COMPACT = makeCloud(3500, 950, 0x0c0ffee);
 
-/** Dense procedural starfield — indigo / electric blue / violet / magenta pinpoints. */
+/** Dense procedural starfield — round soft pinpoints, indigo / blue / violet / magenta. */
 export function Starfield({ compact = false }: Props) {
   const cloud = compact ? COMPACT : FULL;
   const geometry = useMemo(() => {
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(cloud.positions, 3));
     g.setAttribute("color", new BufferAttribute(cloud.colors, 3));
-    g.setAttribute("size", new BufferAttribute(cloud.sizes, 1));
     return g;
   }, [cloud]);
+  const map = useMemo(() => softDiscTexture(), []);
 
   return (
     <points geometry={geometry} frustumCulled={false}>
       <pointsMaterial
-        size={compact ? 0.85 : 1.15}
+        map={map}
+        size={compact ? 1.6 : 2.2}
         sizeAttenuation
         vertexColors
         transparent
-        opacity={0.92}
+        opacity={0.95}
         depthWrite={false}
         blending={AdditiveBlending}
+        alphaTest={0.01}
       />
     </points>
   );
