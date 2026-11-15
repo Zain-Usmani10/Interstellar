@@ -1,17 +1,27 @@
+import type { SceneBodyId, SceneShuttle } from "../scene/types";
 import type { PlanetBodyId } from "./planetBodies";
 
-/** Plan §20 fleet shape — mock until GET /api/v1/fleet exists. */
+/** Fleet shapes matching contracts 1.3.0 GET /api/v1/fleet. */
 
 export type ShuttleClass = "standard" | "long_range";
+
+export type FleetLocation =
+  | { kind: "docked"; body_id: string }
+  | { kind: "in_flight"; mission_id: string }
+  | { kind: "lost"; mission_id?: string };
 
 export type FleetShuttle = {
   id: string;
   name: string;
   class: ShuttleClass;
-  location:
-    | { kind: "docked"; body_id: PlanetBodyId }
-    | { kind: "in_flight"; mission_id: string }
-    | { kind: "lost" };
+  label?: string;
+  location: FleetLocation;
+};
+
+export type FleetState = {
+  schema_version?: number;
+  active_mission_id?: string | null;
+  shuttles: FleetShuttle[];
 };
 
 export const SHUTTLE_LABEL: Record<ShuttleClass, string> = {
@@ -19,45 +29,9 @@ export const SHUTTLE_LABEL: Record<ShuttleClass, string> = {
   long_range: "Long-range shuttle",
 };
 
-/** Default fleet from plan §20 (data/fleet.json once the API lands). */
-export const MOCK_FLEET: FleetShuttle[] = [
-  {
-    id: "shuttle-std-earth-1",
-    name: "Standard shuttle",
-    class: "standard",
-    location: { kind: "docked", body_id: "399" },
-  },
-  {
-    id: "shuttle-lr-earth-1",
-    name: "Long-range shuttle",
-    class: "long_range",
-    location: { kind: "docked", body_id: "399" },
-  },
-  {
-    id: "shuttle-std-venus-1",
-    name: "Standard shuttle",
-    class: "standard",
-    location: { kind: "docked", body_id: "299" },
-  },
-  {
-    id: "shuttle-std-mars-1",
-    name: "Standard shuttle",
-    class: "standard",
-    location: { kind: "docked", body_id: "499" },
-  },
-  {
-    id: "shuttle-lr-mercury-1",
-    name: "Long-range shuttle",
-    class: "long_range",
-    location: { kind: "docked", body_id: "199" },
-  },
-  {
-    id: "shuttle-lr-jupiter-1",
-    name: "Long-range shuttle",
-    class: "long_range",
-    location: { kind: "docked", body_id: "599" },
-  },
-];
+export function shuttleClassFromIsp(isp: number | undefined): ShuttleClass {
+  return (isp ?? 450) >= 900 ? "long_range" : "standard";
+}
 
 export function dockedAt(
   fleet: FleetShuttle[],
@@ -66,4 +40,39 @@ export function dockedAt(
   return fleet.filter(
     (s) => s.location.kind === "docked" && s.location.body_id === bodyId,
   );
+}
+
+/** Affan's OrbitScene fleet prop (flattened body_id + status). */
+export function toSceneFleet(fleet: FleetShuttle[]): SceneShuttle[] {
+  const bodies: SceneBodyId[] = [
+    "199",
+    "299",
+    "399",
+    "499",
+    "599",
+    "699",
+    "799",
+    "899",
+  ];
+  return fleet.map((s) => {
+    if (s.location.kind === "docked") {
+      const body = s.location.body_id;
+      return {
+        id: s.id,
+        name: s.name,
+        class: s.class,
+        body_id: bodies.includes(body as SceneBodyId)
+          ? (body as SceneBodyId)
+          : null,
+        status: "docked" as const,
+      };
+    }
+    return {
+      id: s.id,
+      name: s.name,
+      class: s.class,
+      body_id: null,
+      status: s.location.kind === "lost" ? ("lost" as const) : ("in_flight" as const),
+    };
+  });
 }

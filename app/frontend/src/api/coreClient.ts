@@ -101,12 +101,62 @@ export async function getMission(missionId: string): Promise<MissionSnapshot> {
 export async function createMission(
   operatorToken: string,
   planId: string,
+  shuttleId?: string | null,
 ): Promise<MissionSnapshot> {
+  const body: { plan_id: string; shuttle_id?: string } = { plan_id: planId };
+  if (shuttleId) body.shuttle_id = shuttleId;
   return apiFetch("/api/v1/missions", {
     method: "POST",
     headers: { "X-Operator-Token": operatorToken },
-    body: JSON.stringify({ plan_id: planId }),
+    body: JSON.stringify(body),
   });
+}
+
+export type FleetResponse = {
+  schema_version?: number;
+  active_mission_id?: string | null;
+  shuttles: Array<{
+    id: string;
+    name: string;
+    class: "standard" | "long_range";
+    label?: string;
+    location:
+      | { kind: "docked"; body_id: string }
+      | { kind: "in_flight"; mission_id: string }
+      | { kind: "lost"; mission_id?: string };
+  }>;
+};
+
+export async function getFleet(): Promise<FleetResponse> {
+  return apiFetch("/api/v1/fleet");
+}
+
+export async function resetFleet(
+  operatorToken: string,
+): Promise<FleetResponse> {
+  return apiFetch("/api/v1/fleet/reset", {
+    method: "POST",
+    headers: { "X-Operator-Token": operatorToken },
+  });
+}
+
+export type PlanetPositionsResponse = {
+  epoch_jd_tdb: number;
+  date_utc?: string;
+  frame?: string;
+  data_mode?: string;
+  planets: Array<{ body_id: string; r_km: [number, number, number] }>;
+};
+
+export async function getPlanetPositions(args: {
+  date_utc?: string;
+  jd_tdb?: number;
+}): Promise<PlanetPositionsResponse> {
+  const params = new URLSearchParams();
+  if (args.date_utc) params.set("date_utc", args.date_utc);
+  if (args.jd_tdb != null) params.set("jd_tdb", String(args.jd_tdb));
+  const q = params.toString();
+  return apiFetch(`/api/v1/planets/positions${q ? `?${q}` : ""}`);
 }
 
 export async function postMissionCommand(

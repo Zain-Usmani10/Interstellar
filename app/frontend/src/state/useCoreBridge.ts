@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   connectEvents,
   createMission,
+  getFleet,
   getHealth,
   getMission,
   getPlan,
@@ -12,6 +13,8 @@ import {
   postIntent,
   postMissionCommand,
   registerInputSession,
+  resetFleet as postResetFleet,
+  type FleetResponse,
 } from "../api/coreClient";
 import { formatApiError } from "../api/errors";
 import { cardFromApi, cardFromMock, type PlanetCardModel } from "../api/mapPlanetInfo";
@@ -24,7 +27,7 @@ import type {
   SimFaultKind,
 } from "../api/missionTypes";
 import type { BodyId, PlanetTargetId, TargetId } from "../api/types";
-import type { ShuttleClass } from "./fleetMock";
+import type { FleetShuttle, ShuttleClass } from "./fleetMock";
 import { missionActionGates } from "./missionGates";
 import type { PlanetBodyId } from "./planetBodies";
 import {
@@ -141,11 +144,35 @@ export function useCoreBridge() {
   const [destinationBodyId, setDestinationBodyId] =
     useState<PlanetBodyId>("499");
   const [shuttleClass, setShuttleClass] = useState<ShuttleClass>("standard");
+  const [selectedShuttleId, setSelectedShuttleId] = useState<string | null>(
+    null,
+  );
+  const [fleet, setFleet] = useState<FleetShuttle[]>([]);
   const [routesAvailable, setRoutesAvailable] = useState(false);
   const [routeUnavailable, setRouteUnavailable] =
     useState<RouteUnavailable>("none");
   const [snapshot, setSnapshot] = useState<MissionSnapshot | null>(null);
   const [faultHistory, setFaultHistory] = useState<FaultHistoryEntry[]>([]);
+
+  const applyFleet = useCallback((next: FleetResponse) => {
+    setFleet(
+      (next.shuttles ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        class: s.class,
+        label: s.label,
+        location: s.location,
+      })),
+    );
+  }, []);
+
+  const refreshFleet = useCallback(async () => {
+    try {
+      applyFleet(await getFleet());
+    } catch (err) {
+      setLastError(formatApiError(err, "fleet_fetch_failed"));
+    }
+  }, [applyFleet]);
 
   const sessionRef = useRef<SessionBits | null>(null);
   const operatorTokenRef = useRef<string | null>(null);
@@ -217,6 +244,7 @@ export function useCoreBridge() {
       origin?: PlanetBodyId;
       destination?: PlanetBodyId;
       shuttleClass?: ShuttleClass;
+      shuttleId?: string | null;
     }) => {
       const origin = next.origin ?? originBodyId;
       let destination = next.destination ?? destinationBodyId;
@@ -227,6 +255,7 @@ export function useCoreBridge() {
       setOriginBodyId(origin);
       setDestinationBodyId(destination);
       setShuttleClass(vehicle);
+      if (next.shuttleId !== undefined) setSelectedShuttleId(next.shuttleId);
       if (linkMode === "live") {
         void loadPlans(origin, destination, vehicle);
       } else {
@@ -386,6 +415,11 @@ export function useCoreBridge() {
         return;
       }
 
+      if (msg.type === "fleet") {
+        applyFleet(msg.data as FleetResponse);
+        return;
+      }
+
       if (msg.type === "transport") {
         const data = msg.data as { transport_state?: string; detail?: string };
         if (data.detail) setLastError(data.detail);
@@ -447,6 +481,11 @@ export function useCoreBridge() {
         } catch {
           if (!cancelled) setLastError("plans_unavailable");
         }
+        try {
+          if (!cancelled) applyFleet(await getFleet());
+        } catch {
+          if (!cancelled) setLastError("fleet_unavailable");
+        }
         if (cancelled) return;
         openSocket();
       } catch {
@@ -468,7 +507,7 @@ export function useCoreBridge() {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [applySelection, applySnapshot, loadPlans]);
+  }, [applyFleet, applySelection, applySnapshot, loadPlans]);
 
   const proposeTarget = useCallback(
     async (targetId: TargetId, source: "mouse" | "keyboard") => {
@@ -554,14 +593,20 @@ export function useCoreBridge() {
     setCommandBusy(true);
     setLastError(null);
     try {
-      const snap = await createMission(token, plan.plan_id);
+      const snap = await createMission(token, plan.plan_id, selectedShuttleId);
       applySnapshot(snap);
+      void refreshFleet();
     } catch (err) {
-      setLastError(formatApiError(err, "create_mission_failed"));
+      const detail = formatApiError(err, "create_mission_failed");
+      setLastError(
+        detail.includes("NO_SHUTTLE_DOCKED")
+          ? "No shuttle docked here"
+          : detail,
+      );
     } finally {
       setCommandBusy(false);
     }
-  }, [applySnapshot, linkMode, selectedPlan]);
+  }, [applySnapshot, linkMode, refreshFleet, selectedPlan, selectedShuttleId]);
 
   const sendCommand = useCallback(
     async (command: MissionCommand) => {
@@ -604,9 +649,14 @@ export function useCoreBridge() {
       let missionId = missionIdRef.current;
       const state = snapshotRef.current?.state;
       if (!missionId || state === "IDLE" || state === "UNKNOWN" || !state) {
-        const snap = await createMission(token, plan.plan_id);
+        const snap = await createMission(
+          token,
+          plan.plan_id,
+          selectedShuttleId,
+        );
         applySnapshot(snap);
         missionId = snap.mission_id;
+        void refreshFleet();
       }
       if (!missionId) return;
       const result = await postMissionCommand(token, missionId, "upload");
@@ -615,11 +665,33 @@ export function useCoreBridge() {
         setLastError(`upload: ${result.detail || "not_applied"}`);
       }
     } catch (err) {
-      setLastError(formatApiError(err, "prepare_failed"));
+      const detail = formatApiError(err, "prepare_failed");
+      setLastError(
+        detail.includes("NO_SHUTTLE_DOCKED")
+          ? "No shuttle docked here"
+          : detail,
+      );
     } finally {
       setCommandBusy(false);
     }
-  }, [applySnapshot, linkMode, selectedPlan]);
+  }, [applySnapshot, linkMode, refreshFleet, selectedPlan, selectedShuttleId]);
+
+  const resetFleet = useCallback(async () => {
+    const token = operatorTokenRef.current;
+    if (!token || linkMode !== "live") {
+      setLastError("operator_unavailable");
+      return;
+    }
+    setCommandBusy(true);
+    setLastError(null);
+    try {
+      applyFleet(await postResetFleet(token));
+    } catch (err) {
+      setLastError(formatApiError(err, "fleet_reset_failed"));
+    } finally {
+      setCommandBusy(false);
+    }
+  }, [applyFleet, linkMode]);
 
   const injectFault = useCallback(
     async (kind: SimFaultKind) => {
@@ -702,6 +774,8 @@ export function useCoreBridge() {
     originBodyId,
     destinationBodyId,
     shuttleClass,
+    selectedShuttleId,
+    fleet,
     routesAvailable,
     routeUnavailable,
     snapshot,
@@ -710,9 +784,11 @@ export function useCoreBridge() {
     simFaultsEnabled,
     selectPlanById,
     setTrip,
+    setSelectedShuttleId,
     createMissionFromSelected,
     prepareMission,
     resetMission,
+    resetFleet,
     sendCommand,
     injectFault,
     selectPlanet,

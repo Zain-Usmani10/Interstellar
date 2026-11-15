@@ -5,10 +5,17 @@ type Props = {
   plan: MissionPlan | null;
   snapshot: MissionSnapshot | null;
   faultHistory: FaultHistoryEntry[];
+  dataMode?: string;
 };
 
-export function EngineerDrawer({ plan, snapshot, faultHistory }: Props) {
+export function EngineerDrawer({
+  plan,
+  snapshot,
+  faultHistory,
+  dataMode,
+}: Props) {
   const [open, setOpen] = useState(false);
+  const delayDemo = snapshot?.link?.delay_demo_s;
   return (
     <div className={`engineer-drawer ${open ? "open" : ""}`}>
       <button
@@ -22,6 +29,20 @@ export function EngineerDrawer({ plan, snapshot, faultHistory }: Props) {
       {open ? (
         <div className="drawer-body">
           <dl>
+            <div>
+              <dt>Data source</dt>
+              <dd>{dataMode ?? plan?.data_mode ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Controller</dt>
+              <dd>{snapshot?.controller_label ?? "—"}</dd>
+            </div>
+            {delayDemo != null ? (
+              <div>
+                <dt>Delay demo s</dt>
+                <dd>{delayDemo.toFixed(3)}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>State</dt>
               <dd>{snapshot?.state ?? "—"}</dd>

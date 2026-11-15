@@ -26,6 +26,7 @@ type Props = {
   onReset: () => void;
   onBlackoutStart: () => void;
   onBlackoutEnd: () => void;
+  onResetFleet: () => void;
   onFaultSingle: () => void;
   onFaultDivergence: () => void;
 };
@@ -46,6 +47,7 @@ export function GuidedLaunch({
   onReset,
   onBlackoutStart,
   onBlackoutEnd,
+  onResetFleet,
   onFaultSingle,
   onFaultDivergence,
 }: Props) {
@@ -160,6 +162,14 @@ export function GuidedLaunch({
         )}
         <button type="button" disabled={locked} onClick={onReset}>
           Start over
+        </button>
+        <button
+          type="button"
+          disabled={busy || !live || blackoutActive}
+          title="Restore the starting fleet (operator)"
+          onClick={onResetFleet}
+        >
+          Reset fleet
         </button>
         {simFaultsEnabled ? (
           <>
