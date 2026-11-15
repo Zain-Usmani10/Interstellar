@@ -386,6 +386,19 @@ class MissionRuntime:
         self._publish()
         return {"command": name, "applied": True, "detail": "OK", "snapshot": self.snapshot(mission_uuid)}
 
+    def link_indicator(self) -> str:
+        """One word for the GUI's link light. Never changes on a timer alone.
+
+        active       : CRC-valid STATUS frames from the controller are arriving.
+        inactive     : an operator/automatic blackout is on (the backend is silent), or the port is down.
+        reconnecting : the backend is probing with GET_STATUS and has not yet had a valid STATUS back
+                       (after a blackout ends, after telemetry went stale, or before the first frame).
+        """
+        if self._blackout is not None or self._link_error or not self.transport.is_open():
+            return "inactive"
+        fresh = self._status_at is not None and time.monotonic() - self._status_at <= STALE_AFTER_S
+        return "active" if fresh and self._reconcile is None else "reconnecting"
+
     # ------------------------------------------------------------ snapshots
 
     def _publish(self) -> None:
@@ -420,6 +433,7 @@ class MissionRuntime:
             "fuel_remaining_g": 0, "safe_reason": "NONE",
             "faults": {"masked_fault_count": 0, "no_majority_count": 0, "rx_error_count": 0},
             "link": {"transport_state": transport_state, "observed_age_ms": age, "view": "ground_delayed",
+                     "indicator": self.link_indicator(),
                      # Applied only when the transport is wrapped in a DelayTransport (LINK_DELAY_DEMO).
                      "delay_demo_s": self._demo_delay() if self._delayed else None,
                      "delay_physical_s": None, "blackout": self._blackout is not None},
@@ -497,6 +511,7 @@ class MissionRuntime:
         source = self.transport.controller_source
         return {"mode": source, "controller_label": LABELS[source],
                 "open": self.transport.is_open(), "stats": self.transport.stats(),
+                "link_indicator": self.link_indicator(),
                 "link_error": self._link_error}
 
     def create_mission(self, plan_id: str, shuttle_id: str | None = None) -> dict:

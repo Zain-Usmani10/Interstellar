@@ -269,6 +269,30 @@ def test_automatic_blackout_once_per_flight(tmp_path):
         assert wait_for(client, mission_id, lambda s: s["state"] == "COMPLETE")["outcome"] == "captured"
 
 
+def test_link_indicator_follows_real_frames(ctx):
+    client, app, clock = ctx
+    health = lambda: client.get("/api/v1/health").json()["transport"]["link_indicator"]   # noqa: E731
+    deadline = time.monotonic() + 3
+    while health() != "active" and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert health() == "active"                                   # STATUS frames are arriving
+    mission_id = running_mission(client, app, clock)
+    assert client.get(f"/api/v1/missions/{mission_id}").json()["link"]["indicator"] == "active"
+    snap = command(client, app, mission_id, "blackout_start")["snapshot"]
+    assert snap["link"]["indicator"] == "inactive" and health() == "inactive"
+    runtime = app.state.runtime
+    transport = runtime.transport
+    original = transport.receive
+    transport.receive = lambda timeout_s: (time.sleep(min(timeout_s, 0.01)), None)[1]   # the board cannot be heard
+    command(client, app, mission_id, "blackout_end")
+    time.sleep(0.6)
+    assert health() == "reconnecting"                             # probing, but no valid STATUS yet
+    assert client.get(f"/api/v1/missions/{mission_id}").json()["reconciliation"] is None
+    transport.receive = original                                   # frames get through again
+    snap = wait_for(client, mission_id, lambda s: s["link"]["indicator"] == "active")
+    assert snap["reconciliation"] is not None and VALIDATORS["mission_snapshot"].is_valid(snap)
+
+
 def test_blackout_needs_a_running_mission(ctx):
     client, app, clock = ctx
     mission_id = new_mission(client, app)
