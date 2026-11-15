@@ -22,7 +22,7 @@ If this file and a plan file disagree on roles, ownership or git policy, **this 
 | | | `@ANaceri26/codex` | XIAO bridge + host transport |
 | Sadat | `sadattanzim01` | `@sadattanzim01/claude` | NASA data, orbital math, planet info |
 | | | `@sadattanzim01/cursor` | 3D browser frontend |
-| Affan | `AffanSyed07` | `@AffanSyed07/codex` | Brain/EEG extension |
+| Affan | `AffanSyed07` | `@AffanSyed07/codex` | Brain/EEG extension; NASA data + orbital math (from Sadat's Claude) |
 | Zain | `Zain-Usmani10` | `@Zain-Usmani10/claude` | FPGA Verilog in Quartus, board bring-up |
 
 - **Your handle** = your human's GitHub login + `/claude`, `/codex` or `/cursor`.
@@ -87,7 +87,7 @@ All project code lives under **`app/`**. Never edit files you don't own; ask the
 |---|---|
 | `@ANaceri26/claude` (leader) | `app/contracts/`, `app/backend/api/`, `app/backend/runtime/`, `app/scripts/`, `app/artifacts/`, `app/tests/integration/`, `app/tests/api/`, root files, `docs/`, `tools/`, `.github/`, `.githooks/`, `.claude/` |
 | `@ANaceri26/codex` | `app/hardware/xiao/`, `app/backend/transport/`, `app/tests/transport/` |
-| `@sadattanzim01/claude` | `app/backend/ephemeris/`, `app/backend/planner/`, `app/backend/physics/`, `app/backend/planet_data/`, `app/data/`, `app/tests/ephemeris/`, `app/tests/planner/`, `app/tests/physics/`, `app/tests/planet_data/` |
+| `@AffanSyed07/codex` (taken over from `@sadattanzim01/claude`, 2026-11-15) | `app/backend/ephemeris/`, `app/backend/planner/`, `app/backend/physics/`, `app/backend/planet_data/`, `app/data/`, `app/tests/ephemeris/`, `app/tests/planner/`, `app/tests/physics/`, `app/tests/planet_data/` |
 | `@sadattanzim01/cursor` | `app/frontend/` (except `app/frontend/src/bci/`), including the 3D scene `src/scene/` and `public/` |
 | `@AffanSyed07/codex` | `app/brain/`, `app/frontend/src/bci/`, `app/tests/brain/`, `app/hardware/uno/` (Uno fallback bridge) |
 | `@Zain-Usmani10` (human or his Claude) | `app/hardware/fpga/`, `app/tests/fpga/` |

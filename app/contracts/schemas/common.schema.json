@@ -9,7 +9,7 @@
     "u32": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
     "u16": { "type": "integer", "minimum": 0, "maximum": 65535 },
     "vec3": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
-    "body_id": { "type": "string", "enum": ["399", "499"], "description": "Horizons body id: 399 Earth, 499 Mars" },
+    "body_id": { "type": "string", "enum": ["199", "299", "399", "499", "599", "699", "799", "899"], "description": "Horizons body id: 199 Mercury, 299 Venus, 399 Earth, 499 Mars, 599 Jupiter, 699 Saturn, 799 Uranus, 899 Neptune" },
     "target_id": { "type": "string", "enum": ["planet.399", "planet.499", "planet.more_details", "navigation.back"] },
     "data_mode": { "type": "string", "enum": ["nasa_live", "nasa_cached", "static_dataset", "synthetic"],
                    "description": "Where the numbers came from. synthetic = made-up test data; the UI must show a persistent banner." },

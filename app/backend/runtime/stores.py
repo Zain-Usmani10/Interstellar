@@ -112,6 +112,7 @@ class PlanStore:
 
     def summaries(self) -> list[dict]:
         return [{"plan_id": pl["plan_id"], "objectives_won": pl["objectives_won"],
+                 "origin_body_id": pl["origin_body_id"], "destination_body_id": pl["destination_body_id"],
                  "data_mode": pl["data_mode"], "departure": pl["departure"], "arrival": pl["arrival"],
                  "dv_total_km_s": pl["dv"]["dv_total_km_s"],
                  "propellant_required_kg": pl["masses"]["propellant_required_kg"]}

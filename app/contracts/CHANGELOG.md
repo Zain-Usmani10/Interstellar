@@ -2,6 +2,12 @@
 
 Breaking change = version bump here + `@all` post on the board with the commit.
 
+## 1.1.0 (2026-11-15): additive, nothing breaks
+
+- `body_id` now allows all eight planets (199, 299, 399, 499, 599, 699, 799, 899), so a MissionPlan may connect any two planets. The wire protocol is unchanged: the board only receives ticks and fuel.
+- `GET /api/v1/plans` summaries also carry `origin_body_id` and `destination_body_id`.
+- Planet selection targets and information cards are still Earth and Mars only.
+
 ## 1.0.1 (2026-11-14): additive, nothing breaks
 
 - `api_v1.md`: added `POST /sim/faults`, `GET /session`, heartbeat rules per source, and the adapter imports the backend looks for.
